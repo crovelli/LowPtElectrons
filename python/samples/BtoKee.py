@@ -1,4 +1,13 @@
-test_file = ['file:/afs/cern.ch/work/m/mverzett/public/BtoKee_RAW.root']
+import socket
+test_file = []
+if "lxplus" in socket.gethostname() :
+    test_file = ['file:/afs/cern.ch/work/m/mverzett/public/BtoKee_RAW.root']
+elif "lx0" in socket.gethostname() :
+    test_file = ['file:/vols/cms/bainbrid/BParking/BtoKee_RAW.root']
+else :
+    import sys
+    print >> sys.stderr,'unknown host'
+    sys.exit()
 
 all_files = [
 '/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_PUMix_18_03_17/180316_083930/0000/BToKee_PUMix_273.root',

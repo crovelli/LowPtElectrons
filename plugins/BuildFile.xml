@@ -2,7 +2,6 @@
 <use name="FWCore/MessageLogger"/>
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
-<use name="FWCore/ParameterSet"/>
 <use name="FWCore/Common"/>
 <use name="FWCore/ServiceRegistry"/>
 
@@ -17,25 +16,21 @@
 <use name="TrackingTools/PatternTools"/>
 <use name="RecoParticleFlow/PFTracking"/>
 <use name="RecoTracker/TransientTrackingRecHit"/>
-<use name="FWCore/MessageLogger"/>
 <use name="TrackingTools/TrackFitters"/>
-<use name="TrackingTools/PatternTools"/>
 <use name="TrackingTools/Records"/>
 <use name="FastSimulation/BaseParticlePropagator"/>
 
 <use name="MagneticField/Engine"/>
-<use name="MagneticField/Records"/>
 <use name="MagneticField/ParametrizedEngine"/>
 
 <use name="TrackingTools/TransientTrack"/>
 <use name="RecoVertex/KalmanVertexFit"/>
-<use name="TrackingTools/Records"/>
 <use name="DataFormats/Math"/>
 
 <use name="root"/>
-<use name="TMVA"/>
+<!--<use name="TMVA"/>-->
 
 <flags CXXFLAGS="-g"/>  
-<library file="*.cc" name="CMGToolsLowPtElectronsPlugins">
+<library file="*.cc" name="LowPtElectronsLowPtElectronsPlugins">
   <flags   EDM_PLUGIN="1"/>
 </library>

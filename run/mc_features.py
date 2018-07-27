@@ -106,12 +106,6 @@ process.electronFeatures *= process.tpClusterProducer
 process.electronFeatures *= process.quickTrackAssociatorByHits
 process.quickTrackAssociatorByHits.useClusterTPAssociation = False
 process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
-process.genElectronTracks = cms.EDProducer(
-   'TracksFromGenParticles',
-   tracks = cms.InputTag('generalTracks'),
-   association = cms.InputTag('trackingParticleRecoTrackAsssociation')
-   )
-process.electronFeatures *= process.genElectronTracks
 from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
 customiseForPreMixingInput(process)
 
@@ -119,7 +113,7 @@ customiseForPreMixingInput(process)
 #make the tracker driven pass-though for pt > 0.5, produce preID
 process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
 process.trackerDrivenElectronSeeds.MinPt = 0.5
-process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.double(0.5)
+process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.5)
 process.trackerDrivenElectronSeeds.ProducePreId = True
 #remove ECAL-driven seeds
 process.ecalDrivenElectronSeeds._TypedParameterizable__type = 'EmptySeedProducer'
