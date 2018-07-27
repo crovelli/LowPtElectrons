@@ -1,14 +1,13 @@
 /*
-	Ugly copy-paste of RecoParticleFlow/PFTracking/plugins/GoodSeedProducer.cc
-	to dump ALL the values used by the seeding to create a new training
-	the code should be refactored to extract all the configurable parts
-	(matching, extraction of features, etc.)
+Ntuplizer for everything you need to know about tracker-driven electrons
  */
 
 // system include files
 #include <memory>
 
 // user include files
+
+//TODO: cleanup all the includes not used
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
@@ -45,16 +44,21 @@
 #include "CondFormats/EgammaObjects/interface/GBRForest.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/RecoCandidate/interface/TrackAssociation.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/ParticleFlowReco/interface/PreId.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
+#include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 
 #include <fstream>
 #include <string>
+#include <map>
+#include <set>
 #include "TMath.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -88,6 +92,7 @@ private:
 	const edm::EDGetTokenT< vector<reco::GsfElectron> > ged_electrons_;
 	//MC Only
 	const edm::EDGetTokenT< reco::RecoToSimCollection > association_;
+	const edm::EDGetTokenT< reco::GenParticleCollection > gen_particles_;
 };
 
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
@@ -96,7 +101,8 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
 	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
-	association_{consumes< reco::RecoToSimCollection >(cfg.getParameter<edm::InputTag>("association"))}
+	association_{consumes< reco::RecoToSimCollection >(cfg.getParameter<edm::InputTag>("association"))},
+	gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))}
 {
 	tree_ = fs_->make<TTree>("tree", "test");
 }
@@ -110,7 +116,49 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 void
 TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 {
-  
+	edm::Handle< vector<reco::PreId> > preids;
+	iEvent.getByToken(preid_, preids);
+
+	edm::Handle< vector<reco::GsfTrack> > gsf_tracks;
+	iEvent.getByToken(gsf_tracks_, gsf_tracks);
+
+	edm::Handle< vector<reco::GsfElectron> > ged_electrons;
+	iEvent.getByToken(ged_electrons_, ged_electrons);
+
+	edm::Handle<reco::RecoToSimCollection> matching;
+	iEvent.getByToken(association_, matching);
+
+	edm::Handle<vector<reco::GenParticle> > gen_particles;
+	iEvent.getByToken(gen_particles_, gen_particles);
+
+	assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
+
+	//gsf2ged
+	atd::map<GsfTrackRef, GsfElectronRef> gsf2ged;
+	for(size_t idx=0; idx < ged_electrons->size(); ++idx){
+		reco::GsfElectronRef ele(ged_electrons, idx);
+		GsfTrackRef trk = ele->gsfTrack();
+		if(gsf2ged.find(trk) != gsf2ged.end()) {
+			std::cout << "THIS SHOULD NEVER HAPPEN! Multiple GSFElectrons matched to the same GSFTrack?!" << std::endl;
+		} else {
+			gsf2ged.insert(std::pair<GsfTrackRef, GsfElectronRef>(GsfTrackRef, GsfElectronRef));
+		}
+	}
+
+	//Match gen to reco
+	std::set<reco::GenParticleRef> electrons_from_B;
+	for(size_t idx=0; idx < gen_particles->size(); idx++) {
+		reco::GenParticleRef genp(gen_particles, idx);
+		if(genp->isLastCopy() && std::abs(genp->pdgId()) == 11 && 
+			 genp->numberOfMothers() >= 1 && 
+			 genp->mother()->pdgId() > 510 && genp->mother()->pdgId() < 546) { //is coming from a B
+			electrons_from_B.insert(genp);
+		}
+	}
+
+	//fill quantities
+	
+	
 }
 
 
