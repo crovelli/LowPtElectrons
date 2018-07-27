@@ -106,12 +106,6 @@ process.electronFeatures *= process.tpClusterProducer
 process.electronFeatures *= process.quickTrackAssociatorByHits
 process.quickTrackAssociatorByHits.useClusterTPAssociation = False
 process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
-#process.genElectronTracks = cms.EDProducer(
-#   'TracksFromGenParticles',
-#   tracks = cms.InputTag('generalTracks'),
-#   association = cms.InputTag('trackingParticleRecoTrackAsssociation')
-#   )
-#process.electronFeatures *= process.genElectronTracks
 from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
 customiseForPreMixingInput(process)
 
