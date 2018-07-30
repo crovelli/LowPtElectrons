@@ -35,18 +35,26 @@ public:
 	void link_tree(TTree *tree);
 
 	//fillers
-	void fill_evt(edm::EventID &id);
+	void fill_evt(const edm::EventID &id);
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
 	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot);
 	void fill_ele(const reco::GsfElectronRef ele);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 
+	void is_e(bool t=true) {is_e_=t;}
+	void is_e_not_matched(bool t=true) {is_e_not_matched_=t;}
+	void is_other(bool t=true) {is_other_=t;}
+
 private:
 	//only simple types (no arrays allowed, otherwise the reset() method fails;
 	unsigned int lumi_ = 0;
 	unsigned int run_ = 0;
 	unsigned long long evt_ = 0;
+
+	bool is_e_ = false;
+	bool is_e_not_matched_ = false;
+	bool is_other_ = false;
 	
 	// GEN electrons
 	float gen_pt_ = -1;
