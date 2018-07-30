@@ -29,6 +29,7 @@
 
 <use name="root"/>
 <use name="LowPtElectrons/LowPtElectrons"/>
+<use name="DataFormats/TrackCandidate"/>
 
 <!--<use name="TMVA"/>-->
 

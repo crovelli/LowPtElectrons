@@ -55,6 +55,7 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "LowPtElectrons/LowPtElectrons/interface/ElectronNtuple.h"
+#include "DataFormats/TrackCandidate/interface/TrackCandidate.h"
 
 #include <fstream>
 #include <string>
@@ -97,20 +98,22 @@ private:
 	//MC Only
 	const edm::EDGetTokenT< reco::RecoToSimCollection > association_;
 	const edm::EDGetTokenT< reco::GenParticleCollection > gen_particles_;
-	const edm::EDGetTokenT< reco::BeamSpot > beamspot_;
+        const edm::EDGetTokenT< reco::BeamSpot > beamspot_;
+        const edm::EDGetTokenT< vector<TrackCandidate> > trk_candidates_;
 };
 
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	ntuple_{},
 	isMC_{cfg.getParameter<bool>("isMC")},
 	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
-	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
+        preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
 	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
 	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
 	association_{consumes< reco::RecoToSimCollection >(cfg.getParameter<edm::InputTag>("association"))},
 	gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
-	beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))}
+        beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
+        trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))}
 {
 	tree_ = fs_->make<TTree>("tree", "test");
 	ntuple_.link_tree(tree_);
@@ -145,6 +148,21 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 	edm::Handle< reco::BeamSpot > beamspot;
 	iEvent.getByToken(beamspot_, beamspot);
+
+	edm::Handle< vector<TrackCandidate> > trk_candidates;
+	iEvent.getByToken(trk_candidates_, trk_candidates);
+
+	int ntrks = 0;
+	for ( unsigned int ii = 0; ii < preids->size(); ++ii ) {
+	  if ( preids.product()->at(ii).trackRef().isNonnull() ) { ++ntrks; }
+	}
+
+	std::cout << "DEBUG"
+		  << " preids: " << preids->size() 
+		  << " trk: " << ntrks
+		  << " cands: " << trk_candidates->size() 
+		  << " gsf: " <<  gsf_tracks->size()
+		  << std::endl;
 
 	assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
@@ -223,6 +241,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				ntuple_.fill_ele(ele_match->second);
 			}
 		}
+		tree_->Fill();
 	}
 	
 	//fill other electron quantities
@@ -239,6 +258,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(ele_match != gsf2ged.end()) { //matched to GED Electron
 			ntuple_.fill_ele(ele_match->second);
 		}
+		tree_->Fill();
 	}
 
 	//(prescaled) fill the backgrounds
@@ -257,7 +277,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(ele_match != gsf2ged.end()) { //matched to GED Electron
 			ntuple_.fill_ele(ele_match->second);
 		}
+		tree_->Fill();
 	}
+
 }
 
 
