@@ -69,18 +69,51 @@ void ElectronNtuple::fill_gen(const GenParticleRef genp) {
 }
 
 void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &spot) {
-	gsf_pt_			 = trk->pt();
-	gsf_eta_		 = trk->eta();
-	gsf_phi_     = trk->phi();
-	gsf_nhits_   = trk->found();
-	gsf_dxy_		 = trk->dxy(spot);
-	gsf_dxy_err_ = trk->dxyError();
-	gsf_inp_  	 = sqrt(trk->innerMomentum().mag2());
-	gsf_outp_	   = sqrt(trk->outerMomentum().mag2());
-	gsf_chi2red_ = trk->normalizedChi2();
+  if ( trk.isNonnull() ) {
+    // kine
+    gsf_pt_ = trk->pt();
+    gsf_eta_ = trk->eta();
+    gsf_phi_ = trk->phi();
+    gsf_inp_ = sqrt(trk->innerMomentum().mag2());
+    gsf_outp_ = sqrt(trk->outerMomentum().mag2());
+    gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
+    // quality
+    gsf_nhits_ = trk->found();
+    gsf_chi2red_ = trk->normalizedChi2();
+    // displ
+    gsf_dxy_ = trk->dxy(spot);
+    gsf_dxy_err_ = trk->dxyError();
+    gsf_dz_ = trk->dz(spot.position());
+    gsf_dz_err_ = trk->dzError();
+  } else {
+    //@@ Shouldn't happen, but we take dummy values ...?
+  }
 }
 
-void ElectronNtuple::fill_preid(const PreId &preid) {
+void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot ) {
+
+  // Extract KF track parameters
+  fill_ktf_trk( preid.trackRef(), spot );
+
+  // ECAL/track matching parameters
+  preid_trk_ecal_match_ = preid.ecalMatching();
+  preid_e_over_p_ = preid.eopMatch();
+  preid_trk_ecal_Deta_ = preid.geomMatching()[0];
+  preid_trk_ecal_Dphi_ = preid.geomMatching()[1];
+
+  // GSF tracks
+  preid_gsf_success_ = false; //@@ ??
+  // (p_out-p_in)/p_in from GSF track
+  preid_gsf_dpt_ = preid.dpt();
+  // Ratio of chi2 from GSF and KF tracks
+  preid_trk_gsf_chiratio_ = preid.chi2Ratio();
+  // Estimate of reduced chi2 for GSF track (assumes GSF and KF track have same d.o.f.)
+  preid_gsf_chi2red_ = preid.gsfChi2();
+
+  // MVA output
+  preid_bdtout_ = preid.mva();
+  preid_ibin_ = preid.ibin();
+
 }
 
 void ElectronNtuple::fill_ele(const GsfElectronRef ele) {
@@ -89,18 +122,26 @@ void ElectronNtuple::fill_ele(const GsfElectronRef ele) {
 	ele_phi_     = ele->phi();
 }
 
-void ElectronNtuple::fill_ktf_trk(const TrackRef trk, const reco::BeamSpot &spot) {
-	trk_pt_			 = trk->pt();
-	trk_eta_		 = trk->eta();
-	trk_phi_     = trk->phi();
-	trk_nhits_   = trk->found();
-	trk_dxy_		 = trk->dxy(spot);
-	trk_dxy_err_ = trk->dxyError();
-	trk_inp_  	 = sqrt(trk->innerMomentum().mag2());
-	trk_outp_	   = sqrt(trk->outerMomentum().mag2());
-	trk_chi2red_ = trk->normalizedChi2();
-	trk_high_purity_ = trk->quality(
-		TrackBase::qualityByName("highPurity")
-		);
+void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spot ) {
+  if ( trk.isNonnull() ) {
+    // kine
+    trk_pt_ = trk->pt();
+    trk_eta_ = trk->eta();
+    trk_phi_ = trk->phi();
+    trk_inp_ = sqrt( trk->innerMomentum().mag2() );
+    trk_outp_ = sqrt( trk->outerMomentum().mag2() );
+    trk_dpt_ = ( trk_inp_ > 0. ) ? fabs( trk_outp_ - trk_inp_ ) / trk_inp_ : 0.; //@@ redundant?
+    // quality
+    trk_nhits_ = trk->found();
+    trk_high_purity_ = trk->quality( TrackBase::qualityByName("highPurity") );
+    trk_chi2red_ = trk->normalizedChi2();
+    // displ
+    trk_dxy_ = trk->dxy(spot);
+    trk_dxy_err_ = trk->dxyError();
+    trk_dz_ = trk->dz(spot.position());
+    trk_dz_err_ = trk->dzError();
+  } else {
+    //@@ Shouldn't happen, but we take dummy values ...?
+  }
 }
 
