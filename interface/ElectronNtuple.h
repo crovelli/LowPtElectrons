@@ -1,8 +1,15 @@
 #ifndef LowPtElectrons_LowPtElectrons_ElectronNtuple
 #define LowPtElectrons_LowPtElectrons_ElectronNtuple
 
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/PreId.h"
+#include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
+#include "DataFormats/Math/interface/Point3D.h"
+#include "FWCore/Framework/interface/Event.h"
 class TTree;
-namespace reco {
+/*namespace reco {
 	class GsfTrackRef;
 	class GsfElectronRef;
 	class GenParticleRef;
@@ -10,6 +17,10 @@ namespace reco {
 	class TrackRef;
 	class BeamSpot;
 }
+
+namespace edm {
+	class EventID;
+	}*/
 
 class ElectronNtuple {
 	/*Small class to provide fillers and hide tree I/O*/
@@ -24,12 +35,12 @@ public:
 	void link_tree(TTree *tree);
 
 	//fillers
-	void fill_evt(/* TODO */);
-	void fill_gen(const GenParticleRef genp);
-	void fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &spot);
-	void fill_preid(const PreId &preid);
-	void fill_ele(const GsfElectronRef ele);
-	void fill_ktf_trk(const TrackRef trk, const reco::BeamSpot &spot);
+	void fill_evt(edm::EventID &id);
+	void fill_gen(const reco::GenParticleRef genp);
+	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
+	void fill_preid(const reco::PreId &preid);
+	void fill_ele(const reco::GsfElectronRef ele);
+	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 
 private:
 	//only simple types (no arrays allowed, otherwise the reset() method fails;

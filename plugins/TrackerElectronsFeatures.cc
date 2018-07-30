@@ -134,14 +134,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
 	//gsf2ged
-	atd::map<GsfTrackRef, GsfElectronRef> gsf2ged;
+	std::map<GsfTrackRef, GsfElectronRef> gsf2ged;
 	for(size_t idx=0; idx < ged_electrons->size(); ++idx){
 		reco::GsfElectronRef ele(ged_electrons, idx);
 		GsfTrackRef trk = ele->gsfTrack();
 		if(gsf2ged.find(trk) != gsf2ged.end()) {
 			std::cout << "THIS SHOULD NEVER HAPPEN! Multiple GSFElectrons matched to the same GSFTrack?!" << std::endl;
 		} else {
-			gsf2ged.insert(std::pair<GsfTrackRef, GsfElectronRef>(GsfTrackRef, GsfElectronRef));
+			gsf2ged.insert(std::pair<reco::GsfTrackRef, reco::GsfElectronRef>(trk, ele));
 		}
 	}
 
