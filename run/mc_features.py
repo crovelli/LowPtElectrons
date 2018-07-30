@@ -171,4 +171,7 @@ process.options   = cms.untracked.PSet(
       #SkipEvent = cms.untracked.vstring('ProductNotFound'),
 )
 
+# Write ntuple to root file called "options.outname" 
+process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
+
 open('pydump.py','w').write(process.dumpPython())
