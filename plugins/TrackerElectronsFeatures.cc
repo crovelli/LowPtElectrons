@@ -215,7 +215,8 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(match != gen2gsf.end()) { //matched to GSF TRK
 			ntuple_.fill_gsf_trk(match->second, *beamspot);
 			ntuple_.fill_preid(
-				preids->at(match->second.index())
+				preids->at(match->second.index()),
+				*beamspot
 				);
 			const auto& ele_match = gsf2ged.find(match->second);
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron
@@ -231,7 +232,8 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		ntuple_.is_e_not_matched();
 		ntuple_.fill_gsf_trk(ele, *beamspot);
 		ntuple_.fill_preid(
-			preids->at(ele.index())
+			preids->at(ele.index()),
+			*beamspot
 			);
 		const auto& ele_match = gsf2ged.find(ele);
 		if(ele_match != gsf2ged.end()) { //matched to GED Electron
@@ -248,7 +250,8 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		ntuple_.is_e_not_matched();
 		ntuple_.fill_gsf_trk(ele, *beamspot);
 		ntuple_.fill_preid(
-			preids->at(ele.index())
+			preids->at(ele.index()),
+			*beamspot
 			);
 		const auto& ele_match = gsf2ged.find(ele);
 		if(ele_match != gsf2ged.end()) { //matched to GED Electron
