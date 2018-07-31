@@ -28,6 +28,8 @@
 <use name="DataFormats/Math"/>
 
 <use name="root"/>
+<use name="LowPtElectrons/LowPtElectrons"/>
+
 <!--<use name="TMVA"/>-->
 
 <flags CXXFLAGS="-g"/>  

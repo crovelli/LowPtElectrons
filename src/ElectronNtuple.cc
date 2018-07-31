@@ -13,6 +13,10 @@ void ElectronNtuple::link_tree(TTree *tree) {
   tree->Branch("lumi", &lumi_, "lumi/i");
   tree->Branch("evt",  &evt_ , "evt/i");
 
+	tree->Branch("is_e", &is_e_, "is_e/O");
+	tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
+	tree->Branch("is_other", &is_other_, "is_other/O");
+
 	tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
 	tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
 	tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
@@ -56,7 +60,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 }
 
 //fillers
-void ElectronNtuple::fill_evt(edm::EventID &id) {
+void ElectronNtuple::fill_evt(const edm::EventID &id) {
 	run_  = id.run();						
   lumi_ = id.luminosityBlock();
   evt_  = id.event();          
