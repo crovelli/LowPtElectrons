@@ -105,6 +105,7 @@ process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_
 process.electronFeatures *= process.tpClusterProducer
 process.electronFeatures *= process.quickTrackAssociatorByHits
 process.quickTrackAssociatorByHits.useClusterTPAssociation = False
+#process.quickTrackAssociatorByHits.associateStrip = False
 process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
 from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
 customiseForPreMixingInput(process)
@@ -123,6 +124,7 @@ process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 
 # https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
 # total hack - not checked carefully (ie are max/mins set correct/adequate?)
+# combined, they do have an effect
 process.TrajectoryFilterForElectrons.chargeSignificance = 0.
 process.TrajectoryFilterForElectrons.minPt = 0.
 process.TrajectoryFilterForElectrons.minHitsMinPt = -999
@@ -133,6 +135,8 @@ process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
 process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
 process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
 
+process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
+#process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
 #
 # PUT THE NTUPLIZER HERE!
 #
@@ -180,7 +184,7 @@ process = customiseLogErrorHarvesterUsingOutputCommands(process)
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)
 # End adding early deletion
-process.MessageLogger.cerr.FwkReport.reportEvery = 200
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 process.options   = cms.untracked.PSet(
       wantSummary = cms.untracked.bool(False),
       #SkipEvent = cms.untracked.vstring('ProductNotFound'),
