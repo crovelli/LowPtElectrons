@@ -112,8 +112,8 @@ customiseForPreMixingInput(process)
 #hack through the electron code
 #make the tracker driven pass-though for pt > 0.5, produce preID
 process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
-process.trackerDrivenElectronSeeds.MinPt = 0.
-process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.)
+#process.trackerDrivenElectronSeeds.MinPt = 0. ##@@
+#process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.) ##@@
 process.trackerDrivenElectronSeeds.ProducePreId = True
 #remove ECAL-driven seeds
 process.ecalDrivenElectronSeeds._TypedParameterizable__type = 'EmptySeedProducer'
@@ -123,15 +123,15 @@ process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 
 # https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
 # total hack - not checked carefully (ie are max/mins set correct/adequate?)
-process.TrajectoryFilterForElectrons.chargeSignificance = 0.
-process.TrajectoryFilterForElectrons.minPt = 0.
-process.TrajectoryFilterForElectrons.minHitsMinPt = -999
-process.TrajectoryFilterForElectrons.maxLostHits = 999
-process.TrajectoryFilterForElectrons.maxNumberOfHits = 999
-process.TrajectoryFilterForElectrons.maxConsecLostHits = 999
-process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
-process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
-process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
+#process.TrajectoryFilterForElectrons.chargeSignificance = 0.
+#process.TrajectoryFilterForElectrons.minPt = 0.
+#process.TrajectoryFilterForElectrons.minHitsMinPt = -999
+#process.TrajectoryFilterForElectrons.maxLostHits = 999
+#process.TrajectoryFilterForElectrons.maxNumberOfHits = 999
+#process.TrajectoryFilterForElectrons.maxConsecLostHits = 999
+#process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
+#process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
+#process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
 
 #
 # PUT THE NTUPLIZER HERE!
