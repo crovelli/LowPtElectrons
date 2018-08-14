@@ -106,7 +106,7 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	ntuple_{},
 	isMC_{cfg.getParameter<bool>("isMC")},
 	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
-        preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
+        preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
 	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
 	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
@@ -158,9 +158,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	}
 
 	std::cout << "DEBUG"
-		  << " preids: " << preids->size() 
+		  << " preids: " << preids->size()
 		  << " trk: " << ntrks
-		  << " cands: " << trk_candidates->size() 
+		  << " cands: " << trk_candidates->size()
 		  << " gsf: " <<  gsf_tracks->size()
 		  << std::endl;
 
