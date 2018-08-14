@@ -204,8 +204,7 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
 
     //loop over the track collection
     for(unsigned int i=0;i<Tk.size();++i){		
-      if (useQuality_ &&
-					(!(Tk[i].quality(trackQuality_)))) continue;
+      if (useQuality_ && (!(Tk[i].quality(trackQuality_)))) continue; //@@ was commented
       
       reco::PreId myPreId;
       bool GoodPreId=false;
@@ -445,7 +444,7 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
 			} // end of !disablePreId_
 
       
-      if (GoodPreId){
+      if (GoodPreId){ //@@ if (true){
 				//NEW SEED with n hits	
 				ElectronSeed NewSeed(Seed);
 				NewSeed.setCtfTrack(trackRef);
@@ -455,7 +454,7 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
 					output_nopre->push_back(Seed);
 				}
       }
-      if(producePreId_ && myPreId.pt()>PtThresholdSavePredId_)
+      if(producePreId_ && myPreId.pt()>PtThresholdSavePredId_) //@@ if (true)
 			{
 				// save the index of the PreId object as to be able to create a Ref later
 				refMap_[trackRef] = output_preidinfo->size();
