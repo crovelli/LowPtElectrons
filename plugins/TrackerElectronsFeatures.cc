@@ -171,12 +171,12 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	}
 
 	std::cout << "DEBUG"
-						<< " preids: " << preids->size() 
-						<< " trk: " << ntrks
-						<< " seeds: " << ele_seeds->size()
-						<< " cands: " << trk_candidates->size() 
-						<< " gsf: " <<  gsf_tracks->size()
-						<< std::endl;
+		  << " preids: " << preids->size()
+		  << " trk: " << ntrks
+			<< " seeds: " << ele_seeds->size()
+		  << " cands: " << trk_candidates->size()
+		  << " gsf: " <<  gsf_tracks->size()
+		  << std::endl;
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
