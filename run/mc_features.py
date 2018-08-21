@@ -105,6 +105,7 @@ process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_
 process.electronFeatures *= process.tpClusterProducer
 process.electronFeatures *= process.quickTrackAssociatorByHits
 process.quickTrackAssociatorByHits.useClusterTPAssociation = False
+#process.quickTrackAssociatorByHits.associateStrip = False
 process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
 from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
 customiseForPreMixingInput(process)
@@ -112,8 +113,8 @@ customiseForPreMixingInput(process)
 #hack through the electron code
 #make the tracker driven pass-though for pt > 0.5, produce preID
 process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
-process.trackerDrivenElectronSeeds.MinPt = 0.5
-process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.5)
+process.trackerDrivenElectronSeeds.MinPt = 0.
+process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.)
 process.trackerDrivenElectronSeeds.ProducePreId = True
 #remove ECAL-driven seeds
 process.ecalDrivenElectronSeeds._TypedParameterizable__type = 'EmptySeedProducer'
@@ -121,9 +122,25 @@ process.ecalDrivenElectronSeedsFromMultiCl._TypedParameterizable__type = 'EmptyS
 #set association to match against GSF, which is now run on every single track
 process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 
+# https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
+# total hack - not checked carefully (ie are max/mins set correct/adequate?)
+# combined, they do have an effect
+process.TrajectoryFilterForElectrons.chargeSignificance = 0.
+process.TrajectoryFilterForElectrons.minPt = 0.
+process.TrajectoryFilterForElectrons.minHitsMinPt = -999
+process.TrajectoryFilterForElectrons.maxLostHits = 999
+process.TrajectoryFilterForElectrons.maxNumberOfHits = 999
+process.TrajectoryFilterForElectrons.maxConsecLostHits = 999
+process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
+process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
+process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
+
+process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
+#process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
 #
 # PUT THE NTUPLIZER HERE!
 #
+process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
 
 # Additional output definition
 
@@ -136,7 +153,9 @@ process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag, '')
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.recosim_step = cms.Path(process.recosim)
+process.electronFeatures *= process.features
 process.reconstruction_step *= process.electronFeatures
+#process.reconstruction_step *= process.features
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 process.schedule = cms.Schedule(
    process.raw2digi_step, process.reconstruction_step, 
@@ -165,7 +184,7 @@ process = customiseLogErrorHarvesterUsingOutputCommands(process)
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)
 # End adding early deletion
-process.MessageLogger.cerr.FwkReport.reportEvery = 200
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 process.options   = cms.untracked.PSet(
       wantSummary = cms.untracked.bool(False),
       #SkipEvent = cms.untracked.vstring('ProductNotFound'),

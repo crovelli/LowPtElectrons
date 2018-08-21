@@ -1,0 +1,20 @@
+import FWCore.ParameterSet.Config as cms
+
+features = cms.EDAnalyzer("TrackerElectronsFeatures",
+                          isMC = cms.bool(True),
+                          prescaleFakes = cms.double(0.005),
+                          beamspot = cms.InputTag("offlineBeamSpot"),
+                          genParticles = cms.InputTag("genParticles"),
+                          gsfTracks = cms.InputTag("electronGsfTracks"),
+                          #gsfTracks = cms.InputTag("electronGsfTracks"),
+                          gedElectrons = cms.InputTag("gedGsfElectrons"),
+                          preId = cms.InputTag("trackerDrivenElectronSeeds","preid"),
+                          association = cms.InputTag("trackingParticleRecoTrackAsssociation"),
+                          trkCandidates = cms.InputTag("electronCkfTrackCandidates"),
+                          eleSeeds = cms.InputTag("trackerDrivenElectronSeeds", 'SeedsForGsf'),
+                          associator = cms.InputTag("quickTrackAssociatorByHits"),
+                          trackingParticles = cms.InputTag("mix", "MergedTrackTruth"),
+                          #pileup = cms.InputTag("addPileupInfo"),
+                          #vertices = cms.InputTag("offlinePrimaryVertices"),
+                          #generalTracks = cms.InputTag("generalTracks"),
+                          )
