@@ -61,6 +61,8 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 #include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 
+#include <algorithm>
+#include <numeric>
 #include <fstream>
 #include <string>
 #include <map>
@@ -93,6 +95,8 @@ private:
 	TTree *tree_;	
 	ElectronNtuple ntuple_;
 	bool isMC_;
+	bool hit_association_;
+	double dr_max_; //for DR Matching only
 	double fake_prescale_;
 
 	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
@@ -112,6 +116,8 @@ private:
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	ntuple_{},
 	isMC_{cfg.getParameter<bool>("isMC")},
+	hit_association_{cfg.getParameter<bool>("hitAssociation")},
+	dr_max_{cfg.getParameter<double>("drMax")},
 	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
 	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
@@ -176,13 +182,13 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	  if ( preids.product()->at(ii).trackRef().isNonnull() ) { ++ntrks; }
 	}
 
-	std::cout << "DEBUG"
+	/*std::cout << "DEBUG"
 		  << " preids: " << preids->size()
 		  << " trk: " << ntrks
 			<< " seeds: " << ele_seeds->size()
 		  << " cands: " << trk_candidates->size()
 		  << " gsf: " <<  gsf_tracks->size()
-		  << std::endl;
+		  << std::endl;*/
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
@@ -199,14 +205,15 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	}
 
 	//match seed to GSF
-	std::map<size_t, GsfTrackRef> seed2gsf;
+	std::map<size_t, std::vector<GsfTrackRef> > seed2gsf;
 	for(size_t idx=0; idx<gsf_tracks->size(); ++idx) {
 		GsfTrackRef trk(gsf_tracks, idx);
 		size_t seed_id = trk->seedRef().castTo<ElectronSeedRef>().index();
-		if(seed2gsf.find(seed_id) == seed2gsf.end()) {
-			seed2gsf.insert(std::pair<size_t, GsfTrackRef>(seed_id, trk));
+		if(seed2gsf.find(seed_id) == seed2gsf.end()) {			
+			seed2gsf.insert(std::pair<size_t, std::vector<GsfTrackRef> >(seed_id, {trk}));
 		} else {
 			std::cout << "THIS SHOULD NEVER HAPPEN! Multiple tracks matched to the same seed." << std::endl;
+			seed2gsf[seed_id].push_back(trk);
 		}
 	}
 
@@ -230,96 +237,158 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	std::map<reco::GenParticleRef, size_t> gen2seed;
 	std::vector<size_t> other_electrons;
 	std::vector<size_t> other_tracks;
-	for(size_t idx=0; idx<ele_seeds->size(); ++idx) {
-		RefToBase<TrajectorySeed> key(ele_seeds, idx);
-		auto match = reco2sim.find(key);
+  if(hit_association_) { //maybe refactor into functions
+		for(size_t idx=0; idx<ele_seeds->size(); ++idx) {
+			RefToBase<TrajectorySeed> key(ele_seeds, idx);
+			auto match = reco2sim.find(key);
 		
-		//check matching
-		if(match != reco2sim.end()) { 
-			auto tracking_particle = match->val.front().first;
-			if(std::abs(tracking_particle->pdgId()) == 11) { //is an electron				
-				if(tracking_particle->genParticles().size()) { //the electron is Gen-level
-					auto genp = tracking_particle->genParticles()[0];
-					if(electrons_from_B.find(genp) != electrons_from_B.end()) { //is coming from a B
-						if(gen2seed.find(genp) == gen2seed.end()) { //is not filled yet
-							cout << "match found" << endl;
-							gen2seed.insert(std::pair<reco::GenParticleRef, size_t>(genp, idx));
-						} else { //something is wrong...
-							cout << "THIS SHOULD NEVER HAPPEN! Multiple GSF tracks associated to the same GEN!" << endl;
+			//check matching
+			if(match != reco2sim.end()) { 
+				auto tracking_particle = match->val.front().first;
+				if(std::abs(tracking_particle->pdgId()) == 11) { //is an electron				
+					if(tracking_particle->genParticles().size()) { //the electron is Gen-level
+						auto genp = tracking_particle->genParticles()[0];
+						if(electrons_from_B.find(genp) != electrons_from_B.end()) { //is coming from a B
+							if(gen2seed.find(genp) == gen2seed.end()) { //is not filled yet
+								cout << "match found" << endl;
+								gen2seed.insert(std::pair<reco::GenParticleRef, size_t>(genp, idx));
+							} else { //something is wrong...
+								cout << "THIS SHOULD NEVER HAPPEN! Multiple GSF tracks associated to the same GEN!" << endl;
+							}
+						} else { //is gen level, but not from B
+							other_electrons.push_back(idx);
 						}
-					} else { //is gen level, but not from B
+					} else { //it is not a gen-level electron
 						other_electrons.push_back(idx);
 					}
-				} else { //it is not a gen-level electron
-						other_electrons.push_back(idx);
+				} //ends if(std::abs(tracking_particle->pdgId()) == 11)
+			} else { //is not matched or not an electron
+				other_tracks.push_back(idx);
+			}
+		} //end loop on GSF tracks	
+
+	} else { //DR association
+		set<size_t> matched;
+		for(const auto& gen : electrons_from_B) {
+			size_t best_idx = 666;
+			double min_dr = dr_max_;
+			for(size_t idx=0; idx<preids->size(); ++idx) {
+				double dr = reco::deltaR(*(preids->at(idx).trackRef()), *gen);
+				if(dr < min_dr) {
+					min_dr = dr;
+					best_idx = idx;
 				}
-			} //ends if(std::abs(tracking_particle->pdgId()) == 11)
-		} else { //is not matched or not an electron
-			other_tracks.push_back(idx);
-		}
-	} //end loop on GSF tracks	
-
-	cout << "Found " << electrons_from_B.size() << " gen electrons, " 
-			 << gen2seed.size() << " matched GSF electrons, "
-			 << other_electrons.size() << " non-gen electrons, " 
-			 << other_tracks.size() << " other tracks" << endl;
-
-	//fill gen electron quantities
-	/*TODO FIX FILLING for(auto gen : electrons_from_B) {
-		ntuple_.reset();
-		ntuple_.fill_evt(iEvent.id());
-		ntuple_.fill_gen(gen);
-		ntuple_.is_e();
-		const auto& match = gen2gsf.find(gen);
-		if(match != gen2gsf.end()) { //matched to GSF TRK
-			ntuple_.fill_gsf_trk(match->second, *beamspot);
-			ntuple_.fill_preid(
-				preids->at(match->second->seedRef().castTo<ElectronSeedRef>().index()),
-				*beamspot
-				);
-			const auto& ele_match = gsf2ged.find(match->second);
-			if(ele_match != gsf2ged.end()) { //matched to GED Electron
-				ntuple_.fill_ele(ele_match->second);
+			}
+			
+			if(min_dr < dr_max_) {
+				gen2seed.insert(std::pair<reco::GenParticleRef, size_t>(gen, best_idx));
+				matched.insert(best_idx);
 			}
 		}
+
+		other_tracks.reserve(preids->size() - matched.size());
+		for(size_t i=0; i<preids->size(); i++) {
+			if(matched.find(i) == matched.end()) {
+				//be extra safe and check hit matching, anyhow we have a LOT of tracks
+				RefToBase<TrajectorySeed> key(ele_seeds, i);
+				auto match = reco2sim.find(key);
+		
+				//check matching
+				if(match == reco2sim.end() || std::abs(match->val.front().first->pdgId()) != 11) { 
+					other_tracks.push_back(i);
+				}
+			}
+		}
+	}
+	/*cout << "Found " << electrons_from_B.size() << " gen electrons, " 
+			 << gen2seed.size() << " matched electron seeds, "
+			 << other_electrons.size() << " non-gen electrons, " 
+			 << other_tracks.size() << " other tracks" << endl; */
+
+	//fill gen electron quantities
+	for(auto gen : electrons_from_B) {
+		ntuple_.reset();
+		ntuple_.fill_evt(iEvent.id());
+		ntuple_.is_e();
+		ntuple_.fill_gen(gen);
+		const auto& match = gen2seed.find(gen);
+		if(match != gen2seed.end()) { //matched to SEED
+			const auto& gsf_match = seed2gsf.find(match->second);
+			ntuple_.fill_preid(
+				preids->at(match->second),
+				*beamspot, (gsf_match != seed2gsf.end())
+				);
+			
+			if(gsf_match != seed2gsf.end()) { //matched to GSF Track
+				const double gpt = gen->pt();
+				auto best = std::min_element(
+					gsf_match->second.begin(),
+					gsf_match->second.end(),
+					[gpt] (const GsfTrackRef& a, const GsfTrackRef& b) {
+						return std::abs(a->pt() - gpt)/gpt < std::abs(b->pt() - gpt)/gpt;
+					});
+				ntuple_.fill_gsf_trk(*best, *beamspot);
+
+				const auto& ele_match = gsf2ged.find(*best);
+				if(ele_match != gsf2ged.end()) { //matched to GED Electron
+					ntuple_.fill_ele(ele_match->second);
+				} //matched to GED Electron
+			}//matched to GSF Track
+		}//matched to SEED
 		tree_->Fill();
 	}
+
 	
 	//fill other electron quantities
-	for(auto& ele : other_electrons) {
+	for(size_t& seed_idx : other_electrons) {
 		ntuple_.reset();
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_e_not_matched();
-		ntuple_.fill_gsf_trk(ele, *beamspot);
+		const auto& gsf_match = seed2gsf.find(seed_idx);
 		ntuple_.fill_preid(
-			preids->at(ele->seedRef().castTo<ElectronSeedRef>().index()),
-			*beamspot
+			preids->at(seed_idx),
+			*beamspot,
+			(gsf_match != seed2gsf.end()) ? gsf_match->second.size() : 0
 			);
-		const auto& ele_match = gsf2ged.find(ele);
-		if(ele_match != gsf2ged.end()) { //matched to GED Electron
-			ntuple_.fill_ele(ele_match->second);
-		}
+
+		if(gsf_match != seed2gsf.end()) { //matched to GSF Track
+			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
+			
+			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
+			if(ele_match != gsf2ged.end()) { //matched to GED Electron
+				ntuple_.fill_ele(ele_match->second);
+			} //matched to GED Electron
+		}//matched to GSF Track
+
 		tree_->Fill();
 	}
 
+
 	//(prescaled) fill the backgrounds
 	//fill other electron quantities
-	for(auto& ele : other_tracks) {
+	for(size_t& seed_idx : other_tracks) {
 		if(gRandom->Rndm() >= fake_prescale_) continue; //the smaller the few tracks are kept
 		ntuple_.reset();
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_other();
-		ntuple_.fill_gsf_trk(ele, *beamspot);
+		const auto& gsf_match = seed2gsf.find(seed_idx);
 		ntuple_.fill_preid(
-			preids->at(ele->seedRef().castTo<ElectronSeedRef>().index()),
-			*beamspot
+			preids->at(seed_idx),
+			*beamspot,
+			(gsf_match != seed2gsf.end()) ? gsf_match->second.size() : 0
 			);
-		const auto& ele_match = gsf2ged.find(ele);
-		if(ele_match != gsf2ged.end()) { //matched to GED Electron
-			ntuple_.fill_ele(ele_match->second);
-		}
+
+		if(gsf_match != seed2gsf.end()) { //matched to GSF Track
+			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
+			
+			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
+			if(ele_match != gsf2ged.end()) { //matched to GED Electron
+				ntuple_.fill_ele(ele_match->second);
+			} //matched to GED Electron
+		}//matched to GSF Track
+
 		tree_->Fill();
-		}*/
+	}//*/
 
 }
 

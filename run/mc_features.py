@@ -30,6 +30,11 @@ options.register('globalTag', '94X_mc2017_realistic_v12',
     VarParsing.varType.string,
     ""
 )
+options.register('hitAssociation', True,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
 options.setDefault('maxEvents', -1)
 options.parseArguments()
 
@@ -113,7 +118,7 @@ customiseForPreMixingInput(process)
 #hack through the electron code
 #make the tracker driven pass-though for pt > 0.5, produce preID
 process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
-#process.trackerDrivenElectronSeeds.MinPt = 0. ##@@
+process.trackerDrivenElectronSeeds.MinPt = 1. ##@@
 #process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.) ##@@
 process.trackerDrivenElectronSeeds.ProducePreId = True
 #remove ECAL-driven seeds
@@ -141,7 +146,7 @@ process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
 # PUT THE NTUPLIZER HERE!
 #
 process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
-
+process.features.hitAssociation = options.hitAssociation
 # Additional output definition
 
 # Other statements

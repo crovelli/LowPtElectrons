@@ -38,7 +38,7 @@ public:
 	void fill_evt(const edm::EventID &id);
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
-	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot);
+	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
 	void fill_ele(const reco::GsfElectronRef ele);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 
@@ -91,6 +91,8 @@ private:
 	// PreId: MVA output
 	float preid_bdtout_ = -1.;
 	int   preid_ibin_ = -1;
+	// PreId: # of seeded GSF Tracks
+	int   preid_numGSF_ = 0;
 	
 	// GSF tracks: kine
 	float gsf_pt_ = -1.;

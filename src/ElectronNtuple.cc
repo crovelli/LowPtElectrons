@@ -43,6 +43,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("preid_gsf_dpt"					, &preid_gsf_dpt_		  		, "preid_gsf_dpt/f");					
 	tree->Branch("preid_trk_gsf_chiratio", &preid_trk_gsf_chiratio_, "preid_trk_gsf_chiratio/f");
 	tree->Branch("preid_gsf_chi2red"     , &preid_gsf_chi2red_     , "preid_gsf_chi2red/f");     
+	tree->Branch("preid_numGSF", &preid_numGSF_, "preid_gsf_chi2red/i");
 	
 	tree->Branch("gsf_pt",				 	&gsf_pt_				   , "gsf_pt/f");
 	tree->Branch("gsf_eta",		 	  &gsf_eta_		       , "gsf_eta/f");
@@ -94,7 +95,7 @@ void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &s
   }
 }
 
-void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot ) {
+void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot, const int num_gsf) {
 
   // Extract KF track parameters
   fill_ktf_trk( preid.trackRef(), spot );
@@ -118,6 +119,8 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot 
   preid_bdtout_ = preid.mva();
   preid_ibin_ = preid.ibin();
 
+	//How many GSF it will seed
+	preid_numGSF_ = num_gsf;
 }
 
 void ElectronNtuple::fill_ele(const GsfElectronRef ele) {
