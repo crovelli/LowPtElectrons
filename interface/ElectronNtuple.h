@@ -79,7 +79,6 @@ private:
 	float trk_dz_err_ = -1;
 
 	// PreId: ECAL/track matching
-	bool  preid_trk_ecal_match_ = false;
 	float preid_e_over_p_ = -1.;
 	float preid_trk_ecal_Deta_ = -1.;
 	float preid_trk_ecal_Dphi_ = -1.;
@@ -93,6 +92,10 @@ private:
 	int   preid_ibin_ = -1;
 	// PreId: # of seeded GSF Tracks
 	int   preid_numGSF_ = 0;
+	//step-wise standard selection
+  bool preid_trk_ecal_match_ = false;
+	bool preid_trkfilter_pass_ = false;
+	bool preid_mva_pass_ = false;
 	
 	// GSF tracks: kine
 	float gsf_pt_ = -1.;
