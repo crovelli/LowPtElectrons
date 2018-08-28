@@ -13,6 +13,7 @@
 <use name="DataFormats/HLTReco"/>
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/ParticleFlowReco"/>
+<use name="DataFormats/ParticleFlowCandidate"/>
 <use name="TrackingTools/PatternTools"/>
 <use name="RecoParticleFlow/PFTracking"/>
 <use name="RecoTracker/TransientTrackingRecHit"/>

@@ -20,6 +20,11 @@ options.register('nchunks', 1,
     VarParsing.varType.int,
     ""
 )
+options.register('fakePrescale', 0.08,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.float,
+    ""
+)
 options.register('data', 'RAWMCTest',
     VarParsing.multiplicity.singleton,
     VarParsing.varType.string,
@@ -29,6 +34,23 @@ options.register('globalTag', '94X_mc2017_realistic_v12',
     VarParsing.multiplicity.singleton,
     VarParsing.varType.string,
     ""
+)
+options.register('hitAssociation', True,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
+options.register('edout', False,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
+options.register(
+   'pick',
+   '',
+   VarParsing.multiplicity.list,
+   VarParsing.varType.string,
+   'Pick single events'
 )
 options.setDefault('maxEvents', -1)
 options.parseArguments()
@@ -85,6 +107,9 @@ process.source = cms.Source("PoolSource",
     secondaryFileNames = cms.untracked.vstring()
 )
 
+if options.pick:
+   process.source.eventsToProcess = cms.untracked.VEventRange(options.pick)
+
 process.options = cms.untracked.PSet(
 
 )
@@ -105,6 +130,7 @@ process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_
 process.electronFeatures *= process.tpClusterProducer
 process.electronFeatures *= process.quickTrackAssociatorByHits
 process.quickTrackAssociatorByHits.useClusterTPAssociation = False
+#process.quickTrackAssociatorByHits.associateStrip = False
 process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
 from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
 customiseForPreMixingInput(process)
@@ -112,7 +138,7 @@ customiseForPreMixingInput(process)
 #hack through the electron code
 #make the tracker driven pass-though for pt > 0.5, produce preID
 process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
-#process.trackerDrivenElectronSeeds.MinPt = 0. ##@@
+process.trackerDrivenElectronSeeds.MinPt = 1. ##@@
 #process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.) ##@@
 process.trackerDrivenElectronSeeds.ProducePreId = True
 #remove ECAL-driven seeds
@@ -123,6 +149,7 @@ process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 
 # https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
 # total hack - not checked carefully (ie are max/mins set correct/adequate?)
+# combined, they do have an effect
 #process.TrajectoryFilterForElectrons.chargeSignificance = 0.
 #process.TrajectoryFilterForElectrons.minPt = 0.
 #process.TrajectoryFilterForElectrons.minHitsMinPt = -999
@@ -133,11 +160,14 @@ process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 #process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
 #process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
 
+process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
+#process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
 #
 # PUT THE NTUPLIZER HERE!
 #
 process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
-
+process.features.hitAssociation = options.hitAssociation
+process.features.prescaleFakes = options.fakePrescale
 # Additional output definition
 
 # Other statements
@@ -165,6 +195,44 @@ associatePatAlgosToolsTask(process)
 #process.options.numberOfThreads=cms.untracked.uint32(4)
 #process.options.numberOfStreams=cms.untracked.uint32(0)
 
+if options.edout:
+   process.AODSIMoutput = cms.OutputModule(
+      "PoolOutputModule",
+      compressionAlgorithm = cms.untracked.string('LZMA'),
+      compressionLevel = cms.untracked.int32(4),
+      eventAutoFlushCompressedSize = cms.untracked.int32(31457280),
+      fileName = cms.untracked.string('file:EDOutput.root'),
+      outputCommands = cms.untracked.vstring( 
+         'keep *',
+         # 'drop *', 
+         # "keep *_offlineBeamSpot_*_*",
+         # "keep *_genParticles_*_*",
+         # "keep *_electronGsfTracks_*_*",
+         # "keep *_particleFlowEGamma_*_*",
+         # "keep *_gedGsfElectronCores_*_*",
+         # "keep *_gedGsfElectrons_*_*",
+         # "keep *_trackingParticleRecoTrackAsssociation_*_*",
+         # "keep *_electronCkfTrackCandidates_*_*",
+         # "keep *_trackerDrivenElectronSeeds_*_*",
+         # 'keep *_generalTracks_*_*',
+         # 'keep *_generalTracks_*_*',
+         # 'keep *_particleFlowEGamma_*_*',
+         # 'keep *_mvaElectrons_*_*',
+         # 'keep *_particleFlowBlock_*_*',
+         # 'keep *_particleFlowSuperClusterECAL_*_*',
+         # 'keep *_pfTrackElec_*_*',
+         # 'keep *_pfDisplacedTrackerVertex_*_*',
+         # 'keep *_pfTrack_*_*',
+         # 'keep *_particleFlowClusterECAL_*_*',
+         # 'keep *_particleFlowClusterHCAL_*_*',
+         # 'keep *_particleFlowClusterHO_*_*',
+         # 'keep *_particleFlowClusterHF_*_*',
+         # 'keep *_particleFlowClusterPS_*_*',
+         )
+      )
+   process.end = cms.EndPath(process.AODSIMoutput)
+   process.schedule.append(process.end)
+   
 #do not add changes to your config after this point (unless you know what you are doing)
 from FWCore.ParameterSet.Utilities import convertToUnscheduled
 process=convertToUnscheduled(process)
@@ -180,7 +248,7 @@ process = customiseLogErrorHarvesterUsingOutputCommands(process)
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)
 # End adding early deletion
-process.MessageLogger.cerr.FwkReport.reportEvery = 200
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 process.options   = cms.untracked.PSet(
       wantSummary = cms.untracked.bool(False),
       #SkipEvent = cms.untracked.vstring('ProductNotFound'),
@@ -189,4 +257,3 @@ process.options   = cms.untracked.PSet(
 # Write ntuple to root file called "options.outname" 
 process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
 
-open('pydump.py','w').write(process.dumpPython())

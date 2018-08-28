@@ -33,7 +33,6 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_chi2red",    &trk_chi2red_      , "trk_chi2red/f"); 
 
 	tree->Branch("preid_ibin", 					&preid_ibin_          , "preid_ibin/I");
-	tree->Branch("preid_trk_ecal_match", &preid_trk_ecal_match_, "preid_trk_ecal_match/O");
 	tree->Branch("preid_bdtout",				 	&preid_bdtout_		  	, "preid_bdtout/f");
 	tree->Branch("preid_trk_ecal_Deta",	&preid_trk_ecal_Deta_ , "preid_trk_ecal_Deta/f");
 	tree->Branch("preid_trk_ecal_Dphi",	&preid_trk_ecal_Dphi_ , "preid_trk_ecal_Dphi/f");
@@ -43,6 +42,11 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("preid_gsf_dpt"					, &preid_gsf_dpt_		  		, "preid_gsf_dpt/f");					
 	tree->Branch("preid_trk_gsf_chiratio", &preid_trk_gsf_chiratio_, "preid_trk_gsf_chiratio/f");
 	tree->Branch("preid_gsf_chi2red"     , &preid_gsf_chi2red_     , "preid_gsf_chi2red/f");     
+	tree->Branch("preid_numGSF", &preid_numGSF_, "preid_gsf_chi2red/i");
+	//step-wise standard selection
+	tree->Branch("preid_trk_ecal_match", &preid_trk_ecal_match_, "preid_trk_ecal_match/O");
+	tree->Branch("preid_trkfilter_pass", &preid_trkfilter_pass_, "preid_trkfilter_pass/O");
+	tree->Branch("preid_mva_pass", &preid_mva_pass_, "preid_mva_pass/O");
 	
 	tree->Branch("gsf_pt",				 	&gsf_pt_				   , "gsf_pt/f");
 	tree->Branch("gsf_eta",		 	  &gsf_eta_		       , "gsf_eta/f");
@@ -53,6 +57,16 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_inp",  			&gsf_inp_  	    	 , "gsf_inp/f");
 	tree->Branch("gsf_outp",	  		&gsf_outp_	  	   , "gsf_outp/f");
 	tree->Branch("gsf_chi2red",    &gsf_chi2red_      , "gsf_chi2red/f"); 
+
+	//Middle steps
+	tree->Branch("has_ele_core", &has_ele_core_, "has_ele_core/O");
+	tree->Branch("has_pfEgamma", &has_pfEgamma_,  "has_pfEgamma/O");
+	tree->Branch("has_pfGSF_trk", &has_pfGSF_trk_, "has_pfGSF_trk/O");
+	tree->Branch("has_pfBlock_with_SC", &has_pfBlock_with_SC_, "has_pfBlock_with_SC/O");
+	tree->Branch("has_pfBlock_with_ECAL", &has_pfBlock_with_ECAL_, "has_pfBlock_with_ECAL/O");
+	tree->Branch("has_pfBlock", &has_pfBlock_, "has_pfBlock/O");
+
+	//bool has_pfEgamma_ = false;
 
 	tree->Branch("ele_pt",				 	&ele_pt_				   , "ele_pt/f");
 	tree->Branch("ele_eta",		 	  &ele_eta_		       , "ele_eta/f");
@@ -94,13 +108,12 @@ void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &s
   }
 }
 
-void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot ) {
+void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot, const int num_gsf) {
 
   // Extract KF track parameters
   fill_ktf_trk( preid.trackRef(), spot );
 
   // ECAL/track matching parameters
-  preid_trk_ecal_match_ = preid.ecalMatching();
   preid_e_over_p_ = preid.eopMatch();
   preid_trk_ecal_Deta_ = preid.geomMatching()[0];
   preid_trk_ecal_Dphi_ = preid.geomMatching()[1];
@@ -113,11 +126,18 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot 
   preid_trk_gsf_chiratio_ = preid.chi2Ratio();
   // Estimate of reduced chi2 for GSF track (assumes GSF and KF track have same d.o.f.)
   preid_gsf_chi2red_ = preid.gsfChi2();
-
+	
   // MVA output
   preid_bdtout_ = preid.mva();
   preid_ibin_ = preid.ibin();
 
+	//How many GSF it will seed
+	preid_numGSF_ = num_gsf;
+
+	//step-wise standard selection
+  preid_trk_ecal_match_ = preid.ecalMatching();
+	preid_trkfilter_pass_ = preid.trackFiltered();
+	preid_mva_pass_ = preid.mvaSelected();
 }
 
 void ElectronNtuple::fill_ele(const GsfElectronRef ele) {
