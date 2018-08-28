@@ -60,6 +60,10 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 #include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/ParticleFlowReco/interface/GsfPFRecTrack.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlockElementGsfTrack.h"
 
 #include <algorithm>
 #include <numeric>
@@ -102,6 +106,10 @@ private:
 	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
 	const edm::EDGetTokenT< vector<reco::GsfTrack> > gsf_tracks_;
 	const edm::EDGetTokenT< edm::View<reco::Track> > gsf_tracks_view_;
+	const edm::EDGetTokenT< vector<reco::GsfPFRecTrack> > pf_gsf_tracks_;
+	const edm::EDGetTokenT< vector<reco::PFBlock> > pfblocks_;
+	const edm::EDGetTokenT< reco::PFCandidateCollection > pf_electrons_;
+	const edm::EDGetTokenT< vector<reco::GsfElectronCore> > ged_electron_cores_;
 	const edm::EDGetTokenT< vector<reco::GsfElectron> > ged_electrons_;
 	//MC Only
 	const edm::EDGetTokenT< reco::RecoToSimCollection > association_;
@@ -122,6 +130,10 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
 	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
+	pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
+	pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
+	pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
+	ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
 	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
 	association_{consumes< reco::RecoToSimCollection >(cfg.getParameter<edm::InputTag>("association"))},
 	gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
@@ -152,6 +164,18 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 	edm::Handle< edm::View<reco::Track> > gsf_tracks_view;
 	iEvent.getByToken(gsf_tracks_view_, gsf_tracks_view);
+
+	edm::Handle< vector<reco::GsfPFRecTrack> > pf_gsf_tracks;
+	iEvent.getByToken(pf_gsf_tracks_, pf_gsf_tracks);
+
+	edm::Handle< vector<reco::PFBlock> > pfblocks;
+	iEvent.getByToken(pfblocks_, pfblocks);
+
+	edm::Handle< reco::PFCandidateCollection > pf_electrons;
+	iEvent.getByToken(pf_electrons_, pf_electrons);
+
+	edm::Handle< vector<reco::GsfElectronCore> > ged_electron_cores;
+	iEvent.getByToken(ged_electron_cores_, ged_electron_cores);
 
 	edm::Handle< vector<reco::GsfElectron> > ged_electrons;
 	iEvent.getByToken(ged_electrons_, ged_electrons);
@@ -191,6 +215,54 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		  << std::endl;*/
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
+
+	//
+	std::set<GsfTrackRef> pfGSFTrks_sources;
+	for(const auto& pfgsf : *pf_gsf_tracks) {
+		if(!pfgsf.gsfTrackRef().isNull()) pfGSFTrks_sources.insert(pfgsf.gsfTrackRef());
+	}
+
+	std::set<GsfTrackRef> pfBlocks_sources;
+	std::set<GsfTrackRef> pfBlocksWSC_sources;
+	std::set<GsfTrackRef> pfBlocksWECAL_sources;
+	for(const auto& block : *pfblocks) {
+		bool has_SC = false;
+		bool has_ECAL = false;
+		for(const auto& element : block.elements()) {
+			has_SC |= (element.type() == PFBlockElement::Type::SC);
+			has_ECAL |= (element.type() == PFBlockElement::Type::SC) ||
+				(element.type() == PFBlockElement::Type::ECAL);
+		}
+
+		for(const auto& element : block.elements()) {
+			if(element.type() != PFBlockElement::Type::GSF) continue;			
+			const PFBlockElementGsfTrack& casted = dynamic_cast<const PFBlockElementGsfTrack&>(element);
+			if(!casted.GsftrackRef().isNull()) {
+				pfBlocks_sources.insert(casted.GsftrackRef());
+				if(has_SC) pfBlocksWSC_sources.insert(casted.GsftrackRef());
+				if(has_ECAL) pfBlocksWECAL_sources.insert(casted.GsftrackRef());
+			}
+		}
+	}
+
+
+	//pfgsfs
+	std::set<GsfTrackRef> pfElectrons_sources;
+	for(const auto& pf : *pf_electrons) {
+		if(!pf.gsfTrackRef().isNull()) pfElectrons_sources.insert(pf.gsfTrackRef());
+	}
+
+	//gsf2core
+	std::map<GsfTrackRef, GsfElectronCoreRef> gsf2core;
+	for(size_t idx=0; idx < ged_electron_cores->size(); ++idx){
+		reco::GsfElectronCoreRef core(ged_electron_cores, idx);
+		GsfTrackRef trk = core->gsfTrack();
+		if(gsf2core.find(trk) != gsf2core.end()) {
+			std::cout << "THIS SHOULD NEVER HAPPEN! Multiple GSFElectronCores matched to the same GSFTrack?!" << std::endl;
+		} else {
+			gsf2core.insert(std::pair<reco::GsfTrackRef, reco::GsfElectronCoreRef>(trk, core));
+		}
+	}
 
 	//gsf2ged
 	std::map<GsfTrackRef, GsfElectronRef> gsf2ged;
@@ -250,7 +322,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 						auto genp = tracking_particle->genParticles()[0];
 						if(electrons_from_B.find(genp) != electrons_from_B.end()) { //is coming from a B
 							if(gen2seed.find(genp) == gen2seed.end()) { //is not filled yet
-								cout << "match found" << endl;
+								//cout << "match found" << endl;
 								gen2seed.insert(std::pair<reco::GenParticleRef, size_t>(genp, idx));
 							} else { //something is wrong...
 								cout << "THIS SHOULD NEVER HAPPEN! Multiple GSF tracks associated to the same GEN!" << endl;
@@ -328,6 +400,20 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 						return std::abs(a->pt() - gpt)/gpt < std::abs(b->pt() - gpt)/gpt;
 					});
 				ntuple_.fill_gsf_trk(*best, *beamspot);
+				ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
+				ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
+				ntuple_.has_pfGSFTrk(
+					pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
+					);
+				ntuple_.has_pfBlock( 
+					pfBlocks_sources.find(*best) != pfBlocks_sources.end()
+					);
+				ntuple_.has_pfBlock_with_SC(
+					pfBlocksWSC_sources.find(*best) != pfBlocksWSC_sources.end()
+          );
+				ntuple_.has_pfBlock_with_ECAL(
+					pfBlocksWECAL_sources.find(*best) !=pfBlocksWECAL_sources.end()
+					);
 
 				const auto& ele_match = gsf2ged.find(*best);
 				if(ele_match != gsf2ged.end()) { //matched to GED Electron
@@ -353,7 +439,21 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 		if(gsf_match != seed2gsf.end()) { //matched to GSF Track
 			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
-			
+			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
+			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
+			ntuple_.has_pfGSFTrk(
+				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
+				);
+			ntuple_.has_pfBlock( 
+				pfBlocks_sources.find(gsf_match->second.at(0)) != pfBlocks_sources.end()
+				);
+			ntuple_.has_pfBlock_with_SC(
+				pfBlocksWSC_sources.find(gsf_match->second.at(0)) != pfBlocksWSC_sources.end()
+				);
+			ntuple_.has_pfBlock_with_ECAL(
+				pfBlocksWECAL_sources.find(gsf_match->second.at(0)) !=pfBlocksWECAL_sources.end()
+				);
+
 			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron
 				ntuple_.fill_ele(ele_match->second);
@@ -380,6 +480,20 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 		if(gsf_match != seed2gsf.end()) { //matched to GSF Track
 			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
+			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
+			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
+			ntuple_.has_pfGSFTrk(
+				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
+				);
+			ntuple_.has_pfBlock( 
+				pfBlocks_sources.find(gsf_match->second.at(0)) != pfBlocks_sources.end()
+				);
+			ntuple_.has_pfBlock_with_SC(
+				pfBlocksWSC_sources.find(gsf_match->second.at(0)) != pfBlocksWSC_sources.end()
+				);
+			ntuple_.has_pfBlock_with_ECAL(
+				pfBlocksWECAL_sources.find(gsf_match->second.at(0)) !=pfBlocksWECAL_sources.end()
+				);
 			
 			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron

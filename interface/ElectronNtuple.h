@@ -45,6 +45,12 @@ public:
 	void is_e(bool t=true) {is_e_=t;}
 	void is_e_not_matched(bool t=true) {is_e_not_matched_=t;}
 	void is_other(bool t=true) {is_other_=t;}
+	void has_ele_core(bool t=true) {has_ele_core_=t;}
+	void has_pfEgamma(bool t=true) {has_pfEgamma_=t;}
+	void has_pfBlock_with_SC(bool t=true) {has_pfBlock_with_SC_ = t;}
+	void has_pfBlock_with_ECAL(bool t=true) {has_pfBlock_with_ECAL_ = t;}
+	void has_pfBlock(bool t=true) {has_pfBlock_ = t;}
+	void has_pfGSFTrk(bool t=true) {has_pfGSF_trk_=t;}
 
 private:
 	//only simple types (no arrays allowed, otherwise the reset() method fails;
@@ -112,6 +118,14 @@ private:
 	float gsf_dxy_err_ = -1;
 	float gsf_dz_ = -1;
 	float gsf_dz_err_ = -1;
+
+	//Middle steps
+	bool has_ele_core_ = false;
+	bool has_pfEgamma_ = false;
+	bool has_pfBlock_with_SC_ = false;
+	bool has_pfBlock_with_ECAL_ = false;
+	bool has_pfBlock_ = false;
+	bool has_pfGSF_trk_ = false;
 
 	// GSF electrons
 	float ele_pt_ = -1.;

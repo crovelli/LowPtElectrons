@@ -58,6 +58,16 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_outp",	  		&gsf_outp_	  	   , "gsf_outp/f");
 	tree->Branch("gsf_chi2red",    &gsf_chi2red_      , "gsf_chi2red/f"); 
 
+	//Middle steps
+	tree->Branch("has_ele_core", &has_ele_core_, "has_ele_core/O");
+	tree->Branch("has_pfEgamma", &has_pfEgamma_,  "has_pfEgamma/O");
+	tree->Branch("has_pfGSF_trk", &has_pfGSF_trk_, "has_pfGSF_trk/O");
+	tree->Branch("has_pfBlock_with_SC", &has_pfBlock_with_SC_, "has_pfBlock_with_SC/O");
+	tree->Branch("has_pfBlock_with_ECAL", &has_pfBlock_with_ECAL_, "has_pfBlock_with_ECAL/O");
+	tree->Branch("has_pfBlock", &has_pfBlock_, "has_pfBlock/O");
+
+	//bool has_pfEgamma_ = false;
+
 	tree->Branch("ele_pt",				 	&ele_pt_				   , "ele_pt/f");
 	tree->Branch("ele_eta",		 	  &ele_eta_		       , "ele_eta/f");
 	tree->Branch("ele_phi",		 	  &ele_phi_     		 , "ele_phi/f");
