@@ -40,6 +40,16 @@ options.register('hitAssociation', True,
     VarParsing.varType.bool,
     ""
 )
+options.register('disableAssociation', False,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
+options.register('checkFromB', True,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
 options.register('edout', False,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.bool,
@@ -168,6 +178,8 @@ process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
 process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
 process.features.hitAssociation = options.hitAssociation
 process.features.prescaleFakes = options.fakePrescale
+process.features.disableAssociation = options.disableAssociation
+process.features.checkFromB = options.checkFromB
 # Additional output definition
 
 # Other statements
