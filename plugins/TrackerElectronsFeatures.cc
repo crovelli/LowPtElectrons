@@ -99,6 +99,8 @@ private:
 	TTree *tree_;	
 	ElectronNtuple ntuple_;
 	bool isMC_;
+	bool disable_association_;
+	bool check_from_B_;
 	bool hit_association_;
 	double dr_max_; //for DR Matching only
 	double fake_prescale_;
@@ -106,13 +108,13 @@ private:
 	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
 	const edm::EDGetTokenT< vector<reco::GsfTrack> > gsf_tracks_;
 	const edm::EDGetTokenT< edm::View<reco::Track> > gsf_tracks_view_;
+	const edm::EDGetTokenT< vector<int> > pf_gsf_flags_;
 	const edm::EDGetTokenT< vector<reco::GsfPFRecTrack> > pf_gsf_tracks_;
 	const edm::EDGetTokenT< vector<reco::PFBlock> > pfblocks_;
 	const edm::EDGetTokenT< reco::PFCandidateCollection > pf_electrons_;
 	const edm::EDGetTokenT< vector<reco::GsfElectronCore> > ged_electron_cores_;
 	const edm::EDGetTokenT< vector<reco::GsfElectron> > ged_electrons_;
 	//MC Only
-	const edm::EDGetTokenT< reco::RecoToSimCollection > association_;
 	const edm::EDGetTokenT< reco::GenParticleCollection > gen_particles_;
 	const edm::EDGetTokenT< reco::BeamSpot > beamspot_;
 	const edm::EDGetTokenT< vector<TrackCandidate> > trk_candidates_;
@@ -124,23 +126,25 @@ private:
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	ntuple_{},
 	isMC_{cfg.getParameter<bool>("isMC")},
+	disable_association_{cfg.getParameter<bool>("disableAssociation")},
+	check_from_B_{cfg.getParameter<bool>("checkFromB")},
 	hit_association_{cfg.getParameter<bool>("hitAssociation")},
 	dr_max_{cfg.getParameter<double>("drMax")},
 	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
 	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
 	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
+	pf_gsf_flags_{consumes< vector<int> >(cfg.getParameter<edm::InputTag>("PFGsfFlags"))},
 	pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
 	pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
 	pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
 	ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
 	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
-	association_{consumes< reco::RecoToSimCollection >(cfg.getParameter<edm::InputTag>("association"))},
 	gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
 	beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
 	trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
 	ele_seeds_{consumes< edm::View<TrajectorySeed> >(cfg.getParameter<edm::InputTag>("eleSeeds"))},
-	associator_{consumes< reco::TrackToTrackingParticleAssociator >(cfg.getParameter<edm::InputTag>("associator"))},
+	associator_{mayConsume< reco::TrackToTrackingParticleAssociator >(cfg.getParameter<edm::InputTag>("associator"))},
 	tracking_particles_{consumes< TrackingParticleCollection >(cfg.getParameter<edm::InputTag>("trackingParticles"))}
 {
 	tree_ = fs_->make<TTree>("tree", "test");
@@ -168,6 +172,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< vector<reco::GsfPFRecTrack> > pf_gsf_tracks;
 	iEvent.getByToken(pf_gsf_tracks_, pf_gsf_tracks);
 
+	edm::Handle< vector<int> > pf_gsf_flags;
+	iEvent.getByToken(pf_gsf_flags_, pf_gsf_flags);
+
 	edm::Handle< vector<reco::PFBlock> > pfblocks;
 	iEvent.getByToken(pfblocks_, pfblocks);
 
@@ -179,9 +186,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 	edm::Handle< vector<reco::GsfElectron> > ged_electrons;
 	iEvent.getByToken(ged_electrons_, ged_electrons);
-
-	edm::Handle<reco::RecoToSimCollection> matching;
-	iEvent.getByToken(association_, matching);
 
 	edm::Handle<vector<reco::GenParticle> > gen_particles;
 	iEvent.getByToken(gen_particles_, gen_particles);
@@ -195,9 +199,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< edm::View<TrajectorySeed> > ele_seeds;
 	iEvent.getByToken(ele_seeds_, ele_seeds);
 	
-	edm::Handle< reco::TrackToTrackingParticleAssociator > associator;
-	iEvent.getByToken(associator_, associator);
-	
 	edm::Handle< TrackingParticleCollection > tracking_particles;
 	iEvent.getByToken(tracking_particles_, tracking_particles);
 
@@ -206,6 +207,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	  if ( preids.product()->at(ii).trackRef().isNonnull() ) { ++ntrks; }
 	}
 
+	//Match gen to seed
+	//match seeds to tracking particles
+	reco::RecoToSimCollectionSeed reco2sim;
+	if(!disable_association_) {
+		edm::Handle< reco::TrackToTrackingParticleAssociator > associator;
+		iEvent.getByToken(associator_, associator);	
+		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
+	}
 	/*std::cout << "DEBUG"
 		  << " preids: " << preids->size()
 		  << " trk: " << ntrks
@@ -288,19 +297,16 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			seed2gsf[seed_id].push_back(trk);
 		}
 	}
-
-	//Match gen to seed
-	//match seeds to tracking particles
-	auto reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	//auto sim2reco = associator->associateSimToReco();
 
 	//Find gen electrons
 	std::set<reco::GenParticleRef> electrons_from_B;
 	for(size_t idx=0; idx < gen_particles->size(); idx++) {
 		reco::GenParticleRef genp(gen_particles, idx);
-		if(genp->isLastCopy() && std::abs(genp->pdgId()) == 11 && 
-			 genp->numberOfMothers() >= 1 && 
-			 genp->mother()->pdgId() > 510 && genp->mother()->pdgId() < 546) { //is coming from a B
+		bool is_ele = genp->isLastCopy() && std::abs(genp->pdgId()) == 11;
+		bool comes_from_B = genp->numberOfMothers() >= 1 && genp->mother()->pdgId() > 510 && 
+			genp->mother()->pdgId() < 546;
+		if(is_ele && (comes_from_B || !check_from_B_)) { //is coming from a B
 			electrons_from_B.insert(genp);
 		}
 	}
@@ -310,6 +316,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	std::vector<size_t> other_electrons;
 	std::vector<size_t> other_tracks;
   if(hit_association_) { //maybe refactor into functions
+		
 		for(size_t idx=0; idx<ele_seeds->size(); ++idx) {
 			RefToBase<TrajectorySeed> key(ele_seeds, idx);
 			auto match = reco2sim.find(key);
@@ -366,7 +373,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				auto match = reco2sim.find(key);
 		
 				//check matching
-				if(match == reco2sim.end() || std::abs(match->val.front().first->pdgId()) != 11) { 
+				if(disable_association_ || match == reco2sim.end() || std::abs(match->val.front().first->pdgId()) != 11) { 
 					other_tracks.push_back(i);
 				}
 			}
@@ -402,6 +409,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				ntuple_.fill_gsf_trk(*best, *beamspot);
 				ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
 				ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
+				ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
 				ntuple_.has_pfGSFTrk(
 					pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
 					);
@@ -441,6 +449,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
 			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
 			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
+			ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
 			ntuple_.has_pfGSFTrk(
 				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
 				);
@@ -482,6 +491,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
 			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
 			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
+			ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
 			ntuple_.has_pfGSFTrk(
 				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
 				);

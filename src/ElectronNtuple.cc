@@ -58,6 +58,15 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_outp",	  		&gsf_outp_	  	   , "gsf_outp/f");
 	tree->Branch("gsf_chi2red",    &gsf_chi2red_      , "gsf_chi2red/f"); 
 
+	//PFGSFTrack internal steps flags
+	tree->Branch("pfgsf_gsf_has_ktf", &pfgsf_gsf_has_ktf_, "pfgsf_gsf_has_ktf/O");
+	tree->Branch("pfgsf_ktf_is_fifthStep", &pfgsf_ktf_is_fifthStep_, "pfgsf_ktf_is_fifthStep/O");
+	tree->Branch("pfgsf_gsf_ecalDriven", &pfgsf_gsf_ecalDriven_, "pfgsf_gsf_ecalDriven/O");
+	tree->Branch("pfgsf_gsf_trackerDriven", &pfgsf_gsf_trackerDriven_, "pfgsf_gsf_trackerDriven/O");
+	tree->Branch("pfgsf_valid_gsf_brem", &pfgsf_valid_gsf_brem_, "pfgsf_valid_gsf_brem/O");
+	tree->Branch("pfgsf_passes_preselection", &pfgsf_passes_preselection_, "pfgsf_passes_preselection/O");
+	tree->Branch("pfgsf_passes_selection", &pfgsf_passes_selection_, "pfgsf_passes_selection/O");
+
 	//Middle steps
 	tree->Branch("has_ele_core", &has_ele_core_, "has_ele_core/O");
 	tree->Branch("has_pfEgamma", &has_pfEgamma_,  "has_pfEgamma/O");
@@ -169,3 +178,12 @@ void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spo
   }
 }
 
+void ElectronNtuple::unpack_pfgsf_flags(const int flags) {
+	pfgsf_gsf_has_ktf_       	= get_ith_bit(flags, 0);
+	pfgsf_ktf_is_fifthStep_  	= get_ith_bit(flags, 1);
+	pfgsf_gsf_ecalDriven_    	= get_ith_bit(flags, 2);
+	pfgsf_gsf_trackerDriven_ 	= get_ith_bit(flags, 3);
+	pfgsf_valid_gsf_brem_    	= get_ith_bit(flags, 4);
+	pfgsf_passes_preselection_ = get_ith_bit(flags, 5);
+	pfgsf_passes_selection_    = get_ith_bit(flags, 6);
+}
