@@ -67,6 +67,17 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("pfgsf_passes_preselection", &pfgsf_passes_preselection_, "pfgsf_passes_preselection/O");
 	tree->Branch("pfgsf_passes_selection", &pfgsf_passes_selection_, "pfgsf_passes_selection/O");
 
+	tree->Branch("pfgsf_xclean_seedref", &pfgsf_xclean_seedref_, "pfgsf_xclean_seedref/O");
+	tree->Branch("pfgsf_xclean_ECALDriven_too_few_hits", &pfgsf_xclean_ECALDriven_too_few_hits_, "pfgsf_xclean_ECALDriven_too_few_hits/O");
+	tree->Branch("pfgsf_xclean_ECALDriven_bad_EoverP", &pfgsf_xclean_ECALDriven_bad_EoverP_, "pfgsf_xclean_ECALDriven_bad_EoverP/O");
+	tree->Branch("pfgsf_xclean_TrkDriven_too_few_hits", &pfgsf_xclean_TrkDriven_too_few_hits_, "pfgsf_xclean_TrkDriven_too_few_hits/O");
+	tree->Branch("pfgsf_xclean_TrkDriven_vs_ECALDriven", &pfgsf_xclean_TrkDriven_vs_ECALDriven_, "pfgsf_xclean_TrkDriven_vs_ECALDriven/O");
+	tree->Branch("pfgsf_xclean_BothTrk_bad_EoverP", &pfgsf_xclean_BothTrk_bad_EoverP_, "pfgsf_xclean_BothTrk_bad_EoverP/O");
+	tree->Branch("pfgsf_xclean_BothTrk_noECAL_match", &pfgsf_xclean_BothTrk_noECAL_match_, "pfgsf_xclean_BothTrk_noECAL_match/O");
+	tree->Branch("pfgsf_xclean_AngularGsfCleaning", &pfgsf_xclean_AngularGsfCleaning_, "pfgsf_xclean_AngularGsfCleaning/O");
+	tree->Branch("pfgsf_xclean_noECAL_match_AGAIN", &pfgsf_xclean_noECAL_match_AGAIN_, "pfgsf_xclean_noECAL_match_AGAIN/O");
+	tree->Branch("pfgsf_xclean_FINAL", &pfgsf_xclean_FINAL_, "pfgsf_xclean_FINAL/O");
+
 	//Middle steps
 	tree->Branch("has_ele_core", &has_ele_core_, "has_ele_core/O");
 	tree->Branch("has_pfEgamma", &has_pfEgamma_,  "has_pfEgamma/O");
@@ -186,4 +197,15 @@ void ElectronNtuple::unpack_pfgsf_flags(const int flags) {
 	pfgsf_valid_gsf_brem_    	= get_ith_bit(flags, 4);
 	pfgsf_passes_preselection_ = get_ith_bit(flags, 5);
 	pfgsf_passes_selection_    = get_ith_bit(flags, 6);
+
+	pfgsf_xclean_seedref_ = get_ith_bit(flags, 7);
+	pfgsf_xclean_ECALDriven_too_few_hits_ = get_ith_bit(flags, 8);
+	pfgsf_xclean_ECALDriven_bad_EoverP_ = get_ith_bit(flags, 9);
+	pfgsf_xclean_TrkDriven_too_few_hits_ = get_ith_bit(flags, 10);
+	pfgsf_xclean_TrkDriven_vs_ECALDriven_ = get_ith_bit(flags, 11);
+	pfgsf_xclean_BothTrk_bad_EoverP_ = get_ith_bit(flags, 12);
+	pfgsf_xclean_BothTrk_noECAL_match_ = get_ith_bit(flags, 13);
+	pfgsf_xclean_AngularGsfCleaning_ = get_ith_bit(flags, 14);
+	pfgsf_xclean_noECAL_match_AGAIN_ = get_ith_bit(flags, 15);
+	pfgsf_xclean_FINAL_ = get_ith_bit(flags, 16);
 }

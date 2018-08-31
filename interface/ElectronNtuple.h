@@ -132,6 +132,17 @@ private:
 	bool pfgsf_passes_preselection_ = false;
 	bool pfgsf_passes_selection_ = false;
 
+	bool pfgsf_xclean_seedref_ = false;
+	bool pfgsf_xclean_ECALDriven_too_few_hits_ = false;
+	bool pfgsf_xclean_ECALDriven_bad_EoverP_ = false;
+	bool pfgsf_xclean_TrkDriven_too_few_hits_ = false;
+	bool pfgsf_xclean_TrkDriven_vs_ECALDriven_ = false;
+	bool pfgsf_xclean_BothTrk_bad_EoverP_ = false;
+	bool pfgsf_xclean_BothTrk_noECAL_match_ = false;
+	bool pfgsf_xclean_AngularGsfCleaning_ = false;
+	bool pfgsf_xclean_noECAL_match_AGAIN_ = false;
+	bool pfgsf_xclean_FINAL_ = false;
+
 	//Middle steps
 	bool has_ele_core_ = false;
 	bool has_pfEgamma_ = false;
