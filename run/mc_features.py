@@ -62,12 +62,17 @@ options.register(
    VarParsing.varType.string,
    'Pick single events'
 )
+options.register('matchAtSeeding', False,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
 options.setDefault('maxEvents', -1)
 options.parseArguments()
 
 from LowPtElectrons.LowPtElectrons.samples import all_samples
 #split into even chunks
-input_files = all_samples[options.data]
+input_files = all_samples[options.data] if not options.inputFiles else options.inputFiles
 n = len(input_files)/options.nchunks
 chunks = [input_files[i:i + n] for i in xrange(0, len(input_files), n)]
 leftovers = sum(chunks[options.nchunks:], [])
@@ -151,6 +156,9 @@ process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTra
 process.trackerDrivenElectronSeeds.MinPt = 1. ##@@
 #process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.) ##@@
 process.trackerDrivenElectronSeeds.ProducePreId = True
+process.trackerDrivenElectronSeeds.matchToGen = cms.bool(options.matchAtSeeding)
+process.trackerDrivenElectronSeeds.genParticles = cms.InputTag("genParticles")
+
 #remove ECAL-driven seeds
 process.ecalDrivenElectronSeeds._TypedParameterizable__type = 'EmptySeedProducer'
 process.ecalDrivenElectronSeedsFromMultiCl._TypedParameterizable__type = 'EmptySeedProducer'
@@ -269,3 +277,5 @@ process.options   = cms.untracked.PSet(
 # Write ntuple to root file called "options.outname" 
 process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
 
+#process.pfTrackElec.debugGsfCleaning = True
+process.pfTrackElec.applyGsfTrackCleaning = False
