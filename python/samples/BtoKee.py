@@ -27,7 +27,36 @@ if "cern.ch" in socket.gethostname() :
         '/store/cmst3/group/bpark/BToKee_Pythia_PUMix_18_03_18_180318_112206_0000/BToKee_PUMix_120.root',
         ]
 elif "lx0" in socket.gethostname() :
-    test_file = ['file:/vols/cms/bainbrid/BParking/BtoKee_RAW.root']
+    base='root://cms-xrd-global.cern.ch//store/cmst3/group/bpark/BToKee_Pythia_PUMix_18_03_18_180318_112206_0000/'
+    test_file = [
+#        'file:/vols/cms/bainbrid/BParking/pick0.root', # gen ele +GSFtrk -GEDele
+#        'file:/vols/cms/bainbrid/BParking/pick1.root', # gen ele +GSFtrk +PFBlockECAL -PFCand -GEDele
+#        'file:/vols/cms/bainbrid/BParking/pick2.root', # gen ele +GSFtrk +PFBlockECAL +PFCand +GEDele
+#        'file:/vols/cms/bainbrid/BParking/BtoKee_RAW.root',
+        base+'BToKee_PUMix_10.root',
+        base+'BToKee_PUMix_100.root',
+        base+'BToKee_PUMix_101.root',
+        base+'BToKee_PUMix_102.root',
+        base+'BToKee_PUMix_103.root',
+        base+'BToKee_PUMix_104.root',
+        base+'BToKee_PUMix_105.root',
+        base+'BToKee_PUMix_106.root',
+        base+'BToKee_PUMix_107.root',
+        base+'BToKee_PUMix_108.root',
+        base+'BToKee_PUMix_109.root',
+        base+'BToKee_PUMix_11.root',
+        base+'BToKee_PUMix_110.root',
+        base+'BToKee_PUMix_111.root',
+        base+'BToKee_PUMix_112.root',
+        base+'BToKee_PUMix_113.root',
+        base+'BToKee_PUMix_114.root',
+        base+'BToKee_PUMix_115.root',
+        base+'BToKee_PUMix_116.root',
+        base+'BToKee_PUMix_117.root',
+        base+'BToKee_PUMix_118.root',
+        base+'BToKee_PUMix_119.root',
+        base+'BToKee_PUMix_120.root',
+        ]
 else :
     import sys
     print >> sys.stderr,'unknown host'
