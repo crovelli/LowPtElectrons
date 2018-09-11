@@ -2,8 +2,10 @@ import FWCore.ParameterSet.Config as cms
 
 features = cms.EDAnalyzer("TrackerElectronsFeatures",
                           isMC = cms.bool(True),
+                          printPfBlock = cms.bool(False),
                           disableAssociation = cms.bool(False),
                           prescaleFakes = cms.double(0.08),
+                          fakesMultiplier = cms.double(1.),
                           checkFromB = cms.bool(True),
                           beamspot = cms.InputTag("offlineBeamSpot"),
                           genParticles = cms.InputTag("genParticles"),
