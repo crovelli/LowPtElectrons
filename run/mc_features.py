@@ -67,6 +67,11 @@ options.register('matchAtSeeding', False,
     VarParsing.varType.bool,
     ""
 )
+options.register('skipEvents', 0,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.int,
+    ""
+)
 options.setDefault('maxEvents', -1)
 options.parseArguments()
 
@@ -114,13 +119,15 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 # Input source
-process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring(
+process.source = cms.Source(
+   "PoolSource",
+   fileNames = cms.untracked.vstring(
       chunks[options.ichunk]
       #'/store/data/Run2017F/SingleElectron/RAW/v1/000/306/459/00000/B6410DA6-C8C5-E711-947F-02163E01A45E.root'
       ),
-    secondaryFileNames = cms.untracked.vstring()
-)
+   secondaryFileNames = cms.untracked.vstring(),
+   skipEvents=cms.untracked.uint32(options.skipEvents)
+   )
 
 if options.pick:
    process.source.eventsToProcess = cms.untracked.VEventRange(options.pick)
