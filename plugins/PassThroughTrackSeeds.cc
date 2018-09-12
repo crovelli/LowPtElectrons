@@ -69,6 +69,7 @@ PassThroughTrackSeeds::PassThroughTrackSeeds(const ParameterSet& iConfig, const 
   pfCLusTagECLabel_=consumes<reco::PFClusterCollection>(iConfig.getParameter<InputTag>("PFEcalClusterLabel"));
 
   pfCLusTagHCLabel_=consumes<reco::PFClusterCollection>(iConfig.getParameter<InputTag>("PFHcalClusterLabel"));  
+	genParticles_ = mayConsume< reco::GenParticleCollection >(iConfig.getParameter<edm::InputTag>("genParticles"));
 
   pfCLusTagPSLabel_=consumes<reco::PFClusterCollection>(iConfig.getParameter<InputTag>("PFPSClusterLabel"));
   
@@ -82,6 +83,7 @@ PassThroughTrackSeeds::PassThroughTrackSeeds(const ParameterSet& iConfig, const 
   
   
   nHitsInSeed_=iConfig.getParameter<int>("NHitsInSeed");
+	matchToGen_ = iConfig.getParameter<bool>("matchToGen");
 
   clusThreshold_=iConfig.getParameter<double>("ClusterThreshold");
   
@@ -202,10 +204,37 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
                                 <<"tracksContainers_[" << istr << "] to be analyzed "
                                 <<Tk.size();
 
+		std::set<size_t> matched;
+		if(matchToGen_) {
+			Handle<GenParticleCollection> gen_particles;
+			iEvent.getByToken(genParticles_, gen_particles);
+			
+			for(const auto& genp : *gen_particles) {
+				if(genp.isLastCopy() && std::abs(genp.pdgId()) == 11) {
+					
+					size_t best_idx = 666;
+					double min_dr = 0.02; //yeah, hardcoded for the moment
+					for(unsigned int i=0; i<Tk.size(); ++i){
+						double dr = reco::deltaR(Tk.at(i), genp);
+						if(dr < min_dr) {
+							min_dr = dr;
+							best_idx = i;
+						}
+					}
+			
+					if(min_dr < 0.02) {
+						matched.insert(best_idx);
+					}						
+				}
+			}
+		}
+
+
     //loop over the track collection
     for(unsigned int i=0;i<Tk.size();++i){		
       if (useQuality_ && (!(Tk[i].quality(trackQuality_)))) continue; //@@ was commented
-      
+      if(matchToGen_ && matched.find(i) == matched.end()) continue;
+
       reco::PreId myPreId;
       bool GoodPreId=false;
 

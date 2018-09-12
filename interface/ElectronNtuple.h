@@ -51,8 +51,12 @@ public:
 	void has_pfBlock_with_ECAL(bool t=true) {has_pfBlock_with_ECAL_ = t;}
 	void has_pfBlock(bool t=true) {has_pfBlock_ = t;}
 	void has_pfGSFTrk(bool t=true) {has_pfGSF_trk_=t;}
+	void unpack_pfgsf_flags(int flags);
 
 private:
+
+	bool get_ith_bit(const int val, const size_t ibit) const {return (val >> ibit) & 1;}
+
 	//only simple types (no arrays allowed, otherwise the reset() method fails;
 	unsigned int lumi_ = 0;
 	unsigned int run_ = 0;
@@ -118,6 +122,26 @@ private:
 	float gsf_dxy_err_ = -1;
 	float gsf_dz_ = -1;
 	float gsf_dz_err_ = -1;
+
+	//PFGSFTrack internal steps flags
+	bool pfgsf_gsf_has_ktf_ = false;
+	bool pfgsf_ktf_is_fifthStep_ = false;
+	bool pfgsf_gsf_ecalDriven_ = false;
+	bool pfgsf_gsf_trackerDriven_ = false;
+	bool pfgsf_valid_gsf_brem_ = false;
+	bool pfgsf_passes_preselection_ = false;
+	bool pfgsf_passes_selection_ = false;
+
+	bool pfgsf_xclean_seedref_ = false;
+	bool pfgsf_xclean_ECALDriven_too_few_hits_ = false;
+	bool pfgsf_xclean_ECALDriven_bad_EoverP_ = false;
+	bool pfgsf_xclean_TrkDriven_too_few_hits_ = false;
+	bool pfgsf_xclean_TrkDriven_vs_ECALDriven_ = false;
+	bool pfgsf_xclean_BothTrk_bad_EoverP_ = false;
+	bool pfgsf_xclean_BothTrk_noECAL_match_ = false;
+	bool pfgsf_xclean_AngularGsfCleaning_ = false;
+	bool pfgsf_xclean_noECAL_match_AGAIN_ = false;
+	bool pfgsf_xclean_FINAL_ = false;
 
 	//Middle steps
 	bool has_ele_core_ = false;
