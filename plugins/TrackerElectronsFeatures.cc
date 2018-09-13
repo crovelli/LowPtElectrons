@@ -608,9 +608,12 @@ std::pair<float,float> TrackerElectronsFeatures::printPfBlock( const reco::GenPa
 				      "kNBETypes"};
 
   std::cout << "[LowPtEleNtuplizer::printPfBlock]" << std::endl
+	    << std::setiosflags(std::ios::right)
+	    << std::setiosflags(std::ios::fixed)
 	    << std::setprecision(0)
 	    << "    Index " << block.index()
 	    << " #elements " << elements_size
+	    << std::setprecision(2)
 	    << " max_dr " << elements_max_dr
 	    << std::endl
 	    << "    ";
