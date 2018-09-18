@@ -4,6 +4,7 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 
 // system include files
 #include <memory>
+#include <utility>
 
 // user include files
 
@@ -48,6 +49,7 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/ParticleFlowReco/interface/PreId.h"
+#include "DataFormats/ParticleFlowReco/interface/PreIdFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
@@ -64,6 +66,8 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 #include "DataFormats/ParticleFlowReco/interface/GsfPFRecTrack.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlockElementGsfTrack.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlockElementTrack.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlockElementCluster.h"
 
 #include <algorithm>
 #include <numeric>
@@ -92,6 +96,13 @@ public:
 private:
 	virtual void beginRun(const edm::Run & run,const edm::EventSetup&);
 	virtual void analyze(const edm::Event&, const edm::EventSetup&);
+
+  std::pair<float,float> printPfBlock( const reco::GenParticleRef gen,
+				       const reco::PreIdRef preid,
+				       const reco::PFBlockRef block,
+				       const reco::GsfTrackRef gsf,
+				       const GsfElectronRef* ele );
+
 	// ----------member data ---------------------------
 
 	//Features trk_features_;
@@ -99,11 +110,13 @@ private:
 	TTree *tree_;	
 	ElectronNtuple ntuple_;
 	bool isMC_;
+	bool printPfBlock_;
 	bool disable_association_;
 	bool check_from_B_;
 	bool hit_association_;
 	double dr_max_; //for DR Matching only
 	double fake_prescale_;
+        double fake_multiplier_;
 
 	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
 	const edm::EDGetTokenT< vector<reco::GsfTrack> > gsf_tracks_;
@@ -124,28 +137,30 @@ private:
 };
 
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
-	ntuple_{},
-	isMC_{cfg.getParameter<bool>("isMC")},
-	disable_association_{cfg.getParameter<bool>("disableAssociation")},
-	check_from_B_{cfg.getParameter<bool>("checkFromB")},
-	hit_association_{cfg.getParameter<bool>("hitAssociation")},
-	dr_max_{cfg.getParameter<double>("drMax")},
-	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
-	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
-	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
-	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
-	pf_gsf_flags_{consumes< vector<int> >(cfg.getParameter<edm::InputTag>("PFGsfFlags"))},
-	pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
-	pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
-	pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
-	ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
-	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
-	gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
-	beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
-	trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
-	ele_seeds_{consumes< edm::View<TrajectorySeed> >(cfg.getParameter<edm::InputTag>("eleSeeds"))},
-	associator_{mayConsume< reco::TrackToTrackingParticleAssociator >(cfg.getParameter<edm::InputTag>("associator"))},
-	tracking_particles_{consumes< TrackingParticleCollection >(cfg.getParameter<edm::InputTag>("trackingParticles"))}
+  ntuple_{},
+  isMC_{cfg.getParameter<bool>("isMC")},
+  printPfBlock_{cfg.getParameter<bool>("printPfBlock")},
+  disable_association_{cfg.getParameter<bool>("disableAssociation")},
+  check_from_B_{cfg.getParameter<bool>("checkFromB")},
+  hit_association_{cfg.getParameter<bool>("hitAssociation")},
+  dr_max_{cfg.getParameter<double>("drMax")},
+  fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
+  fake_multiplier_{cfg.getParameter<double>("fakesMultiplier")},
+  preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},
+  gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
+  gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
+  pf_gsf_flags_{consumes< vector<int> >(cfg.getParameter<edm::InputTag>("PFGsfFlags"))},
+  pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
+  pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
+  pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
+  ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
+  ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
+  gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
+  beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
+  trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
+  ele_seeds_{consumes< edm::View<TrajectorySeed> >(cfg.getParameter<edm::InputTag>("eleSeeds"))},
+  associator_{mayConsume< reco::TrackToTrackingParticleAssociator >(cfg.getParameter<edm::InputTag>("associator"))},
+  tracking_particles_{consumes< TrackingParticleCollection >(cfg.getParameter<edm::InputTag>("trackingParticles"))}
 {
 	tree_ = fs_->make<TTree>("tree", "test");
 	ntuple_.link_tree(tree_);
@@ -231,31 +246,33 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(!pfgsf.gsfTrackRef().isNull()) pfGSFTrks_sources.insert(pfgsf.gsfTrackRef());
 	}
 
-	std::set<GsfTrackRef> pfBlocks_sources;
+	std::map<const GsfTrackRef, const PFBlockRef> pfBlocks_sources;
 	std::set<GsfTrackRef> pfBlocksWSC_sources;
 	std::set<GsfTrackRef> pfBlocksWECAL_sources;
-	for(const auto& block : *pfblocks) {
-		bool has_SC = false;
-		bool has_ECAL = false;
-		for(const auto& element : block.elements()) {
+	for ( unsigned int iblock = 0; iblock < pfblocks->size(); ++iblock ) {
+          const PFBlockRef blockref(pfblocks,iblock);
+	  bool has_SC = false;
+	  bool has_ECAL = false;
+		for(const auto& element : blockref->elements()) {
 			has_SC |= (element.type() == PFBlockElement::Type::SC);
 			has_ECAL |= (element.type() == PFBlockElement::Type::SC) ||
 				(element.type() == PFBlockElement::Type::ECAL);
 		}
 
-		for(const auto& element : block.elements()) {
+		for(const auto& element : blockref->elements()) {
 			if(element.type() != PFBlockElement::Type::GSF) continue;			
 			const PFBlockElementGsfTrack& casted = dynamic_cast<const PFBlockElementGsfTrack&>(element);
 			if(!casted.GsftrackRef().isNull()) {
-				pfBlocks_sources.insert(casted.GsftrackRef());
-				if(has_SC) pfBlocksWSC_sources.insert(casted.GsftrackRef());
-				if(has_ECAL) pfBlocksWECAL_sources.insert(casted.GsftrackRef());
+			  if ( pfBlocks_sources.find(casted.GsftrackRef()) == pfBlocks_sources.end() ) {
+			    pfBlocks_sources.insert( std::make_pair<const GsfTrackRef&,const PFBlockRef&>(casted.GsftrackRef(),blockref) );
+			  } else { std::cout << "GSF track already in map!!! " << std::endl; }
+			  if(has_SC) pfBlocksWSC_sources.insert(casted.GsftrackRef());
+			  if(has_ECAL) pfBlocksWECAL_sources.insert(casted.GsftrackRef());
 			}
 		}
 	}
 
-
-	//pfgsfs
+	// pf candidate (electrons)
 	std::set<GsfTrackRef> pfElectrons_sources;
 	for(const auto& pf : *pf_electrons) {
 		if(!pf.gsfTrackRef().isNull()) pfElectrons_sources.insert(pf.gsfTrackRef());
@@ -384,54 +401,71 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			 << other_electrons.size() << " non-gen electrons, " 
 			 << other_tracks.size() << " other tracks" << endl; */
 
-	//fill gen electron quantities
-	for(auto gen : electrons_from_B) {
-		ntuple_.reset();
-		ntuple_.fill_evt(iEvent.id());
-		ntuple_.is_e();
-		ntuple_.fill_gen(gen);
-		const auto& match = gen2seed.find(gen);
-		if(match != gen2seed.end()) { //matched to SEED
-			const auto& gsf_match = seed2gsf.find(match->second);
-			ntuple_.fill_preid(
-				preids->at(match->second),
-				*beamspot, (gsf_match != seed2gsf.end())
-				);
-			
-			if(gsf_match != seed2gsf.end()) { //matched to GSF Track
-				const double gpt = gen->pt();
-				auto best = std::min_element(
-					gsf_match->second.begin(),
-					gsf_match->second.end(),
-					[gpt] (const GsfTrackRef& a, const GsfTrackRef& b) {
-						return std::abs(a->pt() - gpt)/gpt < std::abs(b->pt() - gpt)/gpt;
-					});
-				ntuple_.fill_gsf_trk(*best, *beamspot);
-				ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
-				ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
-				ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
-				ntuple_.has_pfGSFTrk(
-					pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
-					);
-				ntuple_.has_pfBlock( 
-					pfBlocks_sources.find(*best) != pfBlocks_sources.end()
-					);
-				ntuple_.has_pfBlock_with_SC(
-					pfBlocksWSC_sources.find(*best) != pfBlocksWSC_sources.end()
-          );
-				ntuple_.has_pfBlock_with_ECAL(
-					pfBlocksWECAL_sources.find(*best) !=pfBlocksWECAL_sources.end()
-					);
+  //fill gen electron quantities
+  for(auto gen : electrons_from_B) {
 
-				const auto& ele_match = gsf2ged.find(*best);
-				if(ele_match != gsf2ged.end()) { //matched to GED Electron
-					ntuple_.fill_ele(ele_match->second);
-				} //matched to GED Electron
-			}//matched to GSF Track
-		}//matched to SEED
-		tree_->Fill();
+    ntuple_.reset();
+    ntuple_.fill_evt(iEvent.id());
+    ntuple_.is_e();
+    ntuple_.fill_gen(gen);
+
+    const auto& match = gen2seed.find(gen);
+    if(match != gen2seed.end()) { //matched to SEED
+
+      const reco::PreIdRef preid(preids,match->second);
+      const auto& gsf_match = seed2gsf.find(match->second);
+      ntuple_.fill_preid( preids->at(match->second),
+			  *beamspot,
+			  (gsf_match != seed2gsf.end()) );
+
+      if(gsf_match != seed2gsf.end()) { //matched to GSF Track
+
+	const double gpt = gen->pt();
+	auto best = std::min_element(gsf_match->second.begin(),
+				     gsf_match->second.end(),
+				     [gpt] (const GsfTrackRef& a, const GsfTrackRef& b) {
+				       return std::abs(a->pt() - gpt)/gpt < std::abs(b->pt() - gpt)/gpt;
+				     });
+
+	// GSF trk
+	ntuple_.fill_gsf_trk(*best, *beamspot);
+	// PFGSF trk
+	ntuple_.has_pfGSFTrk( pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end() );
+	ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
+	// PFBlock
+	std::map<const GsfTrackRef,const PFBlockRef>::const_iterator iter = pfBlocks_sources.find(*best);
+	ntuple_.has_pfBlock(iter != pfBlocks_sources.end());
+	// PFBlock+ECAL
+	ntuple_.has_pfBlock_with_ECAL( pfBlocksWECAL_sources.find(*best) !=pfBlocksWECAL_sources.end() );
+	// PFBlock+SC
+	ntuple_.has_pfBlock_with_SC( pfBlocksWSC_sources.find(*best) != pfBlocksWSC_sources.end() );
+	// PFElectron (PFCandidate)
+	ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
+	// PF GsfElectronCore
+	ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
+	// GSF electron
+	const GsfElectronRef* ele_ref = 0;
+	const auto& ele_match = gsf2ged.find(*best);
+	if(ele_match != gsf2ged.end()) { //matched to GED Electron
+	  ntuple_.fill_ele(ele_match->second);
+	  ele_ref = &(ele_match->second);
 	}
 
+	std::pair<float,float> block(-1.,-1.);
+	if ( iter != pfBlocks_sources.end() ) {
+	  block = printPfBlock(gen,
+			       preid,
+			       iter->second,
+			       *best,
+			       ele_ref);
+	}
+	ntuple_.has_pfBlock_size( block.first  );
+	ntuple_.has_pfBlock_dr( block.second );
+
+      }//matched to GSF Track
+    }//matched to SEED
+    tree_->Fill();
+  }
 	
 	//fill other electron quantities
 	for(size_t& seed_idx : other_electrons) {
@@ -477,6 +511,17 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	//fill other electron quantities
 	for(size_t& seed_idx : other_tracks) {
 		if(gRandom->Rndm() >= fake_prescale_) continue; //the smaller the few tracks are kept
+
+//@@ RB, use below instead of using fake_prescale_ above, to balance real/fake?
+//	std::vector<int> indices;
+//	int nfakes = 0;
+//	while ( nfakes < fake_multiplier_ ) {
+//                int index = int( gRandom->Rndm() * other_tracks.size() );
+//		if ( indices.find(index) != indices.end() ) { continue; }
+//		indices.push_back(index);
+//		nfakes++;
+//		size_t& seed_idx = other_tracks[index];
+
 		ntuple_.reset();
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_other();
@@ -515,6 +560,209 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	}//*/
 
 }
+
+/*******************************************************************************
+ *
+ */
+std::pair<float,float> TrackerElectronsFeatures::printPfBlock( const reco::GenParticleRef gen,
+							       const reco::PreIdRef preid,
+							       const reco::PFBlockRef block,
+							       const reco::GsfTrackRef gsf,
+							       const reco::GsfElectronRef* ele )
+{
+
+  const edm::OwnVector<reco::PFBlockElement> elements = block->elements();
+  float elements_size = elements.size();
+  float elements_max_dr = -1.;
+  for ( const auto& ielement : elements ) {
+    if ( ielement.type() == PFBlockElement::TRACK ) {
+      const PFBlockElementTrack& icast = static_cast<const PFBlockElementTrack&>(ielement);
+      if ( icast.trackRef().isNonnull() ) {
+	for ( const auto& jelement : elements ) {
+	  if ( jelement.type() == PFBlockElement::TRACK ) {
+	    const PFBlockElementTrack& jcast = static_cast<const PFBlockElementTrack&>(jelement);
+	    if ( jcast.trackRef().isNonnull() ) {
+	      float dr = deltaR( *(icast.trackRef()), *(jcast.trackRef()) );
+	      if ( dr > elements_max_dr ) { elements_max_dr = dr; }
+	    }
+	  }
+	}
+      }
+    }
+  }
+  if ( !printPfBlock_ ) { return std::pair<float,float>(elements_size,elements_max_dr); }
+
+  static const std::string types[] = {"NONE",
+				      "TRACK",
+				      "PS1",
+				      "PS2",
+				      "ECAL",
+				      "HCAL",
+				      "GSF",
+				      "BREM",
+				      "HFEM",
+				      "HFHAD",
+				      "SC",
+				      "HO",
+				      "HGCAL",
+				      "kNBETypes"};
+
+  std::cout << "[LowPtEleNtuplizer::printPfBlock]" << std::endl
+	    << std::setiosflags(std::ios::right)
+	    << std::setiosflags(std::ios::fixed)
+	    << std::setprecision(0)
+	    << "    Index " << block.index()
+	    << " #elements " << elements_size
+	    << std::setprecision(2)
+	    << " max_dr " << elements_max_dr
+	    << std::endl
+	    << "    ";
+  std::vector<int> histo; histo.resize(14,0);
+  for ( unsigned int iele = 0; iele < elements_size; ++iele ) { 
+    int type = elements[iele].type() > 13 ? 13 : elements[iele].type();
+    histo[type]++;
+  }
+  for ( unsigned int ii = 0 ; ii < histo.size(); ++ii ) {
+    if ( histo[ii] > 0 ) { std::cout << types[ii] << "*" << histo[ii] << ", "; }
+  }
+  std::cout << std::endl;
+
+  std::cout << "    GEN:"
+	    << std::setprecision(2)
+	    << std::setiosflags(std::ios::right)
+	    << std::setiosflags(std::ios::fixed)
+	    << " pt "  << std::setw(5) << gen->pt()
+	    << " eta " << std::setw(5) << gen->eta()
+	    << " phi " << std::setw(5) << gen->phi()
+	    << std::endl;
+  int best = -1;
+  float min_dr = 1.e6;
+  for ( unsigned int iele = 0; iele < elements_size; ++iele ) { 
+    const reco::PFBlockElement& ele = elements[iele];
+    if ( ele.type() == PFBlockElement::Type::GSF ) {
+      const reco::PFBlockElementGsfTrack* trk = 
+	static_cast<const reco::PFBlockElementGsfTrack*>(&ele);
+      if ( trk->GsftrackRef().isNonnull() ) {
+	const reco::GsfTrackRef& ref = trk->GsftrackRef();
+	float dr = deltaR(*ref,*gen);
+	if (dr < min_dr) {
+	  best = iele;
+	  min_dr = dr;
+	}
+      }
+    }
+  }
+
+  if ( preid.isNonnull() ) {
+    std::cout << "    TRK:";
+    if ( preid->trackRef().isNonnull() ) {
+      float dr  = deltaR(*(preid->trackRef()),*gen);
+      std::cout << std::setprecision(2)
+		<< std::setiosflags(std::ios::right)
+		<< std::setiosflags(std::ios::fixed)
+		<< " pt "  << std::setw(5) << preid->trackRef()->pt()
+		<< " eta " << std::setw(5) << preid->trackRef()->eta()
+		<< " phi " << std::setw(5) << preid->trackRef()->phi()
+		<< ", dr " << std::setprecision(3) << dr
+		<< std::endl;
+    } else { std::cout << " (No track match)" << std::endl; }
+  }
+
+  if ( gsf.isNonnull() ) {
+    std::cout << "    GSF:"
+	      << std::setprecision(2)
+	      << std::setiosflags(std::ios::right)
+	      << std::setiosflags(std::ios::fixed)
+	      << " pt "  << std::setw(5) << gsf->pt()
+	      << " eta " << std::setw(5) << gsf->eta()
+	      << " phi " << std::setw(5) << gsf->phi()
+	      << ", dr " << std::setprecision(3) << min_dr
+	      << " (LINKED," << std::setprecision(0) << std::setw(0) << gsf.index() << ")" 
+	      << std::endl;
+  }
+
+  math::XYZVector outer(1.e6,1.e6,1.e6);
+  if ( best >= 0 ) {
+    const reco::PFBlockElementGsfTrack* element = 
+      static_cast<const reco::PFBlockElementGsfTrack*>(&(elements[best]));
+    const reco::GsfTrackRef& ref = element->GsftrackRef();
+    std::cout << "    GSF:"
+	      << std::setprecision(2)
+	      << std::setiosflags(std::ios::right)
+	      << std::setiosflags(std::ios::fixed)
+	      << " pt "  << std::setw(5) << ref->pt()
+	      << " eta " << std::setw(5) << ref->eta()
+	      << " phi " << std::setw(5) << ref->phi()
+	      << ", dr " << std::setprecision(3) << min_dr
+	      << " (MIN DR," << std::setprecision(0) << std::setw(0) << ref.index() << ")" 
+	      << std::endl;
+    const math::XYZVector& inner = ref->innerMomentum();
+    float dr_in  = deltaR(inner,*gen);
+    std::cout << "    IN: "
+	      << std::setprecision(2)
+	      << std::setiosflags(std::ios::right)
+	      << std::setiosflags(std::ios::fixed)
+	      << " pt "  << std::setw(5) << sqrt(inner.Mag2()) * sin(inner.Theta())
+	      << " eta " << std::setw(5) << inner.Eta()
+	      << " phi " << std::setw(5) << inner.Phi()
+	      << ", dr " << std::setprecision(3) << dr_in
+	      << std::endl;
+    outer = math::XYZVector(ref->outerMomentum());
+    float dr_out = deltaR(outer,*gen);
+    std::cout << "    OUT:"
+	      << std::setprecision(2)
+	      << std::setiosflags(std::ios::right)
+	      << std::setiosflags(std::ios::fixed)
+	      << " pt "  << std::setw(5) << ref->outerPt()
+	      << " eta " << std::setw(5) << ref->outerEta()
+	      << " phi " << std::setw(5) << ref->outerPhi()
+	      << ", dr " << std::setprecision(3) << dr_out
+	      << std::endl;
+  }
+
+  for ( unsigned int iele = 0; iele < elements_size; ++iele ) { 
+    const reco::PFBlockElement& ele = elements[iele];
+    if ( ele.type() == PFBlockElement::Type::ECAL ) {
+      const reco::PFBlockElementCluster* ecal = 
+	static_cast<const reco::PFBlockElementCluster*>(&ele);
+      if ( ecal->clusterRef().isNonnull() ) {
+	const reco::PFClusterRef& ref = ecal->clusterRef();
+	float dr = 1.e6;
+	if ( outer.X() < 1.e5 ) { dr = deltaR(ref->positionREP(),outer); }
+	std::cout << "    clu:"
+		  << std::setprecision(2)
+		  << std::setiosflags(std::ios::right)
+		  << std::setiosflags(std::ios::fixed)
+		  << " et "  << std::setw(5) << ref->energy()
+		  << " eta " << std::setw(5) << ref->positionREP().Eta()
+		  << " phi " << std::setw(5) << ref->positionREP().Phi()
+		  << ", dr " << std::setprecision(3) << ( dr < 1.e5 ? dr : -999. )
+		  << " (w.r.t. OUT)"
+		  << std::endl;
+      }
+    }
+  }
+
+  if ( ele > 0 ) { 
+    const reco::GsfElectronRef ref = *ele;
+    float dr = deltaR(*ref,*gen);
+    std::cout << "    ELE:"
+	      << std::setprecision(2)
+	      << std::setiosflags(std::ios::right)
+	      << std::setiosflags(std::ios::fixed)
+	      << " pt "  << std::setw(5) << ref->p4().pt()
+	      << " eta " << std::setw(5) << ref->p4().eta()
+	      << " phi " << std::setw(5) << ref->p4().phi()
+	      << ", dr " << std::setprecision(3) << dr
+	      << " ELECTRON!"
+	      << std::endl;
+  } else { std::cout << "    ELE: (No match)" << std::endl; }
+  std::cout << std::endl;
+
+  return std::pair<float,float>(elements_size,elements_max_dr);
+
+}
+
 
 
 // ------------ method called once each job just before starting event loop  ------------

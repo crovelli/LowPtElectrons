@@ -1,0 +1,19 @@
+#
+# File: variables.txt
+#
+# This file is to be read by the MVAVariableHelper class. Lists all the
+# variables which appear in the xml files for the MVA based Electron IDs for Run2.
+# Variables are given line by line. The columns of each entry correspond to:
+#
+#     1. The name under which the variable appears in the weight files.
+#     2. How to get this variable from the electron with the cut parser (NO SPACES!)
+#        or if not available, how to get the variables elsewhere.
+#     3. The lower clip value for the variable to avoid crazy values. "None" if no clip.
+#     4. The upper clip value.
+#
+
+# Original file: RecoEgamma/ElectronIdentification/data/ElectronIDVariables.txt
+
+ele_pt                             pt                                                         None None
+ele_eta                            eta                                                        None None
+ele_phi                            phi                                                        None None
