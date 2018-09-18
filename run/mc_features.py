@@ -72,6 +72,11 @@ options.register('skipEvents', 0,
     VarParsing.varType.int,
     ""
 )
+options.register('MVANtuplizer', False,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    ""
+)
 options.setDefault('maxEvents', -1)
 options.parseArguments()
 
@@ -143,72 +148,81 @@ process.configurationMetadata = cms.untracked.PSet(
     version = cms.untracked.string('$Revision: 1.19 $')
 )
 
-#
-# Low pT Electron customization
-#
-process.electronFeatures = cms.Sequence()
-process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_cfi')
-#process.reconstruction *= process.simSiPixelDigis
-process.electronFeatures *= process.tpClusterProducer
-process.electronFeatures *= process.quickTrackAssociatorByHits
-process.quickTrackAssociatorByHits.useClusterTPAssociation = False
-#process.quickTrackAssociatorByHits.associateStrip = False
-process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
-from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
-customiseForPreMixingInput(process)
-
-#hack through the electron code
-#make the tracker driven pass-though for pt > 0.5, produce preID
-process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
-process.trackerDrivenElectronSeeds.MinPt = 1. ##@@
-#process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.) ##@@
-process.trackerDrivenElectronSeeds.ProducePreId = True
-process.trackerDrivenElectronSeeds.matchToGen = cms.bool(options.matchAtSeeding)
-process.trackerDrivenElectronSeeds.genParticles = cms.InputTag("genParticles")
-
-#remove ECAL-driven seeds
-process.ecalDrivenElectronSeeds._TypedParameterizable__type = 'EmptySeedProducer'
-process.ecalDrivenElectronSeedsFromMultiCl._TypedParameterizable__type = 'EmptySeedProducer'
-#set association to match against GSF, which is now run on every single track
-process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
-
-# https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
-# total hack - not checked carefully (ie are max/mins set correct/adequate?)
-# combined, they do have an effect
-#process.TrajectoryFilterForElectrons.chargeSignificance = 0.
-#process.TrajectoryFilterForElectrons.minPt = 0.
-#process.TrajectoryFilterForElectrons.minHitsMinPt = -999
-#process.TrajectoryFilterForElectrons.maxLostHits = 999
-#process.TrajectoryFilterForElectrons.maxNumberOfHits = 999
-#process.TrajectoryFilterForElectrons.maxConsecLostHits = 999
-#process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
-#process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
-#process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
-
-process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
-#process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
-#
-# PUT THE NTUPLIZER HERE!
-#
-process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
-process.features.hitAssociation = options.hitAssociation
-process.features.prescaleFakes = options.fakePrescale
-process.features.disableAssociation = options.disableAssociation
-process.features.checkFromB = options.checkFromB
-# Additional output definition
-
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag, '')
 #'94X_dataRun2_PromptLike_v9', '')
 
+#
+# Low pT Electron customization
+#
+if options.MVANtuplizer == True : 
+
+   process.load('LowPtElectrons/LowPtElectrons/ElectronMVANtuplizer_cfi')
+
+else : # Use 'standalone' electron sequence and MVA ntuplizer code
+
+   process.electronFeatures = cms.Sequence()
+   process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_cfi')
+   # process.reconstruction *= process.simSiPixelDigis
+   process.electronFeatures *= process.tpClusterProducer
+   process.electronFeatures *= process.quickTrackAssociatorByHits
+   process.quickTrackAssociatorByHits.useClusterTPAssociation = False
+   # process.quickTrackAssociatorByHits.associateStrip = False
+   process.electronFeatures *= process.trackingParticleRecoTrackAsssociation
+   from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
+   customiseForPreMixingInput(process)
+
+   # hack through the electron code
+   # make the tracker driven pass-though for pt > 0.5, produce preID
+   process.trackerDrivenElectronSeeds._TypedParameterizable__type = 'PassThroughTrackSeeds'
+   process.trackerDrivenElectronSeeds.MinPt = 1. ##@@
+   # process.trackerDrivenElectronSeeds.PtThresholdSavePreId = cms.untracked.double(0.) ##@@
+   process.trackerDrivenElectronSeeds.ProducePreId = True
+   process.trackerDrivenElectronSeeds.matchToGen = cms.bool(options.matchAtSeeding)
+   process.trackerDrivenElectronSeeds.genParticles = cms.InputTag("genParticles")
+   
+   # remove ECAL-driven seeds
+   process.ecalDrivenElectronSeeds._TypedParameterizable__type = 'EmptySeedProducer'
+   process.ecalDrivenElectronSeedsFromMultiCl._TypedParameterizable__type = 'EmptySeedProducer'
+   # set association to match against GSF, which is now run on every single track
+   process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
+
+   # https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
+   # total hack - not checked carefully (ie are max/mins set correct/adequate?)
+   # combined, they do have an effect
+   # process.TrajectoryFilterForElectrons.chargeSignificance = 0.
+   # process.TrajectoryFilterForElectrons.minPt = 0.
+   # process.TrajectoryFilterForElectrons.minHitsMinPt = -999
+   # process.TrajectoryFilterForElectrons.maxLostHits = 999
+   # process.TrajectoryFilterForElectrons.maxNumberOfHits = 999
+   # process.TrajectoryFilterForElectrons.maxConsecLostHits = 999
+   # process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
+   # process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
+   # process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
+   
+   process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
+   # process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
+   #
+   # PUT THE NTUPLIZER HERE!
+   #
+   process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
+   process.features.hitAssociation = options.hitAssociation
+   process.features.prescaleFakes = options.fakePrescale
+   process.features.disableAssociation = options.disableAssociation
+   process.features.checkFromB = options.checkFromB
+   # Additional output definition
+
 # Path and EndPath definitions
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.recosim_step = cms.Path(process.recosim)
-process.electronFeatures *= process.features
-process.reconstruction_step *= process.electronFeatures
-#process.reconstruction_step *= process.features
+if options.MVANtuplizer == True : 
+   process.reconstruction_step += cms.Sequence(process.ntuplizer)
+else :
+   process.electronFeatures *= process.features
+   process.reconstruction_step *= process.electronFeatures
+   # process.reconstruction_step *= process.features
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 process.schedule = cms.Schedule(
    process.raw2digi_step, process.reconstruction_step, 
@@ -231,7 +245,7 @@ if options.edout:
       fileName = cms.untracked.string('file:EDOutput.root'),
       outputCommands = cms.untracked.vstring( 
          'keep *',
-         # 'drop *', 
+         # 'drop *',
          # "keep *_offlineBeamSpot_*_*",
          # "keep *_genParticles_*_*",
          # "keep *_electronGsfTracks_*_*",
@@ -286,3 +300,5 @@ process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outn
 
 #process.pfTrackElec.debugGsfCleaning = True
 process.pfTrackElec.applyGsfTrackCleaning = False
+
+#open('pydump.py','w').write(process.dumpPython())
