@@ -4,7 +4,7 @@ mvaVariablesFile = "LowPtElectrons/LowPtElectrons/data/ElectronIDVariables.txt"
 
 ntuplizer = cms.EDAnalyzer('ElectronMVANtuplizer',
         # AOD case
-        src                  = cms.InputTag('lowPtGsfElectronsOpen'),
+        src                  = cms.InputTag('lowPtGsfElectrons'),
         vertices             = cms.InputTag('offlinePrimaryVertices'),
         pileup               = cms.InputTag('addPileupInfo'),
         genParticles         = cms.InputTag('genParticles'),
