@@ -35,7 +35,7 @@ options.register('globalTag', '94X_mc2017_realistic_v12',
     VarParsing.varType.string,
     ""
 )
-options.register('hitAssociation', True,
+options.register('hitAssociation', False,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.bool,
     ""
@@ -180,6 +180,25 @@ process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 
 process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
 #process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
+
+#
+# ELECTRON ID
+#
+from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
+dataFormat = DataFormat.AOD
+switchOnVIDElectronIdProducer(process, dataFormat)
+my_id_modules = [
+   'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff',
+   'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
+]
+
+#add them to the VID producer
+for idmod in my_id_modules:
+    setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+
+process.electronFeatures *= process.electronMVAVariableHelper
+process.electronFeatures *= process.electronMVAValueMapProducer
+
 #
 # PUT THE NTUPLIZER HERE!
 #
@@ -279,3 +298,5 @@ process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outn
 
 #process.pfTrackElec.debugGsfCleaning = True
 process.pfTrackElec.applyGsfTrackCleaning = False
+#process.particleFlowEGamma.produceEGCandsWithNoSuperCluster = True
+
