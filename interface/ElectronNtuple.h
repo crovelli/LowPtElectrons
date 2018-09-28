@@ -98,6 +98,8 @@ public:
 	void has_pfBlock_with_SC(bool t=true) {has_pfBlock_with_SC_ = t;}
 	void has_pfBlock_with_ECAL(bool t=true) {has_pfBlock_with_ECAL_ = t;}
 	void has_pfBlock(bool t=true) {has_pfBlock_ = t;}
+	void has_pfBlock_size(float f) {has_pfBlock_size_ = f;}
+	void has_pfBlock_dr(float f) {has_pfBlock_dr_ = f;}
 	void has_pfGSFTrk(bool t=true) {has_pfGSF_trk_=t;}
 	void unpack_pfgsf_flags(int flags);
 	void set_rho(float r) {rho_=r;}
@@ -205,12 +207,24 @@ private:
 	bool pfgsf_xclean_noECAL_match_AGAIN_ = false;
 	bool pfgsf_xclean_FINAL_ = false;
 
+//	bool pfgsf_gsf_cntr_ = false;
+//	bool pfgsf_findpfref_seednullptr_ = false;
+//	bool pfgsf_findpfref_castnullptr_ = false;
+//	bool pfgsf_findpfref_trknullptr_ = false;
+//	bool pfgsf_findpfref_nosharedhits_ = false;
+//	bool pfgsf_findpfref_nodrmatch_ = false;
+//	bool pfgsf_findpfref_blah_ = false;
+//	bool pfgsf_findpfref_trkmatch_ = false;
+//	bool pfgsf_findpfref_end_ = false;
+
 	//Middle steps
 	bool has_ele_core_ = false;
 	bool has_pfEgamma_ = false;
 	bool has_pfBlock_with_SC_ = false;
 	bool has_pfBlock_with_ECAL_ = false;
 	bool has_pfBlock_ = false;
+	float has_pfBlock_size_ = -1.;
+	float has_pfBlock_dr_ = -1.;
 	bool has_pfGSF_trk_ = false;
 
 	// GSF electrons

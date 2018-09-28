@@ -95,6 +95,16 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("pfgsf_xclean_noECAL_match_AGAIN", &pfgsf_xclean_noECAL_match_AGAIN_, "pfgsf_xclean_noECAL_match_AGAIN/O");
 	tree->Branch("pfgsf_xclean_FINAL", &pfgsf_xclean_FINAL_, "pfgsf_xclean_FINAL/O");
 
+//	tree->Branch("pfgsf_gsf_cntr", &pfgsf_gsf_cntr_, "pfgsf_gsf_cntr/O");
+//	tree->Branch("pfgsf_findpfref_seednullptr", &pfgsf_findpfref_seednullptr_, "pfgsf_findpfref_seednullptr/O");
+//	tree->Branch("pfgsf_findpfref_castnullptr", &pfgsf_findpfref_castnullptr_, "pfgsf_findpfref_castnullptr/O");
+//	tree->Branch("pfgsf_findpfref_trknullptr", &pfgsf_findpfref_trknullptr_, "pfgsf_findpfref_trknullptr/O");
+//	tree->Branch("pfgsf_findpfref_nosharedhits", &pfgsf_findpfref_nosharedhits_, "pfgsf_findpfref_nosharedhits/O");
+//	tree->Branch("pfgsf_findpfref_nodrmatch", &pfgsf_findpfref_nodrmatch_, "pfgsf_findpfref_nodrmatch/O");
+//	tree->Branch("pfgsf_findpfref_blah", &pfgsf_findpfref_blah_, "pfgsf_findpfref_blah/O");
+//	tree->Branch("pfgsf_findpfref_trkmatch", &pfgsf_findpfref_trkmatch_, "pfgsf_findpfref_trkmatch/O");
+//	tree->Branch("pfgsf_findpfref_end", &pfgsf_findpfref_end_, "pfgsf_findpfref_end/O");
+
 	//Middle steps
 	tree->Branch("has_ele_core", &has_ele_core_, "has_ele_core/O");
 	tree->Branch("has_pfEgamma", &has_pfEgamma_,  "has_pfEgamma/O");
@@ -102,6 +112,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("has_pfBlock_with_SC", &has_pfBlock_with_SC_, "has_pfBlock_with_SC/O");
 	tree->Branch("has_pfBlock_with_ECAL", &has_pfBlock_with_ECAL_, "has_pfBlock_with_ECAL/O");
 	tree->Branch("has_pfBlock", &has_pfBlock_, "has_pfBlock/O");
+	tree->Branch("has_pfBlock_size", &has_pfBlock_size_, "has_pfBlock_size/f");
+	tree->Branch("has_pfBlock_dr", &has_pfBlock_dr_, "has_pfBlock_dr/f");
 
 	//bool has_pfEgamma_ = false;
 	tree->Branch("ele_pt",				 	&ele_pt_				   , "ele_pt/f");
@@ -300,6 +312,17 @@ void ElectronNtuple::unpack_pfgsf_flags(const int flags) {
 	pfgsf_xclean_AngularGsfCleaning_ = get_ith_bit(flags, 14);
 	pfgsf_xclean_noECAL_match_AGAIN_ = get_ith_bit(flags, 15);
 	pfgsf_xclean_FINAL_ = get_ith_bit(flags, 16);
+	//@@ RB
+//	pfgsf_gsf_cntr_ = get_ith_bit(flags, 31); // 31
+//	pfgsf_findpfref_seednullptr_ = get_ith_bit(flags, 17);
+//	pfgsf_findpfref_castnullptr_ = get_ith_bit(flags, 18);
+//	pfgsf_findpfref_trknullptr_ = get_ith_bit(flags, 19);
+//	pfgsf_findpfref_nosharedhits_ = get_ith_bit(flags, 20);
+//	pfgsf_findpfref_nodrmatch_ = get_ith_bit(flags, 21);
+//	pfgsf_findpfref_blah_ = get_ith_bit(flags, 22);
+//	pfgsf_findpfref_trkmatch_ = get_ith_bit(flags, 23);
+//	pfgsf_findpfref_end_ = get_ith_bit(flags, 24);
+
 }
 
 void ElectronNtuple::fill_GSF_ECAL_cluster_info(
