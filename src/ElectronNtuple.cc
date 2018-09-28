@@ -22,13 +22,20 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
 	tree->Branch("is_other", &is_other_, "is_other/O");
 
+	tree->Branch("rho", &rho_, "rho/f");
+
 	tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
 	tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
 	tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
+	tree->Branch("gen_e", &gen_e_, "gen_e/f");
+	tree->Branch("gen_p", &gen_p_, "gen_p/f");
+	tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
 
 	tree->Branch("trk_pt",				 	&trk_pt_				   , "trk_pt/f");
 	tree->Branch("trk_eta",		 	  &trk_eta_		       , "trk_eta/f");
 	tree->Branch("trk_phi",		 	  &trk_phi_     		 , "trk_phi/f");
+	tree->Branch("trk_p", &trk_p_, "trk_p/f");
+	tree->Branch("trk_charge", &trk_charge_, "trk_charge/I");
 	tree->Branch("trk_nhits",			&trk_nhits_        , "trk_nhits/f");
 	tree->Branch("trk_high_purity",&trk_high_purity_	 , "trk_high_purity/i");
 	tree->Branch("trk_dxy",			  &trk_dxy_		  		 , "trk_dxy/f");
@@ -56,6 +63,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_pt",				 	&gsf_pt_				   , "gsf_pt/f");
 	tree->Branch("gsf_eta",		 	  &gsf_eta_		       , "gsf_eta/f");
 	tree->Branch("gsf_phi",		 	  &gsf_phi_     		 , "gsf_phi/f");
+	tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
+	tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
 	tree->Branch("gsf_nhits",			&gsf_nhits_        , "gsf_nhits/f");
 	tree->Branch("gsf_dxy",			  &gsf_dxy_		  		 , "gsf_dxy/f");
 	tree->Branch("gsf_dxy_err",		&gsf_dxy_err_			 , "gsf_dxy_err/f");
@@ -96,6 +105,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 
 	//bool has_pfEgamma_ = false;
 	tree->Branch("ele_pt",				 	&ele_pt_				   , "ele_pt/f");
+	tree->Branch("ele_p",				 	&ele_p_				   , "ele_p/f");
 	tree->Branch("ele_eta",		 	  &ele_eta_		       , "ele_eta/f");
 	tree->Branch("ele_phi",		 	  &ele_phi_     		 , "ele_phi/f");
 	tree->Branch("ele_mvaIdV1",		 	  &ele_mvaIdV1_     		 , "ele_mvaIdV1/f");
@@ -103,6 +113,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 
 	//Bottom up approach
 	tree->Branch("gsf_ecal_cluster_e", &gsf_ecal_cluster_e_, "gsf_ecal_cluster_e/f");
+	tree->Branch("gsf_ecal_cluster_ecorr", &gsf_ecal_cluster_ecorr_, "gsf_ecal_cluster_ecorr/f");
 	tree->Branch("gsf_ecal_cluster_eta", &gsf_ecal_cluster_eta_, "gsf_ecal_cluster_eta/f");
 	tree->Branch("gsf_ecal_cluster_deta", &gsf_ecal_cluster_deta_, "gsf_ecal_cluster_deta/f");
 	tree->Branch("gsf_ecal_cluster_dphi", &gsf_ecal_cluster_dphi_, "gsf_ecal_cluster_dphi/f");
@@ -124,6 +135,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_ktf_same_hcal", &gsf_ktf_same_hcal_, "gsf_ktf_same_hcal/O");
 
 	tree->Branch("ktf_ecal_cluster_e", &ktf_ecal_cluster_e_, "ktf_ecal_cluster_e/f");
+	tree->Branch("ktf_ecal_cluster_ecorr", &ktf_ecal_cluster_ecorr_, "ktf_ecal_cluster_ecorr/f");
 	tree->Branch("ktf_ecal_cluster_eta", &ktf_ecal_cluster_eta_, "ktf_ecal_cluster_eta/f");
 	tree->Branch("ktf_ecal_cluster_deta", &ktf_ecal_cluster_deta_, "ktf_ecal_cluster_deta/f");
 	tree->Branch("ktf_ecal_cluster_dphi", &ktf_ecal_cluster_dphi_, "ktf_ecal_cluster_dphi/f");
@@ -168,6 +180,9 @@ void ElectronNtuple::fill_gen(const GenParticleRef genp) {
 	gen_pt_  = genp->pt();
 	gen_eta_ = genp->eta();
 	gen_phi_ = genp->phi();
+	gen_e_ = genp->energy();
+	gen_p_ = genp->p();
+	gen_charge_ = genp->charge();
 }
 
 void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &spot) {
@@ -176,6 +191,8 @@ void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &s
     gsf_pt_ = trk->pt();
     gsf_eta_ = trk->eta();
     gsf_phi_ = trk->phi();
+		gsf_p_ = trk->p();
+		gsf_charge_ = trk->charge();
     gsf_inp_ = sqrt(trk->innerMomentum().mag2());
     gsf_outp_ = sqrt(trk->outerMomentum().mag2());
     gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
@@ -231,6 +248,7 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot,
 }
 
 void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2) {
+	ele_p_			 = ele->p();
 	ele_pt_			 = ele->pt();
 	ele_eta_		 = ele->eta();
 	ele_phi_     = ele->phi();
@@ -244,6 +262,8 @@ void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spo
     trk_pt_ = trk->pt();
     trk_eta_ = trk->eta();
     trk_phi_ = trk->phi();
+		trk_p_ = trk->p();
+		trk_charge_ = trk->charge();
     trk_inp_ = sqrt( trk->innerMomentum().mag2() );
     trk_outp_ = sqrt( trk->outerMomentum().mag2() );
     trk_dpt_ = ( trk_inp_ > 0. ) ? fabs( trk_outp_ - trk_inp_ ) / trk_inp_ : 0.; //@@ redundant?
@@ -287,7 +307,8 @@ void ElectronNtuple::fill_GSF_ECAL_cluster_info(
 	const reco::PFTrajectoryPoint &gsf,
 	noZS::EcalClusterLazyTools& tools
 	) {
-	gsf_ecal_cluster_e_   = cluster->correctedEnergy();
+	gsf_ecal_cluster_e_   = cluster->energy();
+	gsf_ecal_cluster_ecorr_  = cluster->correctedEnergy();
 	gsf_ecal_cluster_eta_ = cluster->eta();
 	gsf_ecal_cluster_deta_ = cluster->eta() - gsf.positionREP().eta();
 	gsf_ecal_cluster_dphi_ = reco::deltaPhi(cluster->phi(), gsf.positionREP().phi());
@@ -315,7 +336,7 @@ void ElectronNtuple::fill_GSF_HCAL_cluster_info(
 	const reco::PFClusterRef cluster,
 	const reco::PFTrajectoryPoint &gsf
 	) {
-	gsf_hcal_cluster_e_   = cluster->correctedEnergy();
+	gsf_hcal_cluster_e_   = cluster->energy();
 	gsf_hcal_cluster_eta_ = cluster->eta();
 	gsf_hcal_cluster_deta_ = cluster->eta() - gsf.positionREP().eta();
 	gsf_hcal_cluster_dphi_ = reco::deltaPhi(cluster->phi(), gsf.positionREP().phi());
@@ -326,7 +347,8 @@ void ElectronNtuple::fill_KTF_ECAL_cluster_info(
 	const reco::PFTrajectoryPoint &ktf,
 	noZS::EcalClusterLazyTools& tools
 	) {
-	ktf_ecal_cluster_e_   = cluster->correctedEnergy();
+	ktf_ecal_cluster_e_   = cluster->energy();
+	ktf_ecal_cluster_ecorr_ = cluster->correctedEnergy();
 	ktf_ecal_cluster_eta_ = cluster->eta();
 	ktf_ecal_cluster_deta_ = cluster->eta() - ktf.positionREP().eta();
 	ktf_ecal_cluster_dphi_ = reco::deltaPhi(cluster->phi(), ktf.positionREP().phi());
@@ -354,7 +376,7 @@ void ElectronNtuple::fill_KTF_HCAL_cluster_info(
 	const reco::PFClusterRef cluster,
 	const reco::PFTrajectoryPoint &ktf
 	) {
-	ktf_hcal_cluster_e_   = cluster->correctedEnergy();
+	ktf_hcal_cluster_e_   = cluster->energy();
 	ktf_hcal_cluster_eta_ = cluster->eta();
 	ktf_hcal_cluster_deta_ = cluster->eta() - ktf.positionREP().eta();
 	ktf_hcal_cluster_dphi_ = reco::deltaPhi(cluster->phi(), ktf.positionREP().phi());

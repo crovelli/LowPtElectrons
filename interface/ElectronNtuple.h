@@ -60,7 +60,7 @@ public:
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
 	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
-	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-1, float mvaid_v2=-1);
+	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 	void fill_GSF_ECAL_cluster_info(
 		const reco::PFClusterRef cluster,
@@ -100,6 +100,7 @@ public:
 	void has_pfBlock(bool t=true) {has_pfBlock_ = t;}
 	void has_pfGSFTrk(bool t=true) {has_pfGSF_trk_=t;}
 	void unpack_pfgsf_flags(int flags);
+	void set_rho(float r) {rho_=r;}
 
 private:
 
@@ -113,16 +114,23 @@ private:
 	bool is_e_ = false;
 	bool is_e_not_matched_ = false;
 	bool is_other_ = false;
+
+	float rho_ = -1;
 	
 	// GEN electrons
 	float gen_pt_ = -1;
 	float gen_eta_ = -1;
 	float gen_phi_ = -1;
+	float gen_e_ = -1;
+	float gen_p_ = -1;
+	int   gen_charge_ = 0;
 
 	// KF tracks: kine
 	float trk_pt_ = -1.;
 	float trk_eta_ = -1.;
 	float trk_phi_ = -1.;
+	float trk_p_ = -1;
+	int   trk_charge_ = 0;
 	float trk_inp_ = -1.;
 	float trk_outp_ = -1.;
 	float trk_dpt_ = -1.;
@@ -159,6 +167,8 @@ private:
 	float gsf_pt_ = -1.;
 	float gsf_eta_ = -1.;
 	float gsf_phi_ = -1.;
+	float gsf_p_ = -1;
+	int   gsf_charge_ = 0;
 	float gsf_inp_ = -1.;
 	float gsf_outp_ = -1.;
 	float gsf_dpt_ = -1.;
@@ -207,11 +217,13 @@ private:
 	float ele_pt_ = -1.;
 	float ele_eta_ = -1.;
 	float ele_phi_ = -1.;
-	float ele_mvaIdV1_ = -1.;
-	float ele_mvaIdV2_ = -1.;
+	float ele_p_ = -1.;
+	float ele_mvaIdV1_ = -2.;
+	float ele_mvaIdV2_ = -2.;
 
 	// Bottom up approach	
 	float gsf_ecal_cluster_e_ = -1;
+	float gsf_ecal_cluster_ecorr_ = -1;
 	float gsf_ecal_cluster_eta_ = -1;
 	float gsf_ecal_cluster_deta_ = -42;
 	float gsf_ecal_cluster_dphi_ = -42;
@@ -231,6 +243,7 @@ private:
 	bool gsf_ktf_same_hcal_ = false;
 
 	float ktf_ecal_cluster_e_ = -1;
+	float ktf_ecal_cluster_ecorr_ = -1;
 	float ktf_ecal_cluster_eta_ = -1;
 	float ktf_ecal_cluster_deta_ = -42;
 	float ktf_ecal_cluster_dphi_ = -42;
