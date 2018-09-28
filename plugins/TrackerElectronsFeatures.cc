@@ -136,36 +136,36 @@ private:
 };
 
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
-	ntuple_{},
-	isMC_{cfg.getParameter<bool>("isMC")},
-	disable_association_{cfg.getParameter<bool>("disableAssociation")},
-	check_from_B_{cfg.getParameter<bool>("checkFromB")},
-	hit_association_{cfg.getParameter<bool>("hitAssociation")},
-	dr_max_{cfg.getParameter<double>("drMax")},
-	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
-	rho_{consumes< double >(cfg.getParameter<edm::InputTag>("rho"))},	
-	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
-	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
-	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
-	pf_gsf_flags_{consumes< vector<int> >(cfg.getParameter<edm::InputTag>("PFGsfFlags"))},
-	pf_ktf_tracks_{consumes< reco::PFRecTrackCollection >(cfg.getParameter<edm::InputTag>("PFTracks"))},
-	pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
-	pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
-	pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
-	ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
-	ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
-	ecal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("ECALClusters"))},
-	hcal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALClusters"))},
-	eb_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EBRecHits"))},
-	ee_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EERecHits"))},
-	mvaid_v1_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV1"))},
-	mvaid_v2_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))},
-	gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
-	beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
-	trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
-	ele_seeds_{consumes< edm::View<TrajectorySeed> >(cfg.getParameter<edm::InputTag>("eleSeeds"))},
-	associator_{mayConsume< reco::TrackToTrackingParticleAssociator >(cfg.getParameter<edm::InputTag>("associator"))},
-	tracking_particles_{consumes< TrackingParticleCollection >(cfg.getParameter<edm::InputTag>("trackingParticles"))}
+  ntuple_{},
+  isMC_{cfg.getParameter<bool>("isMC")},
+  disable_association_{cfg.getParameter<bool>("disableAssociation")},
+  check_from_B_{cfg.getParameter<bool>("checkFromB")},
+  hit_association_{cfg.getParameter<bool>("hitAssociation")},
+  dr_max_{cfg.getParameter<double>("drMax")},
+  fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
+  rho_{consumes< double >(cfg.getParameter<edm::InputTag>("rho"))},	
+  preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
+  gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
+  gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
+  pf_gsf_flags_{consumes< vector<int> >(cfg.getParameter<edm::InputTag>("PFGsfFlags"))},
+  pf_ktf_tracks_{consumes< reco::PFRecTrackCollection >(cfg.getParameter<edm::InputTag>("PFTracks"))},
+  pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
+  pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
+  pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
+  ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
+  ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
+  ecal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("ECALClusters"))},
+  hcal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALClusters"))},
+  eb_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EBRecHits"))},
+  ee_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EERecHits"))},
+  mvaid_v1_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV1"))},
+  mvaid_v2_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))},
+  gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
+  beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
+  trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
+  ele_seeds_{consumes< edm::View<TrajectorySeed> >(cfg.getParameter<edm::InputTag>("eleSeeds"))},
+  associator_{mayConsume< reco::TrackToTrackingParticleAssociator >(cfg.getParameter<edm::InputTag>("associator"))},
+  tracking_particles_{consumes< TrackingParticleCollection >(cfg.getParameter<edm::InputTag>("trackingParticles"))}
 {
 	tree_ = fs_->make<TTree>("tree", "test");
 	ntuple_.link_tree(tree_);
@@ -506,104 +506,104 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			 << other_tracks.size() << " other tracks" << endl; */
 
 	//fill gen electron quantities
-	for(auto gen : electrons_from_B) {
-		ntuple_.reset();
-		ntuple_.set_rho(*rho);
-		ntuple_.fill_evt(iEvent.id());
-		ntuple_.is_e();
-		ntuple_.fill_gen(gen);
-		const auto& match = gen2seed.find(gen);
-		if(match != gen2seed.end()) { //matched to SEED
-			const auto& gsf_match = seed2gsf.find(match->second);
-			const auto& preid = preids->at(match->second);
-			const reco::TrackRef& ktf = preid.trackRef();
-			ntuple_.fill_preid(
-				preid,
-				*beamspot, (gsf_match != seed2gsf.end())
-				);
+  for(auto gen : electrons_from_B) {
+    ntuple_.reset();
+    ntuple_.set_rho(*rho);
+    ntuple_.fill_evt(iEvent.id());
+    ntuple_.is_e();
+    ntuple_.fill_gen(gen);
+    const auto& match = gen2seed.find(gen);
+    if(match != gen2seed.end()) { //matched to SEED
+      const auto& gsf_match = seed2gsf.find(match->second);
+      const auto& preid = preids->at(match->second);
+      const reco::TrackRef& ktf = preid.trackRef();
+      ntuple_.fill_preid(
+        preid,
+        *beamspot, (gsf_match != seed2gsf.end())
+        );
 
-			auto ktf_ecal = ecal_ktf_clusters_map.find(ktf);				
-			reco::PFClusterRef ktf_ecal_cluster;
-			if(ktf_ecal != ecal_ktf_clusters_map.end()) {
-				ktf_ecal_cluster = ktf_ecal->second;
-				ntuple_.fill_KTF_ECAL_cluster_info(
-					ktf_ecal->second,
-					trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
-					ecal_tools
-					);
-			}
-
-			auto ktf_hcal = hcal_ktf_clusters_map.find(ktf);
-			reco::PFClusterRef ktf_hcal_cluster;
-			if(ktf_hcal != hcal_ktf_clusters_map.end()) {
-				ktf_hcal_cluster = ktf_hcal->second;
-				ntuple_.fill_KTF_HCAL_cluster_info(
-					ktf_hcal->second,
-					trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
-					);
-			}
-
-			
-			if(gsf_match != seed2gsf.end()) { //matched to GSF Track
-				const double gpt = gen->pt();
-				auto best = std::min_element(
-					gsf_match->second.begin(),
-					gsf_match->second.end(),
-					[gpt] (const GsfTrackRef& a, const GsfTrackRef& b) {
-						return std::abs(a->pt() - gpt)/gpt < std::abs(b->pt() - gpt)/gpt;
-					});
-				ntuple_.fill_gsf_trk(*best, *beamspot);
-				ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
-				ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
-				ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
-				ntuple_.has_pfGSFTrk(
-					pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
-					);
-
-				// cout << "DEBUG " << endl 
-				// 		 << "#GSF " << gsf_tracks->size() << endl
-				// 		 << "#PFGSF " << pf_gsf_tracks->size() << endl
-				// 		 << "MATCHING " << (pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()) << endl;
-				auto cluster_matching = ecal_clusters_map.find(*best);				
-				if(cluster_matching != ecal_clusters_map.end()) {
-					auto point = pfGSFTrks_sources[*best]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax);
-					ntuple_.fill_GSF_ECAL_cluster_info(
-						cluster_matching->second,	point, ecal_tools
-						);
-					ntuple_.is_ECAL_cluster_same((ktf_ecal_cluster == cluster_matching->second));
-				}
-
-				auto hcal_matching = hcal_clusters_map.find(*best);
-				if(hcal_matching != hcal_clusters_map.end()) {
-					ntuple_.fill_GSF_HCAL_cluster_info(
-						hcal_matching->second,
-						pfGSFTrks_sources[*best]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
-						);					
-					ntuple_.is_HCAL_cluster_same((ktf_hcal_cluster == hcal_matching->second));
-				}
-
-				ntuple_.has_pfBlock( 
-					pfBlocks_sources.find(*best) != pfBlocks_sources.end()
-					);
-				ntuple_.has_pfBlock_with_SC(
-					pfBlocksWSC_sources.find(*best) != pfBlocksWSC_sources.end()
+      auto ktf_ecal = ecal_ktf_clusters_map.find(ktf);        
+      reco::PFClusterRef ktf_ecal_cluster;
+      if(ktf_ecal != ecal_ktf_clusters_map.end()) {
+        ktf_ecal_cluster = ktf_ecal->second;
+        ntuple_.fill_KTF_ECAL_cluster_info(
+          ktf_ecal->second,
+          trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
+          ecal_tools
           );
-				ntuple_.has_pfBlock_with_ECAL(
-					pfBlocksWECAL_sources.find(*best) !=pfBlocksWECAL_sources.end()
-					);
+      }
 
-				const auto& ele_match = gsf2ged.find(*best);
-				if(ele_match != gsf2ged.end()) { //matched to GED Electron
-					float id1 = (*mvaid_v1)[ele_match->second];
-					float id2 = (*mvaid_v2)[ele_match->second];
-					ntuple_.fill_ele(ele_match->second, id1, id2);
-				} //matched to GED Electron
-			}//matched to GSF Track
-		}//matched to SEED
-		tree_->Fill();
-	}
+      auto ktf_hcal = hcal_ktf_clusters_map.find(ktf);
+      reco::PFClusterRef ktf_hcal_cluster;
+      if(ktf_hcal != hcal_ktf_clusters_map.end()) {
+        ktf_hcal_cluster = ktf_hcal->second;
+        ntuple_.fill_KTF_HCAL_cluster_info(
+          ktf_hcal->second,
+          trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
+          );
+      }
 
-	
+      
+      if(gsf_match != seed2gsf.end()) { //matched to GSF Track
+        const double gpt = gen->pt();
+        auto best = std::min_element(
+          gsf_match->second.begin(),
+          gsf_match->second.end(),
+          [gpt] (const GsfTrackRef& a, const GsfTrackRef& b) {
+            return std::abs(a->pt() - gpt)/gpt < std::abs(b->pt() - gpt)/gpt;
+          });
+        ntuple_.fill_gsf_trk(*best, *beamspot);
+        ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
+        ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
+        ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
+        ntuple_.has_pfGSFTrk(
+          pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
+          );
+
+        // cout << "DEBUG " << endl 
+        //      << "#GSF " << gsf_tracks->size() << endl
+        //      << "#PFGSF " << pf_gsf_tracks->size() << endl
+        //      << "MATCHING " << (pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()) << endl;
+        auto cluster_matching = ecal_clusters_map.find(*best);        
+        if(cluster_matching != ecal_clusters_map.end()) {
+          auto point = pfGSFTrks_sources[*best]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax);
+          ntuple_.fill_GSF_ECAL_cluster_info(
+            cluster_matching->second,  point, ecal_tools
+            );
+          ntuple_.is_ECAL_cluster_same((ktf_ecal_cluster == cluster_matching->second));
+        }
+
+        auto hcal_matching = hcal_clusters_map.find(*best);
+        if(hcal_matching != hcal_clusters_map.end()) {
+          ntuple_.fill_GSF_HCAL_cluster_info(
+            hcal_matching->second,
+            pfGSFTrks_sources[*best]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
+            );          
+          ntuple_.is_HCAL_cluster_same((ktf_hcal_cluster == hcal_matching->second));
+        }
+
+        ntuple_.has_pfBlock( 
+          pfBlocks_sources.find(*best) != pfBlocks_sources.end()
+          );
+        ntuple_.has_pfBlock_with_SC(
+          pfBlocksWSC_sources.find(*best) != pfBlocksWSC_sources.end()
+          );
+        ntuple_.has_pfBlock_with_ECAL(
+          pfBlocksWECAL_sources.find(*best) !=pfBlocksWECAL_sources.end()
+          );
+
+        const auto& ele_match = gsf2ged.find(*best);
+        if(ele_match != gsf2ged.end()) { //matched to GED Electron
+          float id1 = (*mvaid_v1)[ele_match->second];
+          float id2 = (*mvaid_v2)[ele_match->second];
+          ntuple_.fill_ele(ele_match->second, id1, id2);
+        } //matched to GED Electron
+      }//matched to GSF Track
+    }//matched to SEED
+    tree_->Fill();
+  }
+
+  
 	//fill other electron quantities
 	for(size_t& seed_idx : other_electrons) {
 		ntuple_.reset();
