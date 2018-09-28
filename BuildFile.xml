@@ -6,6 +6,7 @@
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/EgammaCandidates"/>
 <use name="FWCore/Framework"/>
+<use name="RecoEcal/EgammaCoreTools"/>
 
 <export>
   <lib   name="1"/>

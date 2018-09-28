@@ -35,7 +35,7 @@ options.register('globalTag', '94X_mc2017_realistic_v12',
     VarParsing.varType.string,
     ""
 )
-options.register('hitAssociation', True,
+options.register('hitAssociation', False,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.bool,
     ""
@@ -188,21 +188,24 @@ else : # Use 'standalone' electron sequence and MVA ntuplizer code
    # set association to match against GSF, which is now run on every single track
    process.trackingParticleRecoTrackAsssociation.label_tr = 'electronGsfTracks'
 
-   # https://github.com/ICBPHCMS/cmssw/blob/CMSSW_9_4_X/TrackingTools/GsfTracking/python/CkfElectronCandidateMaker_cff.py
-   # total hack - not checked carefully (ie are max/mins set correct/adequate?)
-   # combined, they do have an effect
-   # process.TrajectoryFilterForElectrons.chargeSignificance = 0.
-   # process.TrajectoryFilterForElectrons.minPt = 0.
-   # process.TrajectoryFilterForElectrons.minHitsMinPt = -999
-   # process.TrajectoryFilterForElectrons.maxLostHits = 999
-   # process.TrajectoryFilterForElectrons.maxNumberOfHits = 999
-   # process.TrajectoryFilterForElectrons.maxConsecLostHits = 999
-   # process.TrajectoryFilterForElectrons.nSigmaMinPt = 0.
-   # process.TrajectoryFilterForElectrons.minimumNumberOfHits = -999
-   # process.TrajectoryFilterForElectrons.maxCCCLostHits = 999
+   #
+   # ELECTRON ID
+   #
+   from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
+   dataFormat = DataFormat.AOD
+   switchOnVIDElectronIdProducer(process, dataFormat)
+   my_id_modules = [
+      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff',
+      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
+   ]
    
-   process.GsfElectronFittingSmoother.MinNumberOfHits = 2 #does not change anything
-   # process.electronTrajectoryCleanerBySharedHits.fractionShared = 0.9
+   #add them to the VID producer
+   for idmod in my_id_modules:
+       setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+   
+   process.electronFeatures *= process.electronMVAVariableHelper
+   process.electronFeatures *= process.electronMVAValueMapProducer
+
    #
    # PUT THE NTUPLIZER HERE!
    #
@@ -213,7 +216,12 @@ else : # Use 'standalone' electron sequence and MVA ntuplizer code
    process.features.checkFromB = options.checkFromB
    # Additional output definition
 
+
 # Path and EndPath definitions
+process.openPFGSF = process.pfTrackElec.clone(applyGsfTrackCleaning = cms.bool(False))
+process.features.PFGsfTracks = 'openPFGSF'
+process.features.PFGsfFlags = 'openPFGSF:GSFFlags'
+process.electronFeatures *= process.openPFGSF
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.recosim_step = cms.Path(process.recosim)
@@ -299,6 +307,6 @@ process.options   = cms.untracked.PSet(
 process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
 
 #process.pfTrackElec.debugGsfCleaning = True
-process.pfTrackElec.applyGsfTrackCleaning = False
+#process.pfTrackElec.applyGsfTrackCleaning = False
 
 #open('pydump.py','w').write(process.dumpPython())
