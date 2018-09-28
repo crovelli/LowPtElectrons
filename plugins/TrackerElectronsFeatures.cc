@@ -108,6 +108,7 @@ private:
 	double dr_max_; //for DR Matching only
 	double fake_prescale_;
 
+	const edm::EDGetTokenT< double > rho_;	
 	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
 	const edm::EDGetTokenT< vector<reco::GsfTrack> > gsf_tracks_;
 	const edm::EDGetTokenT< edm::View<reco::Track> > gsf_tracks_view_;
@@ -142,6 +143,7 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 	hit_association_{cfg.getParameter<bool>("hitAssociation")},
 	dr_max_{cfg.getParameter<double>("drMax")},
 	fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
+	rho_{consumes< double >(cfg.getParameter<edm::InputTag>("rho"))},	
 	preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
 	gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
 	gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
@@ -193,6 +195,9 @@ TrackerElectronsFeatures::closest_cluster(const reco::PFTrajectoryPoint& point, 
 void
 TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 {
+	edm::Handle< double > rho;
+	iEvent.getByToken(rho_, rho);
+
 	edm::Handle< vector<reco::PreId> > preids;
 	iEvent.getByToken(preid_, preids);
 
@@ -267,28 +272,34 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
 	/*std::cout << "DEBUG"
-		  << " preids: " << preids->size()
-		  << " trk: " << ntrks
-			<< " seeds: " << ele_seeds->size()
-		  << " cands: " << trk_candidates->size()
-		  << " gsf: " <<  gsf_tracks->size()
-		  << std::endl;*/
+						<< " preids: " << preids->size() << endl
+						<< " trk: " << ntrks
+						<< " pf_ktf_tracks: " << pf_ktf_tracks->size() << endl
+						<< " seeds: " << ele_seeds->size() << endl
+						<< " cands: " << trk_candidates->size() << endl
+						<< " gsf: " <<  gsf_tracks->size()
+						<< std::endl; //*/
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
+	std::map<reco::TrackRef, reco::PFRecTrackRef> trk2pftrk;
+	for(size_t i=0; i<pf_ktf_tracks->size(); i++) {
+		reco::PFRecTrackRef pftrk(pf_ktf_tracks, i);
+		if(trk2pftrk.find(pftrk->trackRef()) != trk2pftrk.end()) assert(false);
+
+		trk2pftrk.insert(pair<reco::TrackRef, reco::PFRecTrackRef>(pftrk->trackRef(), pftrk));
+	}
+
 	// PFTrack and Cluster association
-	std::map<reco::TrackRef, reco::PFRecTrackRef> pfTrks_sources;	
 	std::map<reco::TrackRef, PFClusterRef> ecal_ktf_clusters_map;
 	std::map<reco::TrackRef, PFClusterRef> hcal_ktf_clusters_map;
 	for(const auto& preid : *preids) {
 		reco::TrackRef trk = preid.trackRef();
-		const auto index = trk.index();
-		reco::PFRecTrackRef pftrk(pf_ktf_tracks, index);
-	
-		//there should be one-to-one matching, but better be safe 
-		assert(pftrk->trackRef() == trk);
-	
-		pfTrks_sources.insert(std::pair<reco::TrackRef, reco::PFRecTrackRef>(trk, pftrk));
+		reco::PFRecTrackRef pftrk;
+		auto match = trk2pftrk.find(trk);
+		if(match == trk2pftrk.end()) assert(false);
+		pftrk = match->second;
+		
 		//get closest ECAL PF cluster
 		auto position = pftrk->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax);
 		PFClusterRef best_ref = closest_cluster(position, ecal_clusters);
@@ -497,6 +508,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	//fill gen electron quantities
 	for(auto gen : electrons_from_B) {
 		ntuple_.reset();
+		ntuple_.set_rho(*rho);
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_e();
 		ntuple_.fill_gen(gen);
@@ -516,7 +528,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				ktf_ecal_cluster = ktf_ecal->second;
 				ntuple_.fill_KTF_ECAL_cluster_info(
 					ktf_ecal->second,
-					pfTrks_sources[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
+					trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
 					ecal_tools
 					);
 			}
@@ -527,7 +539,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				ktf_hcal_cluster = ktf_hcal->second;
 				ntuple_.fill_KTF_HCAL_cluster_info(
 					ktf_hcal->second,
-					pfTrks_sources[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
+					trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
 					);
 			}
 
@@ -595,6 +607,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	//fill other electron quantities
 	for(size_t& seed_idx : other_electrons) {
 		ntuple_.reset();
+		ntuple_.set_rho(*rho);
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_e_not_matched();
 		const auto& gsf_match = seed2gsf.find(seed_idx);
@@ -611,7 +624,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(ktf_ecal != ecal_ktf_clusters_map.end()) {
 			ntuple_.fill_KTF_ECAL_cluster_info(
 				ktf_ecal->second,
-				pfTrks_sources[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
+				trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
 				ecal_tools
 				);
 			ktf_ecal_cluster = ktf_ecal->second;
@@ -622,7 +635,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(ktf_hcal != hcal_ktf_clusters_map.end()) {
 			ntuple_.fill_KTF_HCAL_cluster_info(
 				ktf_hcal->second,
-				pfTrks_sources[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
+				trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
 				);
 			ktf_hcal_cluster = ktf_hcal->second;
 		}
@@ -682,6 +695,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	for(size_t& seed_idx : other_tracks) {
 		if(gRandom->Rndm() >= fake_prescale_) continue; //the smaller the few tracks are kept
 		ntuple_.reset();
+		ntuple_.set_rho(*rho);
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_other();
 		const auto& gsf_match = seed2gsf.find(seed_idx);
@@ -698,7 +712,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(ktf_ecal != ecal_ktf_clusters_map.end()) {
 			ntuple_.fill_KTF_ECAL_cluster_info(
 				ktf_ecal->second,
-				pfTrks_sources[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
+				trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::ECALShowerMax),
 				ecal_tools
 				);
 			ktf_ecal_cluster = ktf_ecal->second;
@@ -709,7 +723,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		if(ktf_hcal != hcal_ktf_clusters_map.end()) {
 			ntuple_.fill_KTF_HCAL_cluster_info(
 				ktf_hcal->second,
-				pfTrks_sources[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
+				trk2pftrk[ktf]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
 				);
 			ktf_hcal_cluster = ktf_hcal->second;
 		}

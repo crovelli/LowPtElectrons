@@ -215,6 +215,10 @@ process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag, '')
 #'94X_dataRun2_PromptLike_v9', '')
 
 # Path and EndPath definitions
+process.openPFGSF = process.pfTrackElec.clone(applyGsfTrackCleaning = cms.bool(False))
+process.features.PFGsfTracks = 'openPFGSF'
+process.features.PFGsfFlags = 'openPFGSF:GSFFlags'
+process.electronFeatures *= process.openPFGSF
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.recosim_step = cms.Path(process.recosim)
@@ -297,6 +301,6 @@ process.options   = cms.untracked.PSet(
 process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
 
 #process.pfTrackElec.debugGsfCleaning = True
-process.pfTrackElec.applyGsfTrackCleaning = False
+#process.pfTrackElec.applyGsfTrackCleaning = False
 #process.particleFlowEGamma.produceEGCandsWithNoSuperCluster = True
 
