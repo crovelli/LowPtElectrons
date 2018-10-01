@@ -24,7 +24,7 @@ options.register('nchunks', 1,
     VarParsing.varType.int,
     ""
 )
-options.register('fakePrescale', 0.08,
+options.register('fakesMultiplier', 3,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.float,
     ""
@@ -217,7 +217,7 @@ else : # Use custom Ntuplizer code
    # Custom Ntuplizer code 
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
    process.features.hitAssociation = options.hitAssociation
-   process.features.prescaleFakes = options.fakePrescale
+   process.features.fakesMultiplier = options.fakesMultiplier
    process.features.disableAssociation = options.disableAssociation
    process.features.checkFromB = options.checkFromB
    process.ntuplizer_seq *= process.features
