@@ -1,7 +1,10 @@
 ranges = {
+    'gen_pt' : (0, 15),
+    'gen_eta' : (-3, 3),
     'dxy' : (-0.1, 0.1),
     'dxy_err' : (0, 0.1),
-    'trk_pt' : (0, 10),
+    'trk_pt' : (0, 15),
+    'trk_eta' : (-3, 3),
     'trk_inp' : (0, 20),
     'trk_outp' : (0, 10),
     'trk_ecal_Deta' : (0, 0.2),
@@ -16,9 +19,12 @@ ranges = {
 }
 
 beauty = {
+    'gen_pt' : r'p$_T$(gen)', 
+    'gen_eta' : r'$\eta$(gen)', 
     'dxy_err' : r'$\sigma$(dxy)', 
     'nhits' : r'\# of hits',
     'trk_pt' : r'p$_T$(ktf track)', 
+    'trk_eta' : r'$\eta$(ktf track)', 
     'log_trkpt' : r'log$_{10}$(p$_T$)(ktf track)', 
     'trk_inp' : r'p$_{in}$(ktf track)',
     'trk_outp' : r'p$_{out}$(ktf track)', 

@@ -202,6 +202,10 @@ else : # Use 'standalone' electron sequence and MVA ntuplizer code
    #add them to the VID producer
    for idmod in my_id_modules:
        setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+
+   #change inputs
+   process.electronMVAVariableHelper.src = 'lowPtGsfElectrons'
+   process.electronMVAValueMapProducer.src = 'lowPtGsfElectrons'
    
    process.electronFeatures *= process.electronMVAVariableHelper
    process.electronFeatures *= process.electronMVAValueMapProducer

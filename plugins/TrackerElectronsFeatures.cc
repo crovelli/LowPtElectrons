@@ -272,7 +272,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< edm::ValueMap<float> > mvaid_v2;
 	iEvent.getByToken(mvaid_v2_, mvaid_v2);
 
-
 	int ntrks = 0;
 	for ( unsigned int ii = 0; ii < preids->size(); ++ii ) {
 	  if ( preids.product()->at(ii).trackRef().isNonnull() ) { ++ntrks; }
@@ -571,7 +570,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
         ntuple_.fill_gsf_trk(*best, *beamspot);
         ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
         ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
-        ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
+	//ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
         ntuple_.has_pfGSFTrk(
           pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
           );
@@ -678,7 +677,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
 			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
 			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
-			ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
+			//ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
 			ntuple_.has_pfGSFTrk(
 				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
 				);
@@ -777,7 +776,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			ntuple_.fill_gsf_trk(gsf_match->second.at(0), *beamspot);
 			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
 			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
-			ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
+			//ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
 			ntuple_.has_pfGSFTrk(
 				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
 				);
