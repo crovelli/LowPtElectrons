@@ -19,6 +19,13 @@ for dataset, name in [
 
 input_files['all'] = all_sets
 
+dataset_names = {
+   'BToKee' : r'B $\to$ K ee',
+   'BToKstee' : r'B $\to$ K* ee',
+   'BToKJPsiee' : r'B $\to$ K J/$\Psi$(ee)',
+   'BToKstJPsiee' : r'B $\to$ K* J/$\Psi$(ee)',
+}
+
 import os
 if not os.path.isdir('plots/%s' % tag):
    os.mkdir('plots/%s' % tag)
