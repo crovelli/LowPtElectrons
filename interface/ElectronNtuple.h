@@ -6,6 +6,9 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/PFClusterFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/PFTrajectoryPoint.h"
+#include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "DataFormats/Math/interface/Point3D.h"
 #include "FWCore/Framework/interface/Event.h"
 class TTree;
@@ -21,6 +24,24 @@ class TTree;
 namespace edm {
 	class EventID;
 	}*/
+
+//constants
+// #define NHITS_MAX 30
+// #define BREM_WINDOW_ETA 7
+// #define BREM_WINDOW_PHI 12
+// #define CLUSTER_WINDOW_ETA 10
+// #define CLUSTER_WINDOW_PHI 15
+
+constexpr size_t NHITS_MAX = 30;
+constexpr size_t BREM_WINDOW_ETA = 7;
+constexpr size_t BREM_WINDOW_PHI = 12;
+constexpr size_t CLUSTER_WINDOW_ETA = 10;
+constexpr size_t CLUSTER_WINDOW_PHI = 15;
+
+constexpr size_t NECAL_PFCLUSTERS = 30;
+constexpr size_t NHCAL_PFCLUSTERS = 30;
+constexpr size_t ECAL_CLUSTER_SIZE = 7;
+
 
 class ElectronNtuple {
 	/*Small class to provide fillers and hide tree I/O*/
@@ -39,8 +60,35 @@ public:
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
 	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
-	void fill_ele(const reco::GsfElectronRef ele);
+	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
+	void fill_GSF_ECAL_cluster_info(
+		const reco::PFClusterRef cluster,
+		const reco::PFTrajectoryPoint &gsf,
+		noZS::EcalClusterLazyTools& tools
+		);
+	void fill_GSF_HCAL_cluster_info(
+		const reco::PFClusterRef cluster,
+		const reco::PFTrajectoryPoint &gsf
+		//noZS::EcalClusterLazyTools& tools //Something similar for HCAL?
+		);
+
+
+	//TODO: refactor to avoid repetitions
+	//TODO: refactor to avoid repetitions
+	void fill_KTF_ECAL_cluster_info(
+		const reco::PFClusterRef cluster,
+		const reco::PFTrajectoryPoint &ktf,
+		noZS::EcalClusterLazyTools& tools
+		);
+	void fill_KTF_HCAL_cluster_info(
+		const reco::PFClusterRef cluster,
+		const reco::PFTrajectoryPoint &ktf
+		//noZS::EcalClusterLazyTools& tools //Something similar for HCAL?
+		);
+
+	void is_ECAL_cluster_same(bool t=true){gsf_ktf_same_ecal_ = t;}
+	void is_HCAL_cluster_same(bool t=true){gsf_ktf_same_hcal_ = t;}
 
 	void is_e(bool t=true) {is_e_=t;}
 	void is_e_not_matched(bool t=true) {is_e_not_matched_=t;}
@@ -54,6 +102,7 @@ public:
 	void has_pfBlock_dr(float f) {has_pfBlock_dr_ = f;}
 	void has_pfGSFTrk(bool t=true) {has_pfGSF_trk_=t;}
 	void unpack_pfgsf_flags(int flags);
+	void set_rho(float r) {rho_=r;}
 
 private:
 
@@ -67,16 +116,23 @@ private:
 	bool is_e_ = false;
 	bool is_e_not_matched_ = false;
 	bool is_other_ = false;
+
+	float rho_ = -1;
 	
 	// GEN electrons
 	float gen_pt_ = -1;
 	float gen_eta_ = -1;
 	float gen_phi_ = -1;
+	float gen_e_ = -1;
+	float gen_p_ = -1;
+	int   gen_charge_ = 0;
 
 	// KF tracks: kine
 	float trk_pt_ = -1.;
 	float trk_eta_ = -1.;
 	float trk_phi_ = -1.;
+	float trk_p_ = -1;
+	int   trk_charge_ = 0;
 	float trk_inp_ = -1.;
 	float trk_outp_ = -1.;
 	float trk_dpt_ = -1.;
@@ -113,6 +169,8 @@ private:
 	float gsf_pt_ = -1.;
 	float gsf_eta_ = -1.;
 	float gsf_phi_ = -1.;
+	float gsf_p_ = -1;
+	int   gsf_charge_ = 0;
 	float gsf_inp_ = -1.;
 	float gsf_outp_ = -1.;
 	float gsf_dpt_ = -1.;
@@ -124,6 +182,10 @@ private:
 	float gsf_dxy_err_ = -1;
 	float gsf_dz_ = -1;
 	float gsf_dz_err_ = -1;
+	int gsf_ntangents_ = 0;
+ 	float gsf_hit_dpt_[NHITS_MAX] = {0};
+ 	float gsf_hit_dpt_unc_[NHITS_MAX] = {0};
+
 
 	//PFGSFTrack internal steps flags
 	bool pfgsf_gsf_has_ktf_ = false;
@@ -169,6 +231,63 @@ private:
 	float ele_pt_ = -1.;
 	float ele_eta_ = -1.;
 	float ele_phi_ = -1.;
+	float ele_p_ = -1.;
+	float ele_mvaIdV1_ = -2.;
+	float ele_mvaIdV2_ = -2.;
+
+	// Bottom up approach	
+	float gsf_ecal_cluster_e_ = -1;
+	float gsf_ecal_cluster_ecorr_ = -1;
+	float gsf_ecal_cluster_eta_ = -1;
+	float gsf_ecal_cluster_deta_ = -42;
+	float gsf_ecal_cluster_dphi_ = -42;
+	float gsf_ecal_cluster_e3x3_ = -1;
+	float gsf_ecal_cluster_e5x5_ = -1;
+	float gsf_ecal_cluster_covEtaEta_ = -42;
+	float gsf_ecal_cluster_covEtaPhi_ = -42;
+	float gsf_ecal_cluster_covPhiPhi_ = -42;
+	float gsf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
+
+	float gsf_hcal_cluster_e_ = -1;
+	float gsf_hcal_cluster_eta_ = -1;
+	float gsf_hcal_cluster_deta_ = -42;
+	float gsf_hcal_cluster_dphi_ = -42;
+
+	bool gsf_ktf_same_ecal_ = false;
+	bool gsf_ktf_same_hcal_ = false;
+
+	float ktf_ecal_cluster_e_ = -1;
+	float ktf_ecal_cluster_ecorr_ = -1;
+	float ktf_ecal_cluster_eta_ = -1;
+	float ktf_ecal_cluster_deta_ = -42;
+	float ktf_ecal_cluster_dphi_ = -42;
+	float ktf_ecal_cluster_e3x3_ = -1;
+	float ktf_ecal_cluster_e5x5_ = -1;
+	float ktf_ecal_cluster_covEtaEta_ = -42;
+	float ktf_ecal_cluster_covEtaPhi_ = -42;
+	float ktf_ecal_cluster_covPhiPhi_ = -42;
+	float ktf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
+
+	float ktf_hcal_cluster_e_ = -1;
+	float ktf_hcal_cluster_eta_ = -1;
+	float ktf_hcal_cluster_deta_ = -42;
+	float ktf_hcal_cluster_dphi_ = -42;
+
+
+// 	float gsf_dEdx_[NHITS_MAX] = {0};
+// 	float gsf_hit_costh_impact_[NHITS_MAX] = {0};
+// 	float gsf_brem_ecal_map_[NHITS_MAX][BREM_WINDOW_ETA][BREM_WINDOW_PHI] = {{{0}}};
+// 	float gsf_brem_hcal_map_[NHITS_MAX][BREM_WINDOW_ETA][BREM_WINDOW_PHI] = {{{0}}};
+// 	float gsf_brem_hit_map_ [NHITS_MAX][BREM_WINDOW_ETA][BREM_WINDOW_PHI] = {{{0}}};
+
+// 	float gsf_cluster_ecal_map_[CLUSTER_WINDOW_ETA][CLUSTER_WINDOW_PHI]    = {{0}};
+// 	float gsf_cluster_hit_map_[CLUSTER_WINDOW_ETA][CLUSTER_WINDOW_PHI]     = {{0}};
+// 	float gsf_ktf_cluster_hit_map_[CLUSTER_WINDOW_ETA][CLUSTER_WINDOW_PHI] = {{0}};
+// 	float gsf_cluster_hcal_map_[CLUSTER_WINDOW_ETA][CLUSTER_WINDOW_PHI]    = {{0}};
+// 	float gsf_cluster_other_map_[CLUSTER_WINDOW_ETA][CLUSTER_WINDOW_PHI]   = {{0}};
+
+// 	float pfecal_correctedEnergy[NECAL_PFCLUSTERS] = {0};
+// 	float pfecal_deta_impact[NECAL_PFCLUSTERS] = {0};
 
 };
 
