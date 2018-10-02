@@ -35,11 +35,13 @@ import multiprocessing
 import uproot
 import numpy as np
 
-def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count()):
+def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
    thread_pool = concurrent.futures.ThreadPoolExecutor(nthreads)
    if dataset not in input_files:
       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
    infiles = [uproot.open(i) for i in input_files[dataset]]
+   if columns == 'all':
+      columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
    ret = None
    arrays = [i['features/tree'].arrays(columns, executor=thread_pool, blocking=False) for i in infiles]
    ret = arrays[0]()

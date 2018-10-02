@@ -25,10 +25,11 @@ import os
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 from baseline import baseline
+from glob import glob
 
 debug = False
 print 'Getting the data'
-from datasets import input_files, tag
+from datasets import get_data, input_files, tag
 
 def plot_efficiency(eff, **kw):
    graph = eff.graph   
@@ -41,13 +42,14 @@ def plot_efficiency(eff, **kw):
    xerr = np.array([i for i in graph.xerr()]).transpose()
    plt.errorbar(xs, effs, yerr=errs, xerr=xerr, **kw)
 
-for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['test']:
-   if args.test: dataset = os.path.basename(args.test).split('.')[0]
+for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_test']:
+   if args.test: 
+      input_files['current_test'] = glob(args.test)
    print 'plotting for', dataset
-   tfile = uproot.open(input_files[dataset] if not args.test else args.test)
    mc = pd.DataFrame(
-      tfile['features/tree'].arrays(
-         tfile['features/tree'].keys()
+      get_data(
+         dataset, 'all', 
+         exclude={'gsf_hit_dpt', 'gsf_hit_dpt_unc', 'gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix'}
          )
       )
    mc['baseline'] = (
