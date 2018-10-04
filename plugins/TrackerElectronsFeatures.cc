@@ -729,7 +729,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	// fill other electron quantities
 	std::vector<int> indices;
 	int nfakes = 0;
-	while ( nfakes < fake_multiplier_ ) {
+	while ( other_tracks.size() > 0 && nfakes < fake_multiplier_ ) {
                 int index = int( gRandom->Rndm() * other_tracks.size() );
 		if ( std::find( indices.begin(), indices.end(), index ) != indices.end() ) { continue; }
 		indices.push_back(index);
