@@ -111,6 +111,10 @@ if args.what in ['seeding', 'fullseeding']:
 
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(data, test_size=0.2, random_state=42)
+test.to_hdf(
+   '%s/nn_bo_%s_testdata.hdf' % (mods, args.what),
+   'data'
+   ) 
 
 
 #
