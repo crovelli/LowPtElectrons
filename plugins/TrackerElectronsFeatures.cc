@@ -728,8 +728,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	// fill the backgrounds (prescaled according to 'fakesMultiplier' configurable)
 	// fill other electron quantities
 	std::vector<int> indices;
-	int nfakes = 0;
-	while ( other_tracks.size() > 0 && nfakes < fake_multiplier_ ) {
+	unsigned int nfakes = 0;
+	while ( nfakes < other_tracks.size() && nfakes < fake_multiplier_ ) {
+
                 int index = int( gRandom->Rndm() * other_tracks.size() );
 		if ( std::find( indices.begin(), indices.end(), index ) != indices.end() ) { continue; }
 		indices.push_back(index);
