@@ -118,7 +118,6 @@ private:
 	bool check_from_B_;
 	bool hit_association_;
 	double dr_max_; //for DR Matching only
-	double fake_prescale_;
 	double fake_multiplier_;
 
 	const edm::EDGetTokenT< double > rho_;	
@@ -156,7 +155,6 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
   check_from_B_{cfg.getParameter<bool>("checkFromB")},
   hit_association_{cfg.getParameter<bool>("hitAssociation")},
   dr_max_{cfg.getParameter<double>("drMax")},
-  fake_prescale_{cfg.getParameter<double>("prescaleFakes")},
   fake_multiplier_{cfg.getParameter<double>("fakesMultiplier")},
   rho_{consumes< double >(cfg.getParameter<edm::InputTag>("rho"))},	
   preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
@@ -285,20 +283,24 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		iEvent.getByToken(associator_, associator);	
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
-	/*std::cout << "DEBUG"
-						<< " preids: " << preids->size() << endl
-						<< " trk: " << ntrks
-						<< " pf_ktf_tracks: " << pf_ktf_tracks->size() << endl
-						<< " seeds: " << ele_seeds->size() << endl
-						<< " cands: " << trk_candidates->size() << endl
-						<< " gsf: " <<  gsf_tracks->size()
-						<< std::endl; //*/
+
+//	std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
+//		  << "  ele_seeds->size(): " << ele_seeds->size() << std::endl
+//		  << "  preids->size(): " << preids->size() << std::endl
+//		  << "  trk_candidates->size(): " << trk_candidates->size() << std::endl
+//		  << "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
+//		  << "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
+//		  << "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
+//		  << "  ged_electrons->size(): " << ged_electrons->size() << std::endl
+//		  << std::endl;
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
 	std::map<reco::TrackRef, reco::PFRecTrackRef> trk2pftrk;
 	for(size_t i=0; i<pf_ktf_tracks->size(); i++) {
 		reco::PFRecTrackRef pftrk(pf_ktf_tracks, i);
+		//it = find (myvector.begin(), myvector.end(), 30);
+		//if (it != myvector.end())
 		if(trk2pftrk.find(pftrk->trackRef()) != trk2pftrk.end()) assert(false);
 
 		trk2pftrk.insert(pair<reco::TrackRef, reco::PFRecTrackRef>(pftrk->trackRef(), pftrk));
@@ -723,20 +725,17 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	}
 
 
-	//(prescaled) fill the backgrounds
-	//fill other electron quantities
-	for(size_t& seed_idx : other_tracks) {
-		if(gRandom->Rndm() >= fake_prescale_) continue; //the smaller the few tracks are kept
+	// fill the backgrounds (prescaled according to 'fakesMultiplier' configurable)
+	// fill other electron quantities
+	std::vector<int> indices;
+	unsigned int nfakes = 0;
+	while ( nfakes < other_tracks.size() && nfakes < fake_multiplier_ ) {
 
-//@@ RB, use below instead of using fake_prescale_ above, to balance real/fake?
-//	std::vector<int> indices;
-//	int nfakes = 0;
-//	while ( nfakes < fake_multiplier_ ) {
-//                int index = int( gRandom->Rndm() * other_tracks.size() );
-//		if ( indices.find(index) != indices.end() ) { continue; }
-//		indices.push_back(index);
-//		nfakes++;
-//		size_t& seed_idx = other_tracks[index];
+                int index = int( gRandom->Rndm() * other_tracks.size() );
+		if ( std::find( indices.begin(), indices.end(), index ) != indices.end() ) { continue; }
+		indices.push_back(index);
+		nfakes++;
+		size_t& seed_idx = other_tracks[index];
 
 		ntuple_.reset();
 		ntuple_.set_rho(*rho);
