@@ -51,7 +51,7 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 #rc('text', usetex=True)
-from datasets import get_data, tag, kmeans_weighter
+from datasets import get_data, tag, kmeans_weighter, training_selection
 import os
 
 cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
@@ -88,7 +88,7 @@ data = pd.DataFrame(
    get_data(dataset, features+labeling+additional)
 )
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
-data = data[(data.trk_pt > 0) & (data.trk_pt < 15) & (np.abs(data.trk_eta) < 2.4)]
+data = data[training_selection(data)]
 data['training_out'] = -1
 data['log_trkpt'] = np.log10(data.trk_pt)
 #convert bools to integers

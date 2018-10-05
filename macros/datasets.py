@@ -69,3 +69,8 @@ def kmeans_weighter(features, fname):
       except:
          pass
    return apply_weight(cluster, weights)
+
+def training_selection(df):
+   'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
+   return (df.trk_pt > 0) & (df.trk_pt < 15) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
+
