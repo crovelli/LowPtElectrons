@@ -68,3 +68,9 @@ seed_additional = ['preid_trk_ecal_match', 'preid_trkfilter_pass', 'preid_mva_pa
 id_additional = ['ele_mvaIdV1', 'ele_mvaIdV2']
 
 labeling = ['is_e', 'is_e_not_matched', 'is_other']
+gen_features = [
+   'gen_pt',
+   'gen_eta',
+   'gen_phi',
+   'gen_charge',
+   ]

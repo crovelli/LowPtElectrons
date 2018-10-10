@@ -35,11 +35,13 @@ import multiprocessing
 import uproot
 import numpy as np
 
-def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count()):
+def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
    thread_pool = concurrent.futures.ThreadPoolExecutor(nthreads)
    if dataset not in input_files:
       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
    infiles = [uproot.open(i) for i in input_files[dataset]]
+   if columns == 'all':
+      columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
    ret = None
    arrays = [i['features/tree'].arrays(columns, executor=thread_pool, blocking=False) for i in infiles]
    ret = arrays[0]()
@@ -67,3 +69,8 @@ def kmeans_weighter(features, fname):
       except:
          pass
    return apply_weight(cluster, weights)
+
+def training_selection(df):
+   'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
+   return (df.trk_pt > 0) & (df.trk_pt < 15) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
+
