@@ -13,9 +13,12 @@ parser.add_argument(
    '--jobtag', default='', type=str
 )
 
+parser.add_argument(
+   '--test', action='store_true'
+)
+
 args = parser.parse_args()
-dataset = 'all' 
-#dataset = 'test'
+dataset = 'test' if args.test else 'all' 
 
 import matplotlib.pyplot as plt
 import uproot
@@ -27,9 +30,17 @@ rc('text', usetex=True)
 from datasets import get_data, tag, kmeans_weighter, training_selection
 import os
 
+if 'CMSSW_BASE' not in os.environ:
+   cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
+   os.environ['CMSSW_BASE'] = cmssw_path
+
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(mods):
    os.makedirs(mods)
+
+opti_dir = '%s/bdt_bo_%s' % (mods, args.what)
+if not os.path.isdir(opti_dir):
+   os.makedirs(opti_dir)
 
 plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(plots):
@@ -95,15 +106,17 @@ xgtest  = xgb.DMatrix(
 
 params = {'eval_metric':'auc',
           'objective'  :'binary:logitraw'}
-model_default = xgb.train(params, xgtrain, num_boost_round=1000)
+#model_default = xgb.train(params, xgtrain, num_boost_round=1000)
 
 #Next we try out the xgbo package.
 from xgbo import XgboClassifier
 
-xgbo_classifier = XgboClassifier(out_dir='%s/ele_opti_%s' % (mods, dataset))
+xgbo_classifier = XgboClassifier(
+   out_dir=opti_dir,
+)
 
-# xgbo_classifier.optimize(xgtrain, init_points=5, n_iter=50, acq='ei')
-xgbo_classifier.optimize(xgtrain, init_points=0, n_iter=1, acq='ei')
+xgbo_classifier.optimize(xgtrain, init_points=5, n_iter=50, acq='ei')
+#xgbo_classifier.optimize(xgtrain, init_points=0, n_iter=1, acq='ei')
 
 xgbo_classifier.fit(xgtrain, model="default")
 xgbo_classifier.fit(xgtrain, model="optimized")
@@ -115,6 +128,8 @@ xgbo_classifier.save_model(features, model="optimized")
 preds_default    = model_default.predict(xgtest)
 preds_early_stop = xgbo_classifier.predict(xgtest, model="default")
 preds_optimized  = xgbo_classifier.predict(xgtest, model="optimized")
+
+xgbo_classifier._bo.summary()
 
 """
 Finally, we want to plot some ROC curves.
