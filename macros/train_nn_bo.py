@@ -14,12 +14,15 @@ parser.add_argument(
 parser.add_argument(
    '--jobtag', default='', type=str
 )
+parser.add_argument(
+   '--test', action='store_true'
+)
 
 parser.add_argument("--gpu",  help="select specific GPU",   type=int, metavar="OPT", default=-1)
 parser.add_argument("--gpufraction",  help="select memory fraction for GPU",   type=float, metavar="OPT", default=0.5)
 
 args = parser.parse_args()
-dataset = 'all' 
+dataset = 'test' if args.test else 'all' 
 #dataset = 'test'
 
 cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
@@ -65,6 +68,10 @@ mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['C
 if not os.path.isdir(mods):
    os.makedirs(mods)
 
+opti_dir = '%s/nn_bo_%s' % (mods, args.what)
+if not os.path.isdir(opti_dir):
+   os.makedirs(opti_dir)
+
 from features import *
 if args.what == 'seeding':
    features = seed_features
@@ -74,15 +81,23 @@ elif args.what == 'fullseeding':
    additional = seed_additional
 elif args.what == 'id':
    features = id_features
-   additional = id_additional
+   additional = id_additional+['gsf_ecal_cluster_ematrix']
 else:
    raise ValueError()
 
-data = pd.DataFrame(
-   get_data(dataset, features+labeling+additional)
-)
-data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
-data = data[training_selection(data)]
+data_dict = get_data(dataset, features+labeling+additional)
+multi_dim = data_dict.pop('gsf_ecal_cluster_ematrix', None)
+data = pd.DataFrame(data_dict)
+if args.what == 'id':
+    flattened = pd.DataFrame(multi_dim.reshape(multi_dim.shape[0], -1))
+    new_features = ['crystal_%d' % i for i in range(len(flattened.columns))]
+    flattened.columns = new_features
+    features += new_features
+    data = pd.concat([data, flattened], axis=1)
+
+data_mask = (np.invert(data.is_e_not_matched) & training_selection(data))
+data = data[data_mask]
+multi_dim = multi_dim[data_mask]
 data['training_out'] = -1
 data['log_trkpt'] = np.log10(data.trk_pt)
 #convert bools to integers
@@ -112,7 +127,7 @@ if args.what in ['seeding', 'fullseeding']:
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(data, test_size=0.2, random_state=42)
 test.to_hdf(
-   '%s/nn_bo_%s_testdata.hdf' % (mods, args.what),
+   '%s/nn_bo_%s_testdata.hdf' % (opti_dir, args.what),
    'data'
    ) 
 
@@ -161,22 +176,23 @@ from DeepJetCore.training.DeepJet_callbacks import DeepJet_callbacks
 def train_model(**kwargs):
     print 'training:', kwargs
     train_hash = kwargs.__repr__().__hash__()
-    train_dir = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/train_bo_%d' % (os.environ['CMSSW_BASE'], train_hash)
+    train_dir = '%s/train_bo_%d' % (opti_dir, train_hash)
     if not os.path.isdir(train_dir):
         os.makedirs(train_dir)
     else:
-        os.makedirs('%s_clash' % train_dir)
+        train_dir = '%s_clash' % train_dir
+        os.makedirs(train_dir)
     
     with open('%s/hyperparameters.json' % train_dir, 'w') as j:
         j.write(json.dumps(kwargs))
     
     learn_rate = 10.**kwargs['log_learn_rate']
     batch_size = int(kwargs['batch_size'])
-    n_epochs   = int(kwargs['n_epochs'])
+    n_epochs   = 150 #int(kwargs['n_epochs'])
 
     del kwargs['log_learn_rate']
     del kwargs['batch_size']
-    del kwargs['n_epochs']  
+    #del kwargs['n_epochs']  
     
     model = make_model(**kwargs)
 
@@ -206,8 +222,8 @@ def train_model(**kwargs):
     callbacks = DeepJet_callbacks(
         model, 
         outputDir=train_dir,
-        stop_patience=30,
-        lr_patience = 7,
+        stop_patience=50,
+        lr_patience = 10,
         verbose=False
         )
 
@@ -227,23 +243,23 @@ def train_model(**kwargs):
 from xgbo import BayesianOptimization
 par_space = {
     'n_layers'   : (2, 10), 
-    'n_nodes'    : (len(features)/2, 4*len(features)), 
+    'n_nodes'    : (len(features)/3, 3*len(features)), 
     'dropout'    : (0., 0.8),
     'log_learn_rate' : (-4., -1),
     'batch_size' : (500, 2000),
-    'n_epochs'   : (10, 150),
+    #'n_epochs'   : (10, 150),
     }
 
 bo = BayesianOptimization(
     train_model,
     par_space,
-    verbose=1
+    verbose=1,
+    checkpoints='%s/checkpoints.csv' % opti_dir
 )
 
-bo.init(3) #len(par_space))
-bo.maximize(3, 50)
+bo.maximize(5, 50)
 
-with open('%s/nn_bo.json' % mods, 'w') as j:
+with open('%s/nn_bo.json' % opti_dir, 'w') as j:
     mpoint = bo.space.max_point()
     thash = mpoint['max_params'].__repr__().__hash__()
     info = mpoint['max_params']
