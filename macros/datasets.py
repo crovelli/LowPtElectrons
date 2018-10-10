@@ -1,8 +1,8 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
-tag = '2018Sep20'
+#tag = '2018Sep20'
+tag = '2018Oct05'
 input_files = {
-   'test' : ['/eos/cms/store/cmst3/user/mverzett/BToKee_Pythia/crab_2018Sep20_BToKee_v1AssocByDR/180920_162924/0000/BToKee_assocByDR_10.root']
 }
 
 all_sets = []
@@ -18,6 +18,7 @@ for dataset, name in [
    all_sets += files
 
 input_files['all'] = all_sets
+input_files['test'] = all_sets[:10]
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
@@ -44,7 +45,7 @@ def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={
       columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
    ret = None
    arrays = [i['features/tree'].arrays(columns, executor=thread_pool, blocking=False) for i in infiles]
-   ret = arrays[0]()
+   ret = arrays[0]()   
    for arr in arrays[1:]:
       tmp = arr()
       for column in columns:
