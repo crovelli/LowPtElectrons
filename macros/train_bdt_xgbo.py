@@ -49,8 +49,10 @@ elif args.what == 'id':
 else:
    raise ValueError()
 
+fields = features+labeling+additional
+if 'gsf_pt' not in fields : fields += ['gsf_pt']
 data = pd.DataFrame(
-   get_data(dataset, features+labeling+additional)
+   get_data(dataset, fields)
 )
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 data = data[training_selection(data)]
@@ -135,10 +137,10 @@ plt.plot(
    np.arange(0,1,0.01),
    np.arange(0,1,0.01),
    'k--')
-plt.plot(tpr_default, fpr_default, label='default (AUC: %.3f)' % auc_default)
-plt.plot(tpr_early_stop, fpr_early_stop, label='early stop (AUC: %.3f)' % auc_early_stop)
-plt.plot(tpr_optimized, fpr_optimized, label='optimized (AUC: %.3f)' % auc_default)
-if args.what in ['seeding', 'fullseeding']:
+plt.plot(fpr_default, tpr_default, label='default (AUC: %.3f)' % auc_default)
+plt.plot(fpr_early_stop, tpr_early_stop, label='early stop (AUC: %.3f)' % auc_early_stop)
+plt.plot(fpr_optimized, tpr_optimized, label='optimized (AUC: %.3f)' % auc_default)
+if args.what in ['seeding', 'fullseeding', 'check']:
    eff = float((data.baseline & data.is_e).sum())/data.is_e.sum()
    mistag = float((data.baseline & np.invert(data.is_e)).sum())/np.invert(data.is_e).sum()
    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
@@ -156,11 +158,15 @@ plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
 plt.legend(loc='best')
 plt.xlim(0., 1)
-plt.savefig('%s/%s_%s_%s_BDT.png' % (plots, dataset, args.jobtag, args.what))
-plt.savefig('%s/%s_%s_%s_BDT.pdf' % (plots, dataset, args.jobtag, args.what))
+try : plt.savefig('%s/%s_%s_%s_BDT_bayes.png' % (plots, dataset, args.jobtag, args.what))
+except : pass
+try : plt.savefig('%s/%s_%s_%s_BDT_bayes.pdf' % (plots, dataset, args.jobtag, args.what))
+except : pass
 plt.gca().set_xscale('log')
 plt.xlim(1e-4, 1)
-plt.savefig('%s/%s_%s_%s_log_BDT.png' % (plots, dataset, args.jobtag, args.what))
-plt.savefig('%s/%s_%s_%s_log_BDT.pdf' % (plots, dataset, args.jobtag, args.what))
+try : plt.savefig('%s/%s_%s_%s_log_BDT_bayes.png' % (plots, dataset, args.jobtag, args.what))
+except : pass
+try : plt.savefig('%s/%s_%s_%s_log_BDT_bayes.pdf' % (plots, dataset, args.jobtag, args.what))
+except : pass
 plt.clf()
 
