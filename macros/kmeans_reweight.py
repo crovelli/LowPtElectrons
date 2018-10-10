@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 from argparse import ArgumentParser
+import os
+from matplotlib.colors import LogNorm
 
 parser = ArgumentParser()
 parser.add_argument(
@@ -29,11 +31,11 @@ import os
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(mods):
-   os.mkdirs(mods)
+   os.makedirs(mods)
 
 plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(plots):
-   os.mkdirs(plots)
+   os.makedirs(plots)
 
 data = pd.DataFrame(
    get_data(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
@@ -97,8 +99,10 @@ plt.ylim(y_min, y_max)
 plt.xlabel(cosmetics.beauty['log_trkpt'])
 plt.ylabel(cosmetics.beauty['trk_eta'])
 plt.plot()
-plt.savefig('%s/%s_clusters.png' % (plots, dataset))
-plt.savefig('%s/%s_clusters.pdf' % (plots, dataset))
+try : plt.savefig('%s/%s_clusters.png' % (plots, dataset))
+except : pass
+try : plt.savefig('%s/%s_clusters.pdf' % (plots, dataset))
+except : pass
 plt.clf()
 
 
@@ -108,7 +112,7 @@ plt.imshow(
    Z, interpolation='nearest',
    extent=(xx.min(), xx.max(), yy.min(), yy.max()),
    cmap=plt.cm.inferno,
-   aspect='auto', origin='lower')
+   aspect='auto', origin='lower', norm=LogNorm())
 plt.title('weight')
 plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
@@ -116,8 +120,10 @@ plt.xlabel(cosmetics.beauty['log_trkpt'])
 plt.ylabel(cosmetics.beauty['trk_eta'])
 plt.colorbar()
 plt.plot()
-plt.savefig('%s/%s_clusters_weights.png' % (plots, dataset))
-plt.savefig('%s/%s_clusters_weights.pdf' % (plots, dataset))
+try : plt.savefig('%s/%s_clusters_weights.png' % (plots, dataset))
+except : pass
+try : plt.savefig('%s/%s_clusters_weights.pdf' % (plots, dataset))
+except : pass
 plt.clf()
 
 
@@ -138,10 +144,37 @@ plt.ylim(0.5, entries.max()*1.2)
 plt.gca().set_xscale('log')
 plt.gca().set_yscale('log')
 plt.plot()
-plt.savefig('%s/%s_clustering_weights.png' % (plots, dataset))
-plt.savefig('%s/%s_clustering_weights.pdf' % (plots, dataset))
+try : plt.savefig('%s/%s_clustering_weights.png' % (plots, dataset))
+except : pass
+try : plt.savefig('%s/%s_clustering_weights.pdf' % (plots, dataset))
+except : pass
 plt.clf()
 
+# plots with unweighted events
+for plot in reweight_feats:
+   x_range = min(data[data.is_e][plot].min(),
+                 data[np.invert(data.is_e)][plot].min()), \
+                 max(data[data.is_e][plot].max(),
+                     data[np.invert(data.is_e)][plot].max())
+   #if plot in cosmetics.ranges: x_range = cosmetics.ranges[plot]
+   plt.hist(
+      data[data.is_e][plot], bins=50, normed=True,
+      histtype='step', label='electrons', range=x_range,
+      )
+   plt.hist(
+      data[np.invert(data.is_e)][plot], bins=50, normed=True,
+      histtype='step', label='background', range=x_range,
+      )
+   plt.legend(loc='best')
+   plt.xlabel(plot if plot not in cosmetics.beauty else cosmetics.beauty[plot])
+   plt.ylabel('A.U.')
+   try : plt.savefig('%s/%s_unweighted_%s.png' % (plots, dataset, plot))
+   except : pass
+   try : plt.savefig('%s/%s_unweighted_%s.pdf' % (plots, dataset, plot))
+   except : pass
+   plt.clf()
+
+# plots with weighted events
 for plot in reweight_feats:
    x_range = min(data[data.is_e][plot].min(), data[np.invert(data.is_e)][plot].min()), \
       max(data[data.is_e][plot].max(), data[np.invert(data.is_e)][plot].max())
@@ -157,7 +190,9 @@ for plot in reweight_feats:
    plt.legend(loc='best')
    plt.xlabel(plot if plot not in cosmetics.beauty else cosmetics.beauty[plot])
    plt.ylabel('A.U.')   
-   plt.savefig('%s/%s_reweight_%s.png' % (plots, dataset, plot))
-   plt.savefig('%s/%s_reweight_%s.pdf' % (plots, dataset, plot))
+   try : plt.savefig('%s/%s_reweight_%s.png' % (plots, dataset, plot))
+   except : pass
+   try : plt.savefig('%s/%s_reweight_%s.pdf' % (plots, dataset, plot))
+   except : pass
    plt.clf()
    
