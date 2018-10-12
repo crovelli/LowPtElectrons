@@ -2,29 +2,27 @@ from glob import glob
 #A single place where to bookkeep the dataset file locations
 #tag = '2018Sep20'
 tag = '2018Oct05'
-input_files = {
-}
+posix = '2018Oct0[589]' #in case of rescue submissions
 
-all_sets = []
-for dataset, name in [
-   ('BToKee_Pythia', 'BToKee'),
-   ('BToKstee_Pythia', 'BToKstee'),
-   ('Bu_KJPsi_ee_Pythia', 'BToKJPsiee'),
-   ('Bd_KstJPsi_ee_Pythia_GEN-SIM_18_07_01', 'BToKstJPsiee'),
-   ('Bu_KJPsi_ee_Pythia_GEN-SIM_18_06_4', 'BToKJPsiee')]:
-   if name not in input_files: input_files[name] = []
-   files = glob('/eos/cms/store/cmst3/user/mverzett/%s/crab_%s_*/*/*/*.root' % (dataset, tag))
-   input_files[name] += files
-   all_sets += files
-
+import os
+all_sets = glob('/eos/cms/store/cmst3/group/bpark/electron_training/*_%s_*.root' % posix)
+sets = set([os.path.basename(i).split('_')[0].split('Assoc')[0] for i in all_sets])
+sets = sorted(list(sets), key=lambda x: -len(x))
+input_files = {i : [] for i in sets}
 input_files['all'] = all_sets
-input_files['test'] = all_sets[:10]
+input_files['test'] = all_sets[:1]
+for inf in all_sets:
+   for name in sets:
+      if os.path.basename(inf).startswith(name):
+         input_files[name].append(inf)
+         break
+
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
-   'BToKstee' : r'B $\to$ K* ee',
-   'BToKJPsiee' : r'B $\to$ K J/$\Psi$(ee)',
-   'BToKstJPsiee' : r'B $\to$ K* J/$\Psi$(ee)',
+   #'BToKstee' : r'B $\to$ K* ee',
+   'BToJPsieeK' : r'B $\to$ K J/$\Psi$(ee)',
+   #'BToKstJPsiee' : r'B $\to$ K* J/$\Psi$(ee)',
 }
 
 import os
@@ -51,6 +49,26 @@ def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={
       for column in columns:
          ret[column] = np.concatenate((ret[column],tmp[column]))
    return ret
+
+def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
+   if dataset not in input_files:
+      raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
+   infiles = [uproot.open(i) for i in input_files[dataset]]
+   if columns == 'all':
+      columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
+   try:
+      ret = infiles[0]['features/tree'].arrays(columns)
+   except:
+      raise RuntimeError('Failed to open %s properly' % infiles[0])
+   for infile in infiles[1:]:
+      try:
+         arrays = infile['features/tree'].arrays(columns)
+      except:
+         raise RuntimeError('Failed to open %s properly' % infile)         
+      for column in columns:
+         ret[column] = np.concatenate((ret[column],arrays[column]))
+   return ret
+
 
 from sklearn.cluster import KMeans
 from sklearn.externals import joblib
