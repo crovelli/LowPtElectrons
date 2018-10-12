@@ -29,7 +29,7 @@ from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag
+from datasets import get_data, tag, apply_weight, get_data_sync
 import os
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
@@ -40,9 +40,11 @@ plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['C
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
+print 'Getting data...'
 data = pd.DataFrame(
-   get_data(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
+   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
 )
+print '...Done'
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 #remove things that do not yield tracks
 data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
@@ -51,9 +53,11 @@ data['log_trkpt'] = np.log10(data.trk_pt)
 overall_scale = data.shape[0]/float(data.is_e.sum())
 reweight_feats = ['log_trkpt', 'trk_eta']
 
-from sklearn.cluster import KMeans
-clusterizer = KMeans(n_clusters=args.nbins, n_jobs=-2)
+print 'clustering...'
+from sklearn.cluster import KMeans, MiniBatchKMeans
+clusterizer = MiniBatchKMeans(n_clusters=args.nbins, batch_size=3000) #n_jobs=3)
 clusterizer.fit(data[reweight_feats]) #fit(data[data.is_e][reweight_feats])
+global_ratio = float(data.is_e.sum())/np.invert(data.is_e).sum()
 
 data['cluster'] = clusterizer.predict(data[reweight_feats])
 weights = {}
@@ -62,7 +66,7 @@ for cluster, group in data.groupby('cluster'):
    nsig = group.is_e.sum()
    if not nbkg: RuntimeError('cluster %d has no background events, reduce the number of bins!' % nbkg)
    elif not nsig: RuntimeError('cluster %d has no electrons events, reduce the number of bins!' % nsig)
-   weight = nbkg/float(nsig)
+   weight = float(nsig)/nbkg
    weights[cluster] = weight
 
 from sklearn.externals import joblib
@@ -74,11 +78,12 @@ joblib.dump(
 weights['features'] = reweight_feats
 with open('%s/kmeans_%s_weighter.json' % (mods, dataset), 'w') as ww:
    json.dump(weights, ww)
+print '...done'
 
 #vectorize(excluded={2})
-apply_weight = np.vectorize(lambda x, y: y.get(x), excluded={2})
-data['weight'] = data.is_e*apply_weight(data.cluster, weights)+np.invert(data.is_e)
+data['weight'] = np.invert(data.is_e)*apply_weight(data.cluster, weights)+data.is_e
 
+print 'time for plots!'
 # Step size of the mesh. Decrease to increase the quality of the VQ.
 h = .02     # point in the mesh [x_min, x_max]x[y_min, y_max].
 
@@ -120,7 +125,7 @@ plt.imshow(
    Z, interpolation='nearest',
    extent=(xx.min(), xx.max(), yy.min(), yy.max()),
    cmap=plt.cm.seismic,
-   norm=LogNorm(vmin=0.01, vmax=100),
+   norm=LogNorm(vmin=10**-4, vmax=10**4),
    aspect='auto', origin='lower')
 plt.title('weight')
 plt.xlim(x_min, x_max)
@@ -140,7 +145,7 @@ plt.clf()
 entries, _, _ = plt.hist(
    data.weight, 
    bins=np.logspace(
-      np.log(data.weight.min()), 
+      np.log(max(data.weight.min(), 10**-5)), 
       np.log(data.weight.max()), 
       100
       ),
@@ -150,7 +155,7 @@ plt.xlabel('Weight')
 plt.ylabel('Occurrency')
 plt.legend(loc='best')
 plt.ylim(0.5, entries.max()*1.2)
-#plt.xlim(entries.min(), entries.max()*1.2)
+plt.xlim(max(entries.min(), 10**-4), entries.max()*1.2)
 plt.gca().set_xscale('log')
 plt.gca().set_yscale('log')
 plt.plot()
