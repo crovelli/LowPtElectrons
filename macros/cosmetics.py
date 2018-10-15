@@ -1,35 +1,63 @@
+from fnmatch import fnmatch
 class RangesByName(object):
    def __init__(self, rlist):
       self._rlist_ = rlist #list of (ending, range)
+      self._rlist_.sort(key=lambda x: -1*len(x[0]))
 
    def get(self, val, default=None):
       for ending, vrange in self._rlist_:
-         if val.endswith(ending):
+         if fnmatch(val, ending):
             return vrange
       return default
 
    def __getitem__(self, val):
-      self.get(val)
+      return self.get(val)
 
 ranges = RangesByName([
-   ('_cluster_deta', (-2, 2)),
-   ('_pt', (0, 15)),
-   ('_eta' , (-3, 3)),
-   ('_inp' , (0, 20)),
-   ('_outp' , (0, 10)),
-   ('_chi2red' , (0, 6)),
-   ('_Deta' , (0, 0.2)),
-   ('_Dphi' , (-0.2, 0.2)),
-   ('_nhits' , (0, 50)),
-   ('_p' , (0, 20)),
-   ('_cluster_e', (0, 20)),
-   ('_cluster_ecorr', (0, 20)),
-   ('_cluster_eta', (-3, 3)),
-   ('_cluster_deta', (-1.5, 1.5)),
-   ('_cluster_dphi', (-1.5, 1.5)),
-   ## ('_cluster_covEtaEta', (-0.5, 0.5)),
-   ## ('_cluster_covEtaPhi', (-0.5, 0.5)),
-   ## ('_cluster_covPhiPhi', (-0.5, 0.5)),
+   ('*_cluster_deta', (-2, 2)),
+   ('*_pt', (0, 15)),
+   ('*_eta' , (-3, 3)),
+   ('*_inp' , (0, 20)),
+   ('*_outp' , (0, 10)),
+   ('*_chi2red' , (0, 6)),
+   ('*_Deta' , (0, 0.2)),
+   ('*_Dphi' , (-0.2, 0.2)),
+   ('*_nhits' , (0, 50)),
+   ('*_p' , (0, 20)),
+   ('*_cluster_e', (0, 20)),
+   ('*_cluster_ecorr', (0, 20)),
+   ('*_cluster_eta', (-3, 3)),
+   ('*_cluster_deta', (-1.5, 1.5)),
+   ('*_cluster_dphi', (-1.5, 1.5)),
+   ('*brem_frac', (-4,2)),
+   ('*_fracSC', (0.4, 1)),
+   ('*brem_fracTrk', (-4,2)),
+   ('*_covEtaEta', (-1, 1)),
+   ('*_covEtaPhi', (-1, 1)),
+   ('*_cluster_covPhiPhi', (-1, 1)),
+   ('*_EoverP', (0, 10)),
+   ('*_dEta', (-2, 2)),
+   ('*_dPhi', (-1, 1)),
+   ('*EoverPout', (0, 50)),
+   ('*dEta_vtx', (-5, 5)),
+   ('*sc_E', (0, 100)),
+   ('*sc_Et', (0, 200)),
+   ('*sc_RawE', (0, 100)),
+   ('*sc_etaWidth', (0, 1)),
+   ('*HoverE', (0,1)),
+   ('*HoverEBc', (0, 0.4)),
+   ('*_e[0-9]x[0-5]*', (0, 10.)),
+   ('shape_e[BLRT]*', (0, 2.)),
+   ('*_full5x5_HoverE', (0, 2)),
+   ('*_full5x5_HoverEBc', (0, 1)),
+   ('*full5x5_e[BLRT]*', (0, 2)),
+   ('*_hcalDepth1*', (0, 1)),
+   ('*_hcalDepth2*', (0, 0.3)),
+   ('*_r9', (0, 0.5)),
+   ('*_sigmaEtaEta', (0., 0.1)),
+   ('*_sigmaIetaIeta', (0., 0.1)),
+   ('*_sigmaIphiIphi', (0., 0.08)),
+   ## ('*', ()),
 ])
 
 beauty = {
