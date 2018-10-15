@@ -45,7 +45,9 @@ def hadd(ins, out, tree_path='features/tree'):
       if idx%500 == 0: progbar(idx/float(entries))
       tc.GetEntry(idx)
       otree.Fill()
-   otree.AutoSave()
+   #otree.AutoSave()
+   otree.Write()
+   #tf.Write()
    print ''
    tf.Close()   
 
