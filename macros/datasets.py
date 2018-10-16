@@ -10,12 +10,12 @@ sets = set([os.path.basename(i).split('_')[0].split('Assoc')[0] for i in all_set
 sets = sorted(list(sets), key=lambda x: -len(x))
 input_files = {i : [] for i in sets}
 input_files['all'] = all_sets
-input_files['test'] = all_sets[:1]
 for inf in all_sets:
    for name in sets:
       if os.path.basename(inf).startswith(name):
          input_files[name].append(inf)
          break
+input_files['test'] = input_files['BToKee'][:1]
 
 
 dataset_names = {
@@ -33,6 +33,16 @@ import concurrent.futures
 import multiprocessing
 import uproot
 import numpy as np
+
+def get_models_dir():
+   if 'CMSSW_BASE' not in os.environ:
+      cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
+      os.environ['CMSSW_BASE'] = cmssw_path
+   
+   mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
+   if not os.path.isdir(mods):
+      os.makedirs(mods)
+   return mods
 
 def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
    thread_pool = concurrent.futures.ThreadPoolExecutor(nthreads)
@@ -93,3 +103,47 @@ def training_selection(df):
    'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
    return (df.trk_pt > 0) & (df.trk_pt < 15) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
 
+import pandas as pd
+import numpy as np
+def pre_process_data(dataset, features, for_seeding=False):  
+   mods = get_models_dir()
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta']))
+   data_dict = get_data_sync(dataset, features)
+   if 'gsf_ecal_cluster_ematrix' in features:
+      multi_dim = data_dict.pop('gsf_ecal_cluster_ematrix', None)
+   data = pd.DataFrame(data_dict)
+   if 'gsf_ecal_cluster_ematrix' in features:
+      flattened = pd.DataFrame(multi_dim.reshape(multi_dim.shape[0], -1))
+      new_features = ['crystal_%d' % i for i in range(len(flattened.columns))]
+      flattened.columns = new_features
+      features += new_features
+      data = pd.concat([data, flattened], axis=1)
+
+   data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
+   data = data[training_selection(data)]
+   data['training_out'] = -1
+   data['log_trkpt'] = np.log10(data.trk_pt)
+   
+   #apply pt-eta reweighting
+   ## from hep_ml.reweight import GBReweighter
+   ## from sklearn.externals import joblib
+   ## reweighter = joblib.load('%s/%s_reweighting.pkl' % (mods, dataset))
+   ## weights = reweighter.predict_weights(data[['trk_pt', 'trk_eta']])
+   weights = kmeans_weighter(
+      data[['log_trkpt', 'trk_eta']],
+      '%s/kmeans_%s_weighter.plk' % (mods, dataset)
+      ) 
+   data['weight'] = weights*np.invert(data.is_e) + data.is_e
+   
+   #add baseline seeding (for seeding only)
+   if for_seeding:
+      data['baseline'] = (
+         data.preid_trk_ecal_match | 
+         (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
+         )
+   
+   #convert bools to integers
+   for c in features:
+      if data[c].dtype == np.dtype('bool'):
+         data[c] = data[c].astype(int)
+   return data

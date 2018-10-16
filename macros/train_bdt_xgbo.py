@@ -6,9 +6,7 @@ from cmsjson import CMSJson
 from pdb import set_trace
 
 parser = ArgumentParser()
-parser.add_argument(
-   'what', choices=['seeding', 'fullseeding', 'id'], 
-)
+parser.add_argument('what')
 parser.add_argument(
    '--jobtag', default='', type=str
 )
@@ -27,16 +25,10 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag, kmeans_weighter, training_selection
+from datasets import tag, pre_process_data, get_models_dir
 import os
 
-if 'CMSSW_BASE' not in os.environ:
-   cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
-   os.environ['CMSSW_BASE'] = cmssw_path
-
-mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
-if not os.path.isdir(mods):
-   os.makedirs(mods)
+mods = get_models_dir()
 
 opti_dir = '%s/bdt_bo_%s' % (mods, args.what)
 if not os.path.isdir(opti_dir):
@@ -47,46 +39,11 @@ if not os.path.isdir(plots):
    os.makedirs(plots)
 
 from features import *
-
-if args.what == 'seeding':
-   features = seed_features
-   additional = seed_additional
-elif args.what == 'fullseeding':
-   features = fullseed_features
-   additional = seed_additional
-elif args.what == 'id':
-   features = id_features
-   additional = id_additional
-else:
-   raise ValueError()
+features, additional = get_features(args.what)
 
 fields = features+labeling+additional
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
-data = pd.DataFrame(
-   get_data(dataset, fields)
-)
-data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
-data = data[training_selection(data)]
-data['training_out'] = -1
-data['log_trkpt'] = np.log10(data.trk_pt)
-#convert bools to integers
-for c in features:
-   if data[c].dtype == np.dtype('bool'):
-      data[c] = data[c].astype(int)
-
-#apply pt-eta reweighting
-weights = kmeans_weighter(
-   data[['log_trkpt', 'trk_eta']],
-   '%s/kmeans_%s_weighter.plk' % (mods, dataset)
-   ) 
-data['weight'] = weights*data.is_e + np.invert(data.is_e)
-
-#add baseline seeding (for seeding only)
-if args.what in ['seeding', 'fullseeding']:
-   data['baseline'] = (
-      data.preid_trk_ecal_match | 
-      (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
-      )
+data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
 
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(data, test_size=0.2, random_state=42)

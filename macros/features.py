@@ -140,3 +140,48 @@ gen_features = [
    'gen_phi',
    'gen_charge',
    ]
+
+mva_id_inputs = [
+   'rho',
+   'ele_pt',
+   'sc_eta',
+   'shape_full5x5_sigmaIetaIeta',
+   'shape_full5x5_sigmaIphiIphi',
+   'shape_full5x5_circularity',
+   'shape_full5x5_r9',
+   'sc_etaWidth',
+   'sc_phiWidth',
+   'shape_full5x5_HoverE',
+   'trk_nhits',
+   'trk_chi2red',
+   'gsf_chi2red',
+   'brem_frac',
+   'gsf_nhits',
+   'match_SC_EoverP',
+   'match_eclu_EoverP',
+   'match_SC_dEta', #should be abs
+   'match_SC_dPhi', #should be abs
+   'match_seed_dEta',  #should be abs
+   'sc_E',
+   'trk_p',
+#ele_expected_inner_hits            gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS') None None
+#ele_conversionVertexFitProbability electronMVAVariableHelper:convVtxFitProb                   None None
+#ele_IoEmIop                        1.0/ecalEnergy-1.0/trackMomentumAtVtx.R                    None None
+]
+
+def get_features(ftype):
+   if ftype == 'seeding':
+      features = seed_features
+      additional = seed_additional
+   elif ftype == 'fullseeding':
+      features = fullseed_features
+      additional = seed_additional
+   elif ftype == 'id':
+      features = id_features
+      additional = id_additional
+   elif ftype == 'mva_id':
+      features = mva_id_inputs
+      additional = id_additional
+   else:
+      raise ValueError('%s is not among the possible feature collection' % ftype)
+   return features, additional
