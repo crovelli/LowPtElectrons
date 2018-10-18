@@ -100,6 +100,22 @@ private:
 	virtual void beginRun(const edm::Run & run,const edm::EventSetup&);
 	virtual void analyze(const edm::Event&, const edm::EventSetup&);
 
+  class Bin {
+  public:
+    Bin( float logpt, float eta, float weight ) {
+      logpt_ = logpt; eta_ = eta; weight_ = weight;
+    }
+    float logpt_;
+    float eta_;
+    float weight_;
+  };
+
+  typedef unsigned int uint;
+  float weight( float logpt, float eta, float weight = -1. );
+  std::pair<uint,uint> indices( float logpt, float eta );
+  bool empty_weights();
+  void print_weights();
+
   std::pair<float,float> printPfBlock( const reco::GenParticleRef gen,
 				       const reco::PreIdRef preid,
 				       const reco::PFBlockRef block,
@@ -119,7 +135,10 @@ private:
 	bool hit_association_;
 	double dr_max_; //for DR Matching only
 	double fake_multiplier_;
-
+        std::string fakes_weights_;
+        std::vector<float> bins_logpt_;
+        std::vector<float> bins_eta_;
+        std::vector< std::vector<float> > weights_;
 	const edm::EDGetTokenT< double > rho_;	
 	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
 	const edm::EDGetTokenT< vector<reco::GsfTrack> > gsf_tracks_;
@@ -156,6 +175,7 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
   hit_association_{cfg.getParameter<bool>("hitAssociation")},
   dr_max_{cfg.getParameter<double>("drMax")},
   fake_multiplier_{cfg.getParameter<double>("fakesMultiplier")},
+  fakes_weights_{cfg.getParameter<std::string>("fakesWeights")},
   rho_{consumes< double >(cfg.getParameter<edm::InputTag>("rho"))},	
   preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
   gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
@@ -725,17 +745,27 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	}
 
 
-	// fill the backgrounds (prescaled according to 'fakesMultiplier' configurable)
-	// fill other electron quantities
-	std::vector<int> indices;
+	//@@
+	// fill other electron quantities, prescaled according to (pT,eta) PDF and 'fakesMultiplier' configurable
+	std::vector<int> trk_indices;
 	unsigned int nfakes = 0;
-	while ( nfakes < other_tracks.size() && nfakes < fake_multiplier_ ) {
-
+	while ( trk_indices.size() < other_tracks.size() && // stop when all tracks considered
+		( nfakes < fake_multiplier_ || fake_multiplier_ < 0 ) ) { // stop when fakesMultiplier is satisfied
+	        // pick a track at random
                 int index = int( gRandom->Rndm() * other_tracks.size() );
-		if ( std::find( indices.begin(), indices.end(), index ) != indices.end() ) { continue; }
-		indices.push_back(index);
-		nfakes++;
+		// consider each track only once
+		if ( std::find( trk_indices.begin(),
+				trk_indices.end(),
+				index ) != trk_indices.end() ) { continue; }
+		trk_indices.push_back(index);
+		// Obtain seed index from track
 		size_t& seed_idx = other_tracks[index];
+		// If map is populated, select tracks according to (pT,eta) PDF ...
+		if ( !empty_weights() ) {
+		  const reco::TrackRef& ktf = preids->at(seed_idx).trackRef();
+		  if ( gRandom->Rndm() > weight(log10(ktf->pt()),fabs(ktf->eta())) ) { continue; }
+		}
+		nfakes++;
 
 		ntuple_.reset();
 		ntuple_.set_rho(*rho);
@@ -1024,13 +1054,133 @@ std::pair<float,float> TrackerElectronsFeatures::printPfBlock( const reco::GenPa
 
 }
 
+// Initialise the weights LUT to filter fake tracks
+void TrackerElectronsFeatures::beginRun( const edm::Run & run,
+					 const EventSetup& es ) {
 
+  // Determine path to file containing weights used to filter fakes
+  std::string path = "";
+  try {
+    path = edm::FileInPath(fakes_weights_).fullPath();
+  }
+  catch (...) {
+    std::cout << "[TrackerElectronsFeatures::beginRun] "
+	      << "Cannot find file: \"" << fakes_weights_ << "\" in path!"
+	      << std::endl;
+    return;
+  }
+  ifstream file(path);
+  if ( !file.is_open() ) {
+    std::cout << "[TrackerElectronsFeatures::beginRun] "
+	      << "Cannot open file: \"" << path << "\"!"
+	      << std::endl;
+    return;
+  } else {
+    // Parse file and populate Bin container
+    std::vector<Bin> bins;
+    while( true ) {
+      float pt, eta, weight;
+      file >> pt >> eta >> weight;
+      if (file.eof()) { break; }
+      bins.push_back( Bin(pt,eta,weight) );
+    }
+    // Determine binning in logpt and eta
+    std::set<float> bins_logpt;
+    std::set<float> bins_eta;
+    std::vector<Bin>::const_iterator iter;
+    for ( iter = bins.begin(); iter != bins.end(); ++iter ) {
+      bins_logpt.insert(iter->logpt_);
+      bins_eta.insert(iter->eta_);
+    }
+    bins_logpt_.clear();
+    bins_eta_.clear();
+    std::copy( bins_logpt.begin(), bins_logpt.end(), std::back_inserter(bins_logpt_) );
+    std::copy( bins_eta.begin(), bins_eta.end(), std::back_inserter(bins_eta_) );
+    std::sort( bins_logpt_.begin(), bins_logpt_.begin() );
+    std::sort( bins_eta_.begin(), bins_eta_.begin() );
+    // Populate LUT containing weights used to filter fakes
+    weights_.clear();
+    for ( iter = bins.begin(); iter != bins.end(); ++iter ) {
+      weight(iter->logpt_,iter->eta_,iter->weight_);
+    }
+  }
+  // Print the LUT
+  print_weights();
+}
 
-// ------------ method called once each job just before starting event loop  ------------
-void 
-TrackerElectronsFeatures::beginRun(const edm::Run & run,
-													 const EventSetup& es)
-{
+// Set or get weight for given (logpt,eta) bin
+float TrackerElectronsFeatures::weight( float logpt, float eta, float weight ) {
+  // Get (ilogpt,ieta) indices
+  std::pair<uint,uint> index_pair = indices(logpt,eta);
+  // Check dimensions and their lengths, resize if needed
+  if ( weights_.size() <= index_pair.first ) {
+    weights_.resize(index_pair.first+1,std::vector<float>());
+  }
+  if ( weights_[index_pair.first].size() <= index_pair.second ) {
+    weights_[index_pair.first].resize(index_pair.second+1,0.);
+  }
+  // Set weight if nonzero
+  if ( weight > 0. ) {
+    weights_[index_pair.first][index_pair.second] = weight;
+    std::cout << "Fill LUT ... " << weight << " "
+	      << weights_[index_pair.first][index_pair.second]
+	      << std::endl;
+  }
+  // Return weight
+  return weights_[index_pair.first][index_pair.second];
+}
+
+// Convert (logpt,eta) floats into (ilogpt,ieta) indices
+std::pair<uint,uint> TrackerElectronsFeatures::indices( float logpt, float eta ) {
+  // Bisect the binning vectors to determine indices
+  float offset = 1.e-6;
+  int ilogpt = int( std::upper_bound(bins_logpt_.cbegin(),
+				     bins_logpt_.cend(),
+				     logpt+offset) - bins_logpt_.cbegin() );
+  int ieta = int( std::upper_bound(bins_eta_.cbegin(),
+				   bins_eta_.cend(),
+				   eta+offset) - bins_eta_.cbegin() );
+  // Checks that do nothing ...
+  if ( ilogpt < 0 || ilogpt > (int)bins_logpt_.size() ) {;}
+  if ( ieta < 0 || ieta > (int)bins_eta_.size() ) {;}
+  // Limit the index ranges ...
+  ilogpt = ilogpt > 0 ? ilogpt : 0;
+  ieta = ieta > 0 ? ieta : 0;
+  ilogpt = ilogpt < (int)bins_logpt_.size() ? ilogpt : (int)bins_logpt_.size()-1;
+  ieta = ieta < (int)bins_eta_.size() ? ieta : (int)bins_eta_.size()-1;
+  return std::pair<uint,uint>(ilogpt,ieta);
+}
+
+// Check if weights LUT is empty
+bool TrackerElectronsFeatures::empty_weights() {
+  return ( bins_logpt_.empty() ||
+	   bins_eta_.empty() ||
+	   weights_.empty() );
+}
+
+// Print (logpt,eta) binning schemes and weights LUT
+void TrackerElectronsFeatures::print_weights() {
+  if ( empty_weights() ) {
+    std::cout << "[TrackerElectronsFeatures::print_weights] Empty vectors: "
+	      << bins_logpt_.size() << " "
+	      << bins_eta_.empty()  << " "
+	      << weights_.size() << " "
+	      << std::endl;
+    return;
+  }
+  std::cout << std::setiosflags(std::ios::right)
+	    << std::setiosflags(std::ios::fixed)
+	    << std::setw(5)
+	    << std::setprecision(2);
+  std::cout << "log[pT], " << bins_logpt_.size() << " bins: ";
+  for ( auto iter : bins_logpt_ ) { std::cout << iter << " "; }
+  std::cout << std::endl;
+  std::cout << "|eta|, " << bins_eta_.size() << " bins: ";
+  for ( auto iter : bins_eta_ ) { std::cout << iter << " "; }
+  std::cout << std::endl;
+  std::cout << "weights, outer length: " << weights_.size() << " bins, inner lengths: ";
+  for ( auto iter : weights_ ) { std::cout << iter.size() << " "; }
+  std::cout << std::endl;
 }
 
 DEFINE_FWK_MODULE(TrackerElectronsFeatures);
