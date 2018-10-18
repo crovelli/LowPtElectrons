@@ -24,7 +24,7 @@ options.register('nchunks', 1,
     VarParsing.varType.int,
     ""
 )
-options.register('fakesMultiplier', 3,
+options.register('fakesMultiplier', None,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.float,
     ""
@@ -217,7 +217,7 @@ else : # Use custom Ntuplizer code
    # Custom Ntuplizer code 
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
    process.features.hitAssociation = options.hitAssociation
-   process.features.fakesMultiplier = options.fakesMultiplier
+   if options.fakesMultiplier : process.features.fakesMultiplier = options.fakesMultiplier
    process.features.disableAssociation = options.disableAssociation
    process.features.checkFromB = options.checkFromB
    process.ntuplizer_seq *= process.features
@@ -225,8 +225,8 @@ else : # Use custom Ntuplizer code
 ################################################################################
 # Path and EndPath definitions, TFileService, OutputModule
 
-process.dumper = cms.EDAnalyzer('EventContentDumper')
-process.EIsequence *= process.dumper
+#process.dumper = cms.EDAnalyzer('EventContentDumper')
+#process.EIsequence *= process.dumper
 # ReReco and ntuplize
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
