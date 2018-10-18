@@ -40,7 +40,7 @@ plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['C
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
-print 'Getting data...'
+print 'Getting dataset "{:s}"...'.format(dataset)
 data = pd.DataFrame(
    get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
 )
@@ -66,8 +66,10 @@ for cluster, group in data.groupby('cluster'):
    nsig = group.is_e.sum()
    if not nbkg: RuntimeError('cluster %d has no background events, reduce the number of bins!' % nbkg)
    elif not nsig: RuntimeError('cluster %d has no electrons events, reduce the number of bins!' % nsig)
-   weight = float(nsig)/nbkg
+   weight = float(nsig)/nbkg if nbkg > 0 else 1.
    weights[cluster] = weight
+print "Number of eles: ",data.is_e.sum()
+print "Number of fakes:",np.invert(data.is_e).sum()
 
 from sklearn.externals import joblib
 joblib.dump(
@@ -156,6 +158,7 @@ plt.ylabel('Occurrency')
 plt.legend(loc='best')
 plt.ylim(0.5, entries.max()*1.2)
 plt.xlim(max(entries.min(), 10**-4), entries.max()*1.2)
+#plt.xlim(max(data.weights.min(), 10**-4), data.weights.max()*1.2)
 plt.gca().set_xscale('log')
 plt.gca().set_yscale('log')
 plt.plot()
@@ -173,11 +176,11 @@ for plot in reweight_feats+['trk_pt']:
       ('unweighted', np.ones(data.shape[0])),
       ('reweight', data.weight)]:
       plt.hist(
-         data[data.is_e][plot], bins=50, normed=True, 
+         data[data.is_e][plot], bins=50, normed=True,
          histtype='step', label='electrons', range=x_range, weights=weight[data.is_e]
          )
       plt.hist(
-         data[np.invert(data.is_e)][plot], bins=50, normed=True, 
+         data[np.invert(data.is_e)][plot], bins=50, normed=True,
          histtype='step', label='background', range=x_range, weights=weight[np.invert(data.is_e)]
          )
       plt.legend(loc='best')
@@ -188,4 +191,3 @@ for plot in reweight_feats+['trk_pt']:
       try : plt.savefig('%s/%s_%s_%s.pdf' % (plots, dataset, name, plot))
       except : pass
       plt.clf()
-   
