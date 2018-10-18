@@ -12,8 +12,11 @@ parser.add_argument(
 parser.add_argument(
    '--nthreads', default=10, type=int
 )
+parser.add_argument(
+   '--test', action='store_true',
+)
 args = parser.parse_args()
-dataset = 'all'
+dataset = 'test' if args.test else 'all'
 
 import matplotlib.pyplot as plt
 #import ROOT
@@ -26,7 +29,7 @@ from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag
+from datasets import get_data, tag, apply_weight, get_data_sync
 import os
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
@@ -37,9 +40,11 @@ plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['C
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
+print 'Getting data...'
 data = pd.DataFrame(
-   get_data(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
+   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
 )
+print '...Done'
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 #remove things that do not yield tracks
 data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
@@ -48,14 +53,20 @@ data['log_trkpt'] = np.log10(data.trk_pt)
 overall_scale = data.shape[0]/float(data.is_e.sum())
 reweight_feats = ['log_trkpt', 'trk_eta']
 
-from sklearn.cluster import KMeans
-clusterizer = KMeans(n_clusters=args.nbins, n_jobs=-2)
-clusterizer.fit(data[data.is_e][reweight_feats])
+print 'clustering...'
+from sklearn.cluster import KMeans, MiniBatchKMeans
+clusterizer = MiniBatchKMeans(n_clusters=args.nbins, batch_size=3000) #n_jobs=3)
+clusterizer.fit(data[reweight_feats]) #fit(data[data.is_e][reweight_feats])
+global_ratio = float(data.is_e.sum())/np.invert(data.is_e).sum()
 
 data['cluster'] = clusterizer.predict(data[reweight_feats])
 weights = {}
 for cluster, group in data.groupby('cluster'):
-   weight = group.shape[0]/float(group.is_e.sum())
+   nbkg = np.invert(group.is_e).sum()
+   nsig = group.is_e.sum()
+   if not nbkg: RuntimeError('cluster %d has no background events, reduce the number of bins!' % nbkg)
+   elif not nsig: RuntimeError('cluster %d has no electrons events, reduce the number of bins!' % nsig)
+   weight = float(nsig)/nbkg
    weights[cluster] = weight
 
 from sklearn.externals import joblib
@@ -67,11 +78,12 @@ joblib.dump(
 weights['features'] = reweight_feats
 with open('%s/kmeans_%s_weighter.json' % (mods, dataset), 'w') as ww:
    json.dump(weights, ww)
+print '...done'
 
 #vectorize(excluded={2})
-apply_weight = np.vectorize(lambda x, y: y.get(x), excluded={2})
-data['weight'] = data.is_e*apply_weight(data.cluster, weights)+np.invert(data.is_e)
+data['weight'] = np.invert(data.is_e)*apply_weight(data.cluster, weights)+data.is_e
 
+print 'time for plots!'
 # Step size of the mesh. Decrease to increase the quality of the VQ.
 h = .02     # point in the mesh [x_min, x_max]x[y_min, y_max].
 
@@ -105,14 +117,16 @@ try : plt.savefig('%s/%s_clusters.pdf' % (plots, dataset))
 except : pass
 plt.clf()
 
-
+#set_trace()
+from matplotlib.colors import LogNorm
 Z = apply_weight(Zlin, weights).reshape(xx.shape)
 plt.figure(figsize=[10, 8])
 plt.imshow(
    Z, interpolation='nearest',
    extent=(xx.min(), xx.max(), yy.min(), yy.max()),
-   cmap=plt.cm.inferno,
-   aspect='auto', origin='lower', norm=LogNorm())
+   cmap=plt.cm.seismic,
+   norm=LogNorm(vmin=10**-4, vmax=10**4),
+   aspect='auto', origin='lower')
 plt.title('weight')
 plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
@@ -131,7 +145,7 @@ plt.clf()
 entries, _, _ = plt.hist(
    data.weight, 
    bins=np.logspace(
-      np.log(data.weight.min()), 
+      np.log(max(data.weight.min(), 10**-5)), 
       np.log(data.weight.max()), 
       100
       ),
@@ -141,6 +155,7 @@ plt.xlabel('Weight')
 plt.ylabel('Occurrency')
 plt.legend(loc='best')
 plt.ylim(0.5, entries.max()*1.2)
+plt.xlim(max(entries.min(), 10**-4), entries.max()*1.2)
 plt.gca().set_xscale('log')
 plt.gca().set_yscale('log')
 plt.plot()
@@ -150,49 +165,27 @@ try : plt.savefig('%s/%s_clustering_weights.pdf' % (plots, dataset))
 except : pass
 plt.clf()
 
-# plots with unweighted events
-for plot in reweight_feats:
-   x_range = min(data[data.is_e][plot].min(),
-                 data[np.invert(data.is_e)][plot].min()), \
-                 max(data[data.is_e][plot].max(),
-                     data[np.invert(data.is_e)][plot].max())
-   #if plot in cosmetics.ranges: x_range = cosmetics.ranges[plot]
-   plt.hist(
-      data[data.is_e][plot], bins=50, normed=True,
-      histtype='step', label='electrons', range=x_range,
-      )
-   plt.hist(
-      data[np.invert(data.is_e)][plot], bins=50, normed=True,
-      histtype='step', label='background', range=x_range,
-      )
-   plt.legend(loc='best')
-   plt.xlabel(plot if plot not in cosmetics.beauty else cosmetics.beauty[plot])
-   plt.ylabel('A.U.')
-   try : plt.savefig('%s/%s_unweighted_%s.png' % (plots, dataset, plot))
-   except : pass
-   try : plt.savefig('%s/%s_unweighted_%s.pdf' % (plots, dataset, plot))
-   except : pass
-   plt.clf()
-
-# plots with weighted events
-for plot in reweight_feats:
+for plot in reweight_feats+['trk_pt']:
    x_range = min(data[data.is_e][plot].min(), data[np.invert(data.is_e)][plot].min()), \
       max(data[data.is_e][plot].max(), data[np.invert(data.is_e)][plot].max())
-   if plot in cosmetics.ranges: x_range = cosmetics.ranges[plot]
-   plt.hist(
-      data[data.is_e][plot], bins=50, normed=True, 
-      histtype='step', label='electrons', range=x_range, weights=data[data.is_e].weight
-      )
-   plt.hist(
-      data[np.invert(data.is_e)][plot], bins=50, normed=True, 
-      histtype='step', label='background', range=x_range, weights=data[np.invert(data.is_e)].weight
-      )
-   plt.legend(loc='best')
-   plt.xlabel(plot if plot not in cosmetics.beauty else cosmetics.beauty[plot])
-   plt.ylabel('A.U.')   
-   try : plt.savefig('%s/%s_reweight_%s.png' % (plots, dataset, plot))
-   except : pass
-   try : plt.savefig('%s/%s_reweight_%s.pdf' % (plots, dataset, plot))
-   except : pass
-   plt.clf()
+   x_range = cosmetics.ranges.get(plot, x_range)
+   for name, weight in [
+      ('unweighted', np.ones(data.shape[0])),
+      ('reweight', data.weight)]:
+      plt.hist(
+         data[data.is_e][plot], bins=50, normed=True, 
+         histtype='step', label='electrons', range=x_range, weights=weight[data.is_e]
+         )
+      plt.hist(
+         data[np.invert(data.is_e)][plot], bins=50, normed=True, 
+         histtype='step', label='background', range=x_range, weights=weight[np.invert(data.is_e)]
+         )
+      plt.legend(loc='best')
+      plt.xlabel(plot if plot not in cosmetics.beauty else cosmetics.beauty[plot])
+      plt.ylabel('A.U.')   
+      try : plt.savefig('%s/%s_%s_%s.png' % (plots, dataset, name, plot))
+      except : pass
+      try : plt.savefig('%s/%s_%s_%s.pdf' % (plots, dataset, name, plot))
+      except : pass
+      plt.clf()
    

@@ -225,6 +225,8 @@ else : # Use custom Ntuplizer code
 ################################################################################
 # Path and EndPath definitions, TFileService, OutputModule
 
+process.dumper = cms.EDAnalyzer('EventContentDumper')
+process.EIsequence *= process.dumper
 # ReReco and ntuplize
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)

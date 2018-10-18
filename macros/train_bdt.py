@@ -7,7 +7,10 @@ from pdb import set_trace
 
 parser = ArgumentParser()
 parser.add_argument(
-   'what', choices=['seeding', 'fullseeding', 'id'], 
+   'what'
+)
+parser.add_argument(
+   '--test', action='store_true'
 )
 parser.add_argument(
    '--jobtag', default='', type=str
@@ -50,7 +53,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-dataset = 'all' 
+dataset = 'test' if args.test else 'all' 
 #dataset = 'test'
 
 import matplotlib.pyplot as plt
@@ -62,7 +65,7 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag, kmeans_weighter, training_selection
+from datasets import tag, pre_process_data
 import os
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
@@ -74,52 +77,12 @@ if not os.path.isdir(plots):
    os.mkdirs(plots)
 
 from features import *
-
-if args.what == 'seeding':
-   features = seed_features
-   additional = seed_additional
-elif args.what == 'fullseeding':
-   features = fullseed_features
-   additional = seed_additional
-elif args.what == 'id':
-   features = id_features
-   additional = id_additional
-else:
-   raise ValueError()
+features, additional = get_features(args.what)
 
 fields = features+labeling+additional
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
-data = pd.DataFrame(
-   get_data(dataset, fields)
-)
-data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
-#ensure that there is at least the GSF and a track within meaningful boundaries
-data = data[training_selection(data)]
-data['training_out'] = -1
-data['log_trkpt'] = np.log10(data.trk_pt)
-#convert bools to integers
-for c in features:
-   if data[c].dtype == np.dtype('bool'):
-      data[c] = data[c].astype(int)
 
-
-#apply pt-eta reweighting
-## from hep_ml.reweight import GBReweighter
-## from sklearn.externals import joblib
-## reweighter = joblib.load('%s/%s_reweighting.pkl' % (mods, dataset))
-## weights = reweighter.predict_weights(data[['trk_pt', 'trk_eta']])
-weights = kmeans_weighter(
-   data[['log_trkpt', 'trk_eta']],
-   '%s/kmeans_%s_weighter.plk' % (mods, dataset)
-   ) 
-data['weight'] = weights*data.is_e + np.invert(data.is_e)
-
-#add baseline seeding (for seeding only)
-if args.what in ['seeding', 'fullseeding']:
-   data['baseline'] = (
-      data.preid_trk_ecal_match | 
-      (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
-      )
+data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
 
 from sklearn.model_selection import train_test_split
 train_test, validation = train_test_split(data, test_size=0.2, random_state=42)
@@ -170,8 +133,8 @@ args_dict = args.__dict__
 
 rocs = {}
 for df, name in [
-   (train, 'train'),
-   (test, 'test'),
+   ##(train, 'train'),
+   ##(test, 'test'),
    (validation, 'validation')
    ]:
    training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
@@ -194,16 +157,26 @@ plt.plot(*rocs['validation'], label='Retraining (AUC: %.2f)'  % args_dict['valid
 if args.what in ['seeding', 'fullseeding']:
    eff = float((data.baseline & data.is_e).sum())/data.is_e.sum()
    mistag = float((data.baseline & np.invert(data.is_e)).sum())/np.invert(data.is_e).sum()
-   plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
-elif args.what == 'id':
+   rocs['baseline'] = [[mistag], [eff]]
+   plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)   
+elif 'id' in args.what:
    mva_v1 = roc_curve(validation.is_e, validation.ele_mvaIdV1)[:2]   
    mva_v2 = roc_curve(validation.is_e, validation.ele_mvaIdV2)[:2]
    mva_v1_auc = roc_auc_score(validation.is_e, validation.ele_mvaIdV1)
    mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mvaIdV2)
+   rocs['mva_v1'] = mva_v1
+   rocs['mva_v2'] = mva_v2
    plt.plot(*mva_v1, label='MVA ID V1 (AUC: %.2f)'  % mva_v1_auc)
    plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
 else:
    raise ValueError()
+
+for key in rocs:
+   fpr, tpr = rocs[key]
+   rocs[key] = [list(fpr), list(tpr)]
+
+with open('%s/%s_%s_%s_ROCS.json' % (plots, dataset, args.jobtag, args.what), 'w') as rr:
+   rr.write(json.dumps(rocs))
 
 plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
