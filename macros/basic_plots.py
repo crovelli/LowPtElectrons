@@ -90,7 +90,7 @@ additional = id_additional
 
 multi_dim_branches = ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']
 dict_data = get_data_sync(
-   'all', 
+   'BToKee',
    features+labeling+additional+multi_dim_branches
 )
 data = pd.DataFrame(
@@ -155,7 +155,6 @@ for feat in multi_dim_branches:
    except : pass
    plt.clf()
 
-exit()
       
 for to_plot in features:
    plt.clf()
