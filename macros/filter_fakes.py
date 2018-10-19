@@ -43,7 +43,7 @@ data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15
 data['log_trkpt'] = np.log10(data.trk_pt)
 
 # (logpt,eta) range to consider
-x_bins = 80
+x_bins = 40
 x_min = -2.
 x_max = 2.
 x_range = np.linspace(x_min, x_max, x_bins, endpoint=False)
