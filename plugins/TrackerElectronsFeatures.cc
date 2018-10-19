@@ -467,8 +467,17 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	for(size_t idx=0; idx < gen_particles->size(); idx++) {
 		reco::GenParticleRef genp(gen_particles, idx);
 		bool is_ele = genp->isLastCopy() && std::abs(genp->pdgId()) == 11;
-		bool comes_from_B = genp->numberOfMothers() >= 1 && genp->mother()->pdgId() > 510 && 
-			genp->mother()->pdgId() < 546;
+		bool comes_from_B = genp->numberOfMothers() >= 1 &&
+		  genp->mother()->pdgId() > 510 &&
+		  genp->mother()->pdgId() < 546;
+		if (!comes_from_B && // check resonant (J/psi) production?
+		    genp->numberOfMothers() >= 1 && genp->mother() && // has mother
+		    genp->mother()->pdgId() == 443 && // mother is J/psi
+		    genp->mother()->numberOfMothers() >= 1 && genp->mother()->mother() && // has grandmother
+		    genp->mother()->mother()->pdgId() > 510 &&
+		    genp->mother()->mother()->pdgId() < 546 ) { // grandmother is B
+		  comes_from_B = true;
+		}
 		if(is_ele && (comes_from_B || !check_from_B_)) { //is coming from a B
 			electrons_from_B.insert(genp);
 		}
