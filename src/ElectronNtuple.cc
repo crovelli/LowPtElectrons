@@ -16,8 +16,8 @@ using namespace reco;
 using namespace edm;
 void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("run",  &run_ , "run/i");
-  tree->Branch("lumi", &lumi_, "lumi/i");
-  tree->Branch("evt",  &evt_ , "evt/i");
+	tree->Branch("lumi", &lumi_, "lumi/i");
+	tree->Branch("evt",  &evt_ , "evt/i");
 
 	tree->Branch("is_e", &is_e_, "is_e/O");
 	tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
@@ -37,7 +37,9 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_phi",		 	  &trk_phi_     		 , "trk_phi/f");
 	tree->Branch("trk_p", &trk_p_, "trk_p/f");
 	tree->Branch("trk_charge", &trk_charge_, "trk_charge/I");
-	tree->Branch("trk_nhits",			&trk_nhits_        , "trk_nhits/f");
+	tree->Branch("trk_nhits",			&trk_nhits_        , "trk_nhits/I");
+	tree->Branch("trk_missing_inner_hits", &trk_missing_inner_hits_, "trk_missing_inner_hits/I");
+
 	tree->Branch("trk_high_purity",&trk_high_purity_	 , "trk_high_purity/i");
 	tree->Branch("trk_dxy",			  &trk_dxy_		  		 , "trk_dxy/f");
 	tree->Branch("trk_dxy_err",		&trk_dxy_err_			 , "trk_dxy_err/f");
@@ -66,7 +68,9 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_phi",		 	  &gsf_phi_     		 , "gsf_phi/f");
 	tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
 	tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
-	tree->Branch("gsf_nhits",			&gsf_nhits_        , "gsf_nhits/f");
+	tree->Branch("gsf_nhits",			&gsf_nhits_        , "gsf_nhits/I");
+	tree->Branch("gsf_missing_inner_hits", &gsf_missing_inner_hits_, "gsf_missing_inner_hits/I");
+
 	tree->Branch("gsf_dxy",			  &gsf_dxy_		  		 , "gsf_dxy/f");
 	tree->Branch("gsf_dxy_err",		&gsf_dxy_err_			 , "gsf_dxy_err/f");
 	tree->Branch("gsf_inp",  			&gsf_inp_  	    	 , "gsf_inp/f");
@@ -123,6 +127,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("ele_phi",		 	  &ele_phi_     		 , "ele_phi/f");
 	tree->Branch("ele_mvaIdV1",		 	  &ele_mvaIdV1_     		 , "ele_mvaIdV1/f");
 	tree->Branch("ele_mvaIdV2",		 	  &ele_mvaIdV2_     		 , "ele_mvaIdV2/f");
+	tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
 
 	//Bottom up approach
 	tree->Branch("gsf_ecal_cluster_e", &gsf_ecal_cluster_e_, "gsf_ecal_cluster_e/f");
@@ -200,6 +205,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
   tree->Branch("match_seed_dEta_vtx",&match_seed_dEta_vtx_); 
 
   tree->Branch("match_eclu_EoverP",&match_eclu_EoverP_); 
+  tree->Branch("match_eclu_EoverPout",&match_eclu_EoverPout_); 
 
   tree->Branch("match_eclu_dEta",&match_eclu_dEta_); 
   tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
@@ -276,6 +282,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
   tree->Branch("brem_fracTrk",&brem_fracTrk_); 
   tree->Branch("brem_fracSC",&brem_fracSC_); 
   tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
+  tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
   
   // SuperClusters //////////
 
@@ -323,6 +330,7 @@ void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &s
     gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
     // quality
     gsf_nhits_ = trk->found();
+    gsf_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(HitPattern::MISSING_INNER_HITS);
     gsf_chi2red_ = trk->normalizedChi2();
     // displ
     gsf_dxy_ = trk->dxy(spot);
@@ -372,13 +380,14 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot,
 	preid_mva_pass_ = preid.mvaSelected();
 }
 
-void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2) {
+void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2, float ele_conv_vtx_fit_prob ) {
 	ele_p_			 = ele->p();
 	ele_pt_			 = ele->pt();
 	ele_eta_		 = ele->eta();
 	ele_phi_     = ele->phi();
 	ele_mvaIdV1_ = mvaid_v1;
 	ele_mvaIdV2_ = mvaid_v2;
+	ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob;
 	fill_supercluster(ele);
 }
 
@@ -411,7 +420,8 @@ void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
   match_seed_dPhi_     = ele->deltaPhiSeedClusterTrackAtCalo();
   match_seed_dEta_vtx_ = ele->deltaEtaSeedClusterTrackAtVtx();
 
-  match_eclu_EoverP_ = ele->eEleClusterOverPout();
+  match_eclu_EoverP_ = (1./ele->ecalEnergy()) - (1.0 / ele->p()); //@@ same as ele->gsfTrack()->p() ?
+  match_eclu_EoverPout_ = ele->eEleClusterOverPout();
 
   match_eclu_dEta_ = ele->deltaEtaEleClusterTrackAtCalo();
   match_eclu_dPhi_ = ele->deltaPhiEleClusterTrackAtCalo();
@@ -496,6 +506,8 @@ void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
   brem_fracSC_ = ele->superClusterFbrem();
   brem_N_ = ele->numberOfBrems();
 
+  p4kind_ = ele->candidateP4Kind();
+
   // SuperClusters //////////
   
   if ( ele->superCluster().isNull() ) { return; }
@@ -541,6 +553,7 @@ void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spo
     trk_dpt_ = ( trk_inp_ > 0. ) ? fabs( trk_outp_ - trk_inp_ ) / trk_inp_ : 0.; //@@ redundant?
     // quality
     trk_nhits_ = trk->found();
+    trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(HitPattern::MISSING_INNER_HITS);
     trk_high_purity_ = trk->quality( TrackBase::qualityByName("highPurity") );
     trk_chi2red_ = trk->normalizedChi2();
     // displ
