@@ -58,8 +58,10 @@ for to_plot, nbins in [
    plt.ylabel('Fraction')
    plt.legend(loc='best')
    plt.plot()
-   plt.savefig('%s/electrons_%s.png' % (plots, to_plot))
-   plt.savefig('%s/electrons_%s.pdf' % (plots, to_plot))
+   try : plt.savefig('%s/electrons_%s.png' % (plots, to_plot))
+   except : pass
+   try : plt.savefig('%s/electrons_%s.pdf' % (plots, to_plot))
+   except : pass
    plt.clf()
 
    plt.clf()
@@ -75,8 +77,10 @@ for to_plot, nbins in [
    plt.ylabel('Fraction')
    plt.legend(loc='best')
    plt.plot()
-   plt.savefig('%s/electrons_withTrk_%s.png' % (plots, to_plot))
-   plt.savefig('%s/electrons_withTrk_%s.pdf' % (plots, to_plot))
+   try : plt.savefig('%s/electrons_withTrk_%s.png' % (plots, to_plot))
+   except : pass
+   try : plt.savefig('%s/electrons_withTrk_%s.pdf' % (plots, to_plot))
+   except : pass
    plt.clf()
 
 
@@ -134,8 +138,10 @@ for feat in multi_dim_branches:
       vals[dataset['name']] = heatmap
       plt.imshow(heatmap, cmap='viridis', interpolation='nearest')
       plt.colorbar()
-      plt.savefig('%s/%s_%s.png' % (plots, dataset['name'], feat))
-      plt.savefig('%s/%s_%s.pdf' % (plots, dataset['name'], feat))      
+      try : plt.savefig('%s/%s_%s.png' % (plots, dataset['name'], feat))
+      except : pass
+      try : plt.savefig('%s/%s_%s.pdf' % (plots, dataset['name'], feat))
+      except : pass
       plt.clf()
    #make ratios
    ratio = (vals['electrons']/vals['tracks'])-1
@@ -143,8 +149,10 @@ for feat in multi_dim_branches:
    plt.title(feat.replace('_', ' '))
    plt.imshow(ratio, cmap='RdBu', interpolation='nearest', vmin=-1, vmax=1)
    plt.colorbar()
-   plt.savefig('%s/ratio_%s_%s.png' % (plots, dataset['name'], feat))
-   plt.savefig('%s/ratio_%s_%s.pdf' % (plots, dataset['name'], feat))      
+   try : plt.savefig('%s/ratio_%s_%s.png' % (plots, dataset['name'], feat))
+   except : pass
+   try : plt.savefig('%s/ratio_%s_%s.pdf' % (plots, dataset['name'], feat))
+   except : pass
    plt.clf()
 
 exit()
@@ -171,6 +179,8 @@ for to_plot in features:
    plt.ylabel('Fraction')
    plt.legend(loc='best')
    plt.plot()
-   plt.savefig('%s/electrons_vs_tracks_%s.png' % (plots, to_plot))
-   plt.savefig('%s/electrons_vs_tracks_%s.pdf' % (plots, to_plot))
+   try : plt.savefig('%s/electrons_vs_tracks_%s.png' % (plots, to_plot))
+   except : pass
+   try : plt.savefig('%s/electrons_vs_tracks_%s.pdf' % (plots, to_plot))
+   except : pass
    plt.clf()
