@@ -16,7 +16,6 @@ parser.add_argument("--gpufraction",  help="select memory fraction for GPU",   t
 
 args = parser.parse_args()
 #dataset = 'all' 
-dataset = 'test'
 
 from keras import backend as K, callbacks
 import tensorflow as tf
@@ -48,8 +47,9 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 #rc('text', usetex=True)
-from datasets import tag, pre_process_data
+from datasets import tag, pre_process_data, target_dataset
 import os
+dataset = target_dataset
 
 ccmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
 os.environ['CMSSW_BASE'] = cmssw_path

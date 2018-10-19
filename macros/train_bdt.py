@@ -53,7 +53,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-dataset = 'test' if args.test else 'all' 
 
 import matplotlib.pyplot as plt
 import ROOT
@@ -64,8 +63,10 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, pre_process_data
+from datasets import tag, pre_process_data, target_dataset
 import os
+
+dataset = 'test' if args.test else target_dataset
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(mods):
@@ -97,6 +98,7 @@ print 'training'
 clf = xgb.XGBClassifier(
    #basic stuff
    max_depth=args.depth, learning_rate=args.lrate, n_estimators=args.ntrees,
+   objective='binary:logitraw',
    #many different ways of regularization
    gamma=args.gamma, min_child_weight=args.min_child_weight, max_delta_step=0, 
    subsample=args.colsample_bytree, colsample_bylevel=1, 

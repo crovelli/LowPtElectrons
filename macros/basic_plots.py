@@ -90,7 +90,7 @@ additional = id_additional
 
 multi_dim_branches = ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']
 dict_data = get_data_sync(
-   'all', 
+   'BToKee',
    features+labeling+additional+multi_dim_branches
 )
 data = pd.DataFrame(
@@ -118,6 +118,8 @@ print 'making plots'
 
 for feat in multi_dim_branches:
    vals = {}
+   charge = data.trk_charge
+   multi_dim[feat][charge == -1] = np.flip(multi_dim[feat][charge == -1], axis=2)
    for dataset in [
       {'name' : 'electrons',
        'mask' : data.is_e,

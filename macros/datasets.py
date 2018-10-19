@@ -3,6 +3,7 @@ from glob import glob
 #tag = '2018Sep20'
 tag = '2018Oct05'
 posix = '2018Oct0[589]' #in case of rescue submissions
+target_dataset = 'BToKee'
 
 import socket
 path = ""
@@ -147,8 +148,9 @@ def pre_process_data(dataset, features, for_seeding=False):
          (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
          )
    
+   from features import labeling
    #convert bools to integers
    for c in features:
-      if data[c].dtype == np.dtype('bool'):
+      if data[c].dtype == np.dtype('bool') and c not in labeling:
          data[c] = data[c].astype(int)
    return data

@@ -16,7 +16,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-dataset = 'test' if args.test else 'all' 
 
 import matplotlib.pyplot as plt
 import uproot
@@ -25,9 +24,10 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, pre_process_data, get_models_dir
+from datasets import tag, pre_process_data, get_models_dir, target_dataset
 import os
 
+dataset = 'test' if args.test else target_dataset
 mods = get_models_dir()
 
 opti_dir = '%s/bdt_bo_%s' % (mods, args.what)
@@ -47,98 +47,87 @@ data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding']
 
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(data, test_size=0.2, random_state=42)
+test.to_hdf(
+   '%s/nn_bo_%s_testdata.hdf' % (opti_dir, args.what),
+   'data'
+   ) 
+
+train, validation = train_test_split(train, test_size=0.2, random_state=42)
 
 import xgboost as xgb
+from sklearn.externals import joblib
+from sklearn.metrics import roc_curve, roc_auc_score
+iteration_idx = 0
+def train_model(**kwargs):
+   global iteration_idx
+   print iteration_idx
+   #sanitize inputs
+   kwargs['max_depth'] = int(kwargs['max_depth'])
+   kwargs['n_estimators'] = 5000
 
-xgtrain = xgb.DMatrix(
-   train[features],
-   label = train.is_e,
-   weight = train.weight,
+   clf = xgb.XGBClassifier(
+      objective='binary:logitraw',
+      **kwargs
+      )
+
+   early_stop_kwargs = {
+      'eval_set' : [(validation[features].as_matrix(), validation.is_e.as_matrix().astype(int))],
+      #'sample_weight_eval_set' : [test.weight.as_matrix()], #undefined in this version
+      'eval_metric' : 'auc',
+      'early_stopping_rounds' : 10
+      } 
+
+   clf.fit(
+      train[features].as_matrix(), 
+      train.is_e.as_matrix().astype(int), 
+      sample_weight=train.weight.as_matrix(),
+      **early_stop_kwargs
+      )
+
+   training_out = clf.predict_proba(validation[features].as_matrix())[:, 1]
+   auc = roc_auc_score(validation.is_e, training_out)
+   kwargs['auc'] = auc
+   
+   with open('%s/pars_%d.json' % (opti_dir, iteration_idx), 'w') as jpars:
+      json.dump(kwargs, jpars)
+   
+   joblib.dump(
+      clf, '%s/model_%d.pkl' % (opti_dir, iteration_idx), 
+      compress=True
+      )
+   iteration_idx += 1
+   return auc
+
+#
+# Bayesian optimization
+#
+from xgbo import BayesianOptimization
+par_space = {
+   'min_child_weight': (1, 20),
+   'colsample_bytree': (0.1, 1),
+   'max_depth': (2, 15),
+   'subsample': (0.5, 1),
+   'gamma': (0, 10),
+   'reg_alpha': (0, 10),
+   'reg_lambda': (0, 10),
+   'learning_rate' : (0.001, 0.1),
+   }
+
+bo = BayesianOptimization(
+   train_model,
+   par_space,
+   verbose=1,
+   checkpoints='%s/checkpoints.csv' % opti_dir
 )
-xgtest  = xgb.DMatrix(
-   test[features],
-   label = test.is_e,
-   weight = test.weight,
-)
+bo.init(5, sampling='lhs')
+bo.maximize(5, 50)
 
-params = {'eval_metric':'auc',
-          'objective'  :'binary:logitraw'}
-#model_default = xgb.train(params, xgtrain, num_boost_round=1000)
-
-#Next we try out the xgbo package.
-from xgbo import XgboClassifier
-
-xgbo_classifier = XgboClassifier(
-   out_dir=opti_dir,
-)
-
-xgbo_classifier.optimize(xgtrain, init_points=5, n_iter=50, acq='ei')
-#xgbo_classifier.optimize(xgtrain, init_points=0, n_iter=1, acq='ei')
-
-xgbo_classifier.fit(xgtrain, model="default")
-xgbo_classifier.fit(xgtrain, model="optimized")
-
-xgbo_classifier.save_model(features, model="default")
-xgbo_classifier.save_model(features, model="optimized")
-
-# Now, let's make predictions with all models we got on the testing sample.
-preds_default    = model_default.predict(xgtest)
-preds_early_stop = xgbo_classifier.predict(xgtest, model="default")
-preds_optimized  = xgbo_classifier.predict(xgtest, model="optimized")
-
-xgbo_classifier._bo.summary()
-
-"""
-Finally, we want to plot some ROC curves.
-"""
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score, roc_curve
-
-fpr_default   , tpr_default, _    = roc_curve(test.is_e, preds_default, pos_label=1)
-fpr_early_stop, tpr_early_stop, _ = roc_curve(test.is_e, preds_early_stop, pos_label=1)
-fpr_optimized , tpr_optimized, _  = roc_curve(test.is_e, preds_optimized, pos_label=1)
-
-auc_default    = roc_auc_score(test.is_e, preds_default   )
-auc_early_stop = roc_auc_score(test.is_e, preds_early_stop)
-auc_optimized  = roc_auc_score(test.is_e, preds_optimized )
-
-# make plots
-plt.figure(figsize=[8, 8])
-plt.title('%s training' % args.what)
-plt.plot(
-   np.arange(0,1,0.01),
-   np.arange(0,1,0.01),
-   'k--')
-plt.plot(fpr_default, tpr_default, label='default (AUC: %.3f)' % auc_default)
-plt.plot(fpr_early_stop, tpr_early_stop, label='early stop (AUC: %.3f)' % auc_early_stop)
-plt.plot(fpr_optimized, tpr_optimized, label='optimized (AUC: %.3f)' % auc_default)
-if args.what in ['seeding', 'fullseeding', 'check']:
-   eff = float((data.baseline & data.is_e).sum())/data.is_e.sum()
-   mistag = float((data.baseline & np.invert(data.is_e)).sum())/np.invert(data.is_e).sum()
-   plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
-elif args.what == 'id':
-   mva_v1 = roc_curve(test.is_e, test.ele_mvaIdV1)[:2]   
-   mva_v2 = roc_curve(test.is_e, test.ele_mvaIdV2)[:2]
-   mva_v1_auc = roc_auc_score(test.is_e, test.ele_mvaIdV1)
-   mva_v2_auc = roc_auc_score(test.is_e, test.ele_mvaIdV2)
-   plt.plot(*mva_v1, label='MVA ID V1 (AUC: %.2f)'  % mva_v1_auc)
-   plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
-else:
-   raise ValueError()
-
-plt.xlabel('Mistag Rate')
-plt.ylabel('Efficiency')
-plt.legend(loc='best')
-plt.xlim(0., 1)
-try : plt.savefig('%s/%s_%s_%s_BDT_bayes.png' % (plots, dataset, args.jobtag, args.what))
-except : pass
-try : plt.savefig('%s/%s_%s_%s_BDT_bayes.pdf' % (plots, dataset, args.jobtag, args.what))
-except : pass
-plt.gca().set_xscale('log')
-plt.xlim(1e-4, 1)
-try : plt.savefig('%s/%s_%s_%s_log_BDT_bayes.png' % (plots, dataset, args.jobtag, args.what))
-except : pass
-try : plt.savefig('%s/%s_%s_%s_log_BDT_bayes.pdf' % (plots, dataset, args.jobtag, args.what))
-except : pass
-plt.clf()
+bo.print_summary()
+with open('%s/bdt_bo.json' % opti_dir, 'w') as j:
+    mpoint = bo.space.max_point()
+    thash = mpoint['max_params'].__repr__().__hash__()
+    info = mpoint['max_params']
+    info['value'] = mpoint['max_val']
+    info['hash'] = thash
+    j.write(json.dumps(info))
 

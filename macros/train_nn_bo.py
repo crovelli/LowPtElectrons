@@ -20,7 +20,6 @@ parser.add_argument("--gpu",  help="select specific GPU",   type=int, metavar="O
 parser.add_argument("--gpufraction",  help="select memory fraction for GPU",   type=float, metavar="OPT", default=0.5)
 
 args = parser.parse_args()
-dataset = 'test' if args.test else 'all' 
 #dataset = 'test'
 
 cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
@@ -56,7 +55,8 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 #rc('text', usetex=True)
-from datasets import tag, pre_process_data
+from datasets import tag, pre_process_data, target_dataset
+dataset = 'test' if args.test else target_dataset
 
 plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(plots):
@@ -209,9 +209,10 @@ bo = BayesianOptimization(
     verbose=1,
     checkpoints='%s/checkpoints.csv' % opti_dir
 )
-
+bo.init(5, sampling='lhs')
 bo.maximize(5, 50)
 
+bo.print_summary()
 with open('%s/nn_bo.json' % opti_dir, 'w') as j:
     mpoint = bo.space.max_point()
     thash = mpoint['max_params'].__repr__().__hash__()
