@@ -169,9 +169,38 @@ mva_id_inputs = [
 #ele_IoEmIop                        1.0/ecalEnergy-1.0/trackMomentumAtVtx.R                    None None
 ]
 
+to_drop = {
+   'gsf_phi',
+   'gsf_charge',
+   'trk_outp',
+   'trk_p',
+   'gsf_ecal_cluster_e',
+   'gsf_inp',
+   'trk_eta'
+}
+
+useless = {
+   'trk_p',
+   'trk_high_purity',
+   'gsf_inp',
+   'gsf_charge',
+   'gsf_ktf_same_hcal',
+   'trk_charge',
+   'gsf_ktf_same_ecal',
+   'ktf_ecal_cluster_covEtaPhi',
+   'gsf_ecal_cluster_covEtaEta',
+   'gsf_ecal_cluster_covEtaPhi',
+   'gsf_ecal_cluster_e',
+   'gsf_ecal_cluster_covPhiPhi',
+   'shape_full5x5_sigmaIetaIeta',
+}
+
 def get_features(ftype):
    if ftype == 'seeding':
       features = seed_features
+      additional = seed_additional
+   elif ftype == 'betterseeding':
+      features = seed_features+['rho',]
       additional = seed_additional
    elif ftype == 'fullseeding':
       features = fullseed_features
@@ -181,6 +210,9 @@ def get_features(ftype):
       additional = id_additional
    elif ftype == 'mva_id':
       features = mva_id_inputs
+      additional = id_additional
+   elif ftype == 'combined_id':
+      features = list(set(mva_id_inputs+id_features)-to_drop-useless)
       additional = id_additional
    else:
       raise ValueError('%s is not among the possible feature collection' % ftype)

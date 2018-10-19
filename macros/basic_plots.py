@@ -118,6 +118,8 @@ print 'making plots'
 
 for feat in multi_dim_branches:
    vals = {}
+   charge = data.trk_charge
+   multi_dim[feat][charge == -1] = np.flip(multi_dim[feat][charge == -1], axis=2)
    for dataset in [
       {'name' : 'electrons',
        'mask' : data.is_e,
@@ -155,6 +157,7 @@ for feat in multi_dim_branches:
    except : pass
    plt.clf()
 
+exit()
       
 for to_plot in features:
    plt.clf()
