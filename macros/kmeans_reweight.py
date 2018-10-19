@@ -7,7 +7,7 @@ from matplotlib.colors import LogNorm
 
 parser = ArgumentParser()
 parser.add_argument(
-   '--nbins', default=400, type=int
+   '--nbins', default=600, type=int
 )
 parser.add_argument(
    '--nthreads', default=10, type=int
@@ -16,7 +16,6 @@ parser.add_argument(
    '--test', action='store_true',
 )
 args = parser.parse_args()
-dataset = 'test' if args.test else 'all'
 
 import matplotlib.pyplot as plt
 #import ROOT
@@ -29,8 +28,9 @@ from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag, apply_weight, get_data_sync
+from datasets import get_data, tag, apply_weight, get_data_sync, target_dataset
 import os
+dataset = 'test' if args.test else target_dataset
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(mods):
@@ -191,3 +191,42 @@ for plot in reweight_feats+['trk_pt']:
       try : plt.savefig('%s/%s_%s_%s.pdf' % (plots, dataset, name, plot))
       except : pass
       plt.clf()
+
+#compute separation with a BDT   
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_curve, roc_auc_score
+train_bdt, test_bdt = train_test_split(data, test_size=0.5, random_state=42)
+pre_separation = GradientBoostingClassifier(
+   n_estimators=50, learning_rate=0.1,
+   max_depth=4, random_state=42, verbose=1
+)
+pre_separation.fit(train_bdt[reweight_feats], train_bdt.is_e)
+test_proba = pre_separation.predict_proba(test_bdt[reweight_feats])[:, 1]
+roc_pre = roc_curve(test_bdt[['is_e']],  test_proba)[:2]
+auc_pre = roc_auc_score(test_bdt[['is_e']],  test_proba)
+
+
+post_separation = GradientBoostingClassifier(
+   n_estimators=50, learning_rate=0.1,
+   max_depth=4, random_state=42, verbose=1
+)
+post_separation.fit(train_bdt[reweight_feats], train_bdt.is_e, train_bdt.weight)
+test_proba = post_separation.predict_proba(test_bdt[reweight_feats])[:, 1]
+roc_post = roc_curve(test_bdt[['is_e']],  test_proba, sample_weight=test_bdt.weight)[:2]
+auc_post = roc_auc_score(test_bdt[['is_e']],  test_proba, sample_weight=test_bdt.weight)
+
+# make plots
+plt.clf()
+plt.figure(figsize=[8, 8])
+plt.plot(*roc_pre, label='Initial separation (%.3f)' % auc_pre)
+plt.plot(*roc_post, label='Separation after reweighting (%.3f)' % auc_post)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel('Mistag Rate')
+plt.ylabel('Efficiency')
+plt.legend(loc='best')
+plt.plot()
+plt.savefig('%s/%s_reweighting.png' % (plots, dataset))
+plt.savefig('%s/%s_reweighting.pdf' % (plots, dataset))
+plt.clf()
+
