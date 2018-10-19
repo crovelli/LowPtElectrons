@@ -4,8 +4,14 @@ from glob import glob
 tag = '2018Oct05'
 posix = '2018Oct0[589]' #in case of rescue submissions
 
+import socket
+path = ""
+if "cern.ch" in socket.gethostname() : path = '/eos/cms/store/cmst3/group/bpark/electron_training'
+elif "hep.ph.ic.ac.uk" in socket.gethostname() : path = '/vols/cms/bainbrid/BParking/electron_training'
+print socket.gethostname()
+
 import os
-all_sets = glob('/eos/cms/store/cmst3/group/bpark/electron_training/*_%s_*.root' % posix)
+all_sets = glob(path+'/*_%s_*.root' % posix)
 sets = set([os.path.basename(i).split('_')[0].split('Assoc')[0] for i in all_sets])
 sets = sorted(list(sets), key=lambda x: -len(x))
 input_files = {i : [] for i in sets}
@@ -16,7 +22,6 @@ for inf in all_sets:
          input_files[name].append(inf)
          break
 input_files['test'] = input_files['BToKee'][:1]
-
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
@@ -99,9 +104,9 @@ def kmeans_weighter(features, fname):
          pass
    return apply_weight(cluster, weights)
 
-def training_selection(df):
+def training_selection(df,low=0.,high=15.):
    'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
-   return (df.trk_pt > 0) & (df.trk_pt < 15) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
+   return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
 
 import pandas as pd
 import numpy as np

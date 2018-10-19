@@ -67,6 +67,7 @@ beauty = {
     'nhits' : r'\# of hits',
     'trk_pt' : r'p$_T$(ktf track)', 
     'trk_eta' : r'$\eta$(ktf track)', 
+    'trk_ieta' : r'$i\eta$(ktf track)',
     'log_trkpt' : r'log$_{10}$(p$_T$)(ktf track)', 
     'trk_inp' : r'p$_{in}$(ktf track)',
     'trk_outp' : r'p$_{out}$(ktf track)', 

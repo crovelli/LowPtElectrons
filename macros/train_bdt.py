@@ -54,7 +54,6 @@ parser.add_argument(
 
 args = parser.parse_args()
 dataset = 'test' if args.test else 'all' 
-#dataset = 'test'
 
 import matplotlib.pyplot as plt
 import ROOT
@@ -137,6 +136,7 @@ for df, name in [
    ##(test, 'test'),
    (validation, 'validation')
    ]:
+   df = df[training_selection(df,low=0.,high=15.)]
    training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
    rocs[name] = roc_curve(
       df.is_e.as_matrix().astype(int), 

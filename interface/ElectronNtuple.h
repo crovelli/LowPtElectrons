@@ -60,7 +60,7 @@ public:
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
 	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
-	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2);
+	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, float ele_conv_vtx_fit_prob = -1.);
 	void fill_supercluster(const reco::GsfElectronRef ele);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 	void fill_GSF_ECAL_cluster_info(
@@ -138,7 +138,8 @@ private:
 	float trk_outp_ = -1.;
 	float trk_dpt_ = -1.;
 	// KF tracks: quality
-	float trk_nhits_ = -1;
+	int trk_nhits_ = -1;
+	int trk_missing_inner_hits_ = -1;
 	int   trk_high_purity_ = 0;
 	float trk_chi2red_ = -1.;
 	// KF tracks: displ
@@ -176,7 +177,8 @@ private:
 	float gsf_outp_ = -1.;
 	float gsf_dpt_ = -1.;
 	// GSF tracks: quality
-	float gsf_nhits_ = -1;
+	int gsf_nhits_ = -1;
+	int gsf_missing_inner_hits_ = -1;
 	float gsf_chi2red_ = -1.;
 	// GSF tracks: displ
 	float gsf_dxy_ = -1;
@@ -235,6 +237,7 @@ private:
 	float ele_p_ = -1.;
 	float ele_mvaIdV1_ = -2.;
 	float ele_mvaIdV2_ = -2.;
+	float ele_conv_vtx_fit_prob_ = -1.;
 
 	// Bottom up approach	
 	float gsf_ecal_cluster_e_ = -1;
@@ -310,6 +313,7 @@ private:
   float match_seed_dEta_vtx_ = -1.;
 
   float match_eclu_EoverP_ = -1.;
+  float match_eclu_EoverPout_ = -1.;
 
   float match_eclu_dEta_ = -1.;
   float match_eclu_dPhi_ = -1.;
@@ -393,7 +397,8 @@ private:
   float brem_fracTrk_ = -1.;
   float brem_fracSC_ = -1.;
   int brem_N_ = -1;
-  
+  int p4kind_ = -1;
+
   // SuperClusters //////////
 
   float sc_etaWidth_ = -1.;
