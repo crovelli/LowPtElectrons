@@ -8,6 +8,7 @@ target_dataset = 'BToKee'
 import socket
 path = ""
 if "cern.ch" in socket.gethostname() : path = '/eos/cms/store/cmst3/group/bpark/electron_training'
+elif 'cmg-gpu1080' in socket.gethostname() : path = '/eos/cms/store/cmst3/group/bpark/electron_training'
 elif "hep.ph.ic.ac.uk" in socket.gethostname() : path = '/vols/cms/bainbrid/BParking/electron_training'
 print socket.gethostname()
 
