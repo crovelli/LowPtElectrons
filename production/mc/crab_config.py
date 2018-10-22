@@ -40,7 +40,7 @@ date = datetime.date.today().strftime('%Y%b%d')
 request = '%s_%s' % (date, name)
 idx = 2
 while True:
-   if not os.path.isdir(request):
+   if not os.path.isdir('crab_%s' % request):
       break
    request = '%sv%d_%s' % (date, idx, name)
    idx += 1
