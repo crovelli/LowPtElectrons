@@ -115,7 +115,7 @@ private:
   std::pair<uint,uint> indices( float logpt, float eta );
   bool empty_weights();
   void print_weights();
-	vector<float> get_iso_rings(const GsfElectronRef& ele, const vector<reco::TrackRef> &tracks);
+	vector<float> get_iso_rings(const GsfElectronRef& ele, const reco::TrackRef& ele_trk, const vector<reco::TrackRef> &tracks);
 
   std::pair<float,float> printPfBlock( const reco::GenParticleRef gen,
 				       const reco::PreIdRef preid,
@@ -212,14 +212,15 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
 // member functions
 //
 vector<float> 
-TrackerElectronsFeatures::get_iso_rings(const GsfElectronRef& ele, const vector<reco::TrackRef> &tracks) {
+TrackerElectronsFeatures::get_iso_rings(const GsfElectronRef& ele, const reco::TrackRef& ele_trk, const vector<reco::TrackRef> &tracks) {
 	vector<float> ret = {0., 0., 0., 0.};
-	// for(const auto& trk : tracks) {
-	//  	double dr = deltaR(*ele, *trk);
-	//  	size_t idx = std::floor(dr/0.1);
-	//  	if(idx >= ret.size())
-	// 		ret[idx] += trk->pt(); //this is the conflicting line, for some reason
-	// }
+	for(const auto& trk : tracks) {
+		if(ele_trk == trk) continue;
+	 	double dr = deltaR(*ele, *trk);
+	 	size_t idx = std::floor(dr/0.1);
+	 	if(idx < ret.size())
+			ret[idx] += trk->pt(); //this is the conflicting line, for some reason
+	}
 	return ret;
 }
 
@@ -669,7 +670,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
           float id1 = (*mvaid_v1)[ele_match->second];
           float id2 = (*mvaid_v2)[ele_match->second];
           float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
-					vector<float> iso_rings = get_iso_rings(ele_match->second, tracks);
+					vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
           ntuple_.fill_ele(ele_match->second, id1, id2, conv_vtx_fit_prob, iso_rings);
 					ele_ref = &(ele_match->second);
         } //matched to GED Electron
@@ -771,7 +772,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				float id1 = (*mvaid_v1)[ele_match->second];
 				float id2 = (*mvaid_v2)[ele_match->second];
 				float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
-				vector<float> iso_rings = get_iso_rings(ele_match->second, tracks);
+				vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
 				ntuple_.fill_ele(ele_match->second, id1, id2, conv_vtx_fit_prob, iso_rings);
 			} //matched to GED Electron
 		}//matched to GSF Track
@@ -879,7 +880,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				float id1 = (*mvaid_v1)[ele_match->second];
 				float id2 = (*mvaid_v2)[ele_match->second];
 				float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
-				vector<float> iso_rings = get_iso_rings(ele_match->second, tracks);
+				vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
 				ntuple_.fill_ele(ele_match->second, id1, id2, conv_vtx_fit_prob, iso_rings);
 			} //matched to GED Electron
 		}//matched to GSF Track
