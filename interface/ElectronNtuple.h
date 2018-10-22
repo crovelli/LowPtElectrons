@@ -11,6 +11,7 @@
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "DataFormats/Math/interface/Point3D.h"
 #include "FWCore/Framework/interface/Event.h"
+#include <vector>
 class TTree;
 /*namespace reco {
 	class GsfTrackRef;
@@ -60,7 +61,8 @@ public:
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
 	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
-	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, float ele_conv_vtx_fit_prob = -1.);
+	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, 
+								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.});
 	void fill_supercluster(const reco::GsfElectronRef ele);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 	void fill_GSF_ECAL_cluster_info(
@@ -238,6 +240,10 @@ private:
 	float ele_mvaIdV1_ = -2.;
 	float ele_mvaIdV2_ = -2.;
 	float ele_conv_vtx_fit_prob_ = -1.;
+	float ele_iso01_ = 0.;
+	float ele_iso02_ = 0.;
+	float ele_iso03_ = 0.;
+	float ele_iso04_ = 0.;
 
 	// Bottom up approach	
 	float gsf_ecal_cluster_e_ = -1;
@@ -271,6 +277,8 @@ private:
 	float ktf_ecal_cluster_covEtaPhi_ = -42;
 	float ktf_ecal_cluster_covPhiPhi_ = -42;
 	float ktf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
+	float ktf_ecal_cluster_r9_ = -0.1;
+	float ktf_ecal_cluster_circularity_ = -0.1;
 
 	float ktf_hcal_cluster_e_ = -1;
 	float ktf_hcal_cluster_eta_ = -1;
