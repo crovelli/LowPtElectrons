@@ -128,6 +128,10 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("ele_mvaIdV1",		 	  &ele_mvaIdV1_     		 , "ele_mvaIdV1/f");
 	tree->Branch("ele_mvaIdV2",		 	  &ele_mvaIdV2_     		 , "ele_mvaIdV2/f");
 	tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
+	tree->Branch("ele_iso01", &ele_iso01_, "ele_iso01/f");
+	tree->Branch("ele_iso02", &ele_iso02_, "ele_iso02/f");
+	tree->Branch("ele_iso03", &ele_iso03_, "ele_iso03/f");
+	tree->Branch("ele_iso04", &ele_iso04_, "ele_iso04/f");
 
 	//Bottom up approach
 	tree->Branch("gsf_ecal_cluster_e", &gsf_ecal_cluster_e_, "gsf_ecal_cluster_e/f");
@@ -163,6 +167,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("ktf_ecal_cluster_covEtaPhi", &ktf_ecal_cluster_covEtaPhi_, "ktf_ecal_cluster_covEtaPhi/f");
 	tree->Branch("ktf_ecal_cluster_covPhiPhi", &ktf_ecal_cluster_covPhiPhi_, "ktf_ecal_cluster_covPhiPhi/f");
 	tree->Branch("ktf_ecal_cluster_ematrix", &ktf_ecal_cluster_ematrix_, ("ktf_ecal_cluster_ematrix"+buffer.str()).c_str());
+	tree->Branch("ktf_ecal_cluster_r9", &ktf_ecal_cluster_r9_, "ktf_ecal_cluster_r9/f");
+	tree->Branch("ktf_ecal_cluster_circularity_", &ktf_ecal_cluster_circularity_, "ktf_ecal_cluster_circularity/f");
 
 	tree->Branch("ktf_hcal_cluster_e",    &ktf_hcal_cluster_e_,    "ktf_hcal_cluster_e/f");
 	tree->Branch("ktf_hcal_cluster_eta",  &ktf_hcal_cluster_eta_,  "ktf_hcal_cluster_eta/f");
@@ -380,7 +386,7 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot,
 	preid_mva_pass_ = preid.mvaSelected();
 }
 
-void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2, float ele_conv_vtx_fit_prob ) {
+void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2, float ele_conv_vtx_fit_prob, const std::vector<float>& iso_rings) {
 	ele_p_			 = ele->p();
 	ele_pt_			 = ele->pt();
 	ele_eta_		 = ele->eta();
@@ -388,6 +394,10 @@ void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, fl
 	ele_mvaIdV1_ = mvaid_v1;
 	ele_mvaIdV2_ = mvaid_v2;
 	ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob;
+	ele_iso01_ = iso_rings.at(0);
+	ele_iso02_ = iso_rings.at(1);
+	ele_iso03_ = iso_rings.at(2);
+	ele_iso04_ = iso_rings.at(3);
 	fill_supercluster(ele);
 }
 
@@ -654,6 +664,10 @@ void ElectronNtuple::fill_KTF_ECAL_cluster_info(
 	ktf_ecal_cluster_covEtaEta_ = covs[0];
 	ktf_ecal_cluster_covEtaPhi_ = covs[1];
 	ktf_ecal_cluster_covPhiPhi_ = covs[2];
+
+	ktf_ecal_cluster_r9_ = ktf_ecal_cluster_e3x3_/ktf_ecal_cluster_e_;
+	float e1x5 = tools.e1x5(*cluster);
+	ktf_ecal_cluster_circularity_ = (ktf_ecal_cluster_e5x5_ > 0) ? 1 - e1x5/ktf_ecal_cluster_e5x5_ : -0.1;
 
 	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
 	DetId seedid = cluster->hitsAndFractions().front().first;

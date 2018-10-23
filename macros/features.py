@@ -212,7 +212,7 @@ def get_features(ftype):
       features = mva_id_inputs
       additional = id_additional
    elif ftype == 'combined_id':
-      features = list(set(mva_id_inputs+id_features)-to_drop-useless)
+      features = list(set(mva_id_inputs+id_features))#-to_drop-useless)
       additional = id_additional
    else:
       raise ValueError('%s is not among the possible feature collection' % ftype)
