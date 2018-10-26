@@ -1,9 +1,9 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
 #tag = '2018Sep20'
-tag = '2018Oct05'
-posix = '2018Oct0[589]' #in case of rescue submissions
-target_dataset = 'BToKee'
+tag = '2018Oct22v2'
+posix = '2018Oct22v2'
+target_dataset = 'all'
 
 import socket
 path = ""
@@ -110,11 +110,38 @@ def training_selection(df,low=0.,high=15.):
    'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
    return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
 
+import rootpy.plotting as rplt
+import root_numpy
+
+class HistWeighter(object):
+   def __init__(self, fname):
+      values = [[float(i) for i in j.split()] for j in open(fname)]
+      vals = np.array(values)
+      xs = sorted(list(set(vals[:,0])))
+      ys = sorted(list(set(vals[:,1])))
+      vals[:,0] += 0.0001
+      vals[:,1] += 0.0001
+      mask = (vals[:,2] == 0)
+      vals[:,2][mask] = 1 #turn zeros into ones
+      vals[:,2] = 1/vals[:,2]
+      self._hist = rplt.Hist2D(xs, ys)
+      root_numpy.fill_hist(self._hist, vals[:,[0,1]], vals[:, 2])
+
+   def _get_weight(self, x, y):
+      ix = self._hist.xaxis.FindFixBin(x)
+      iy = self._hist.yaxis.FindFixBin(y)
+      return self._hist.GetBinContent(ix, iy)
+
+   def get_weight(self, x, y):
+      cnt = lambda x, y: self._get_weight(x, y)
+      cnt = np.vectorize(cnt)
+      return cnt(x, y)
+
 import pandas as pd
 import numpy as np
 def pre_process_data(dataset, features, for_seeding=False):  
    mods = get_models_dir()
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta']))
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err'])-{'trk_dxy_sig'})
    data_dict = get_data_sync(dataset, features)
    if 'gsf_ecal_cluster_ematrix' in features:
       multi_dim = data_dict.pop('gsf_ecal_cluster_ematrix', None)
@@ -128,6 +155,7 @@ def pre_process_data(dataset, features, for_seeding=False):
 
    data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
    data = data[training_selection(data)]
+   data['trk_dxy_sig'] = data.trk_dxy_err/data.trk_dxy
    data['training_out'] = -1
    data['log_trkpt'] = np.log10(data.trk_pt)
    
@@ -139,9 +167,12 @@ def pre_process_data(dataset, features, for_seeding=False):
    weights = kmeans_weighter(
       data[['log_trkpt', 'trk_eta']],
       '%s/kmeans_%s_weighter.plk' % (mods, dataset)
-      ) 
+      )    
    data['weight'] = weights*np.invert(data.is_e) + data.is_e
-   
+
+   original_weight = HistWeighter('../data/fakesWeights.txt')
+   data['original_weight'] = np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
+
    #add baseline seeding (for seeding only)
    if for_seeding:
       data['baseline'] = (
