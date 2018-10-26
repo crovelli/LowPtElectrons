@@ -51,14 +51,33 @@ parser.add_argument(
 parser.add_argument(
    '--no_early_stop', action='store_true'
 )
+parser.add_argument(
+   '--config'
+)
+parser.add_argument(
+   '--dataset'
+)
 
 args = parser.parse_args()
+
+import json
+if args.config:
+   #config overrides eveything
+   cfg = json.load(open(args.config))
+   args.reg_alpha = cfg['reg_alpha'] 
+   args.colsample_bytree = cfg['colsample_bytree'] 
+   args.lrate = cfg['learning_rate'] 
+   args.min_child_weight = cfg['min_child_weight'] 
+   args.ntrees = cfg['n_estimators'] 
+   args.subsample = cfg['subsample'] 
+   args.reg_lambda = cfg['reg_lambda'] 
+   args.depth = cfg['max_depth'] 
+   args.gamma = cfg['gamma']
 
 import matplotlib.pyplot as plt
 import ROOT
 import uproot
 import rootpy
-import json
 import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -67,6 +86,8 @@ from datasets import tag, pre_process_data, target_dataset
 import os
 
 dataset = 'test' if args.test else target_dataset
+if args.dataset:
+   dataset = args.dataset
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(mods):
@@ -86,7 +107,7 @@ data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding']
 
 from sklearn.model_selection import train_test_split
 train_test, validation = train_test_split(data, test_size=0.2, random_state=42)
-train, test = train_test_split(train_test, test_size=0.16, random_state=42)
+train, test = train_test_split(train_test, test_size=0.2, random_state=42)
 
 from hep_ml.reweight import GBReweighter
 from sklearn.externals import joblib
@@ -101,7 +122,7 @@ clf = xgb.XGBClassifier(
    objective='binary:logitraw',
    #many different ways of regularization
    gamma=args.gamma, min_child_weight=args.min_child_weight, max_delta_step=0, 
-   subsample=args.colsample_bytree, colsample_bylevel=1, 
+   colsample_bytree=args.colsample_bytree, colsample_bylevel=1, subsample=args.subsample,
    reg_alpha=args.reg_alpha, reg_lambda=args.reg_lambda, 
    #running settings and weight balancing
    silent=False, nthread=args.nthreads, scale_pos_weight=1, 
@@ -138,7 +159,6 @@ for df, name in [
    ##(test, 'test'),
    (validation, 'validation')
    ]:
-   df = df[training_selection(df,low=0.,high=15.)]
    training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
    rocs[name] = roc_curve(
       df.is_e.as_matrix().astype(int), 
