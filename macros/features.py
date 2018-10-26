@@ -17,6 +17,23 @@ seed_features = trk_features + [
    'preid_e_over_p',
 ]
 
+improved_seed_features = trk_features + [
+   'rho',
+   'ktf_ecal_cluster_e',
+   'ktf_ecal_cluster_deta',
+   'ktf_ecal_cluster_dphi',
+   'ktf_ecal_cluster_e3x3',
+   'ktf_ecal_cluster_e5x5',
+   'ktf_ecal_cluster_covEtaEta',
+   'ktf_ecal_cluster_covEtaPhi',
+   'ktf_ecal_cluster_covPhiPhi',
+   'ktf_ecal_cluster_r9',
+   'ktf_ecal_cluster_circularity_',
+   'ktf_hcal_cluster_e',
+   'ktf_hcal_cluster_deta',
+   'ktf_hcal_cluster_dphi',
+]
+
 fullseed_features = seed_features + [
    'preid_gsf_dpt',
    'preid_trk_gsf_chiratio',
@@ -196,6 +213,10 @@ useless = {
 }
 
 def get_features(ftype):
+   add_ons = []
+   if ftype.startswith('displaced_'):
+      add_ons = ['trk_dxy_sig']
+      ftype = ftype.replace('displaced_', '')
    if ftype == 'seeding':
       features = seed_features
       additional = seed_additional
@@ -204,6 +225,9 @@ def get_features(ftype):
       additional = seed_additional
    elif ftype == 'fullseeding':
       features = fullseed_features
+      additional = seed_additional
+   elif ftype == 'improvedseeding':
+      features = improved_seed_features
       additional = seed_additional
    elif ftype == 'id':
       features = id_features
@@ -216,4 +240,4 @@ def get_features(ftype):
       additional = id_additional
    else:
       raise ValueError('%s is not among the possible feature collection' % ftype)
-   return features, additional
+   return features+add_ons, additional
