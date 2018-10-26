@@ -7,10 +7,10 @@ from pdb import set_trace
 import os
 
 parser = ArgumentParser()
-parser.add_argument('what')
 parser.add_argument('model')
+parser.add_argument('--what')
 parser.add_argument('--dataset')
-
+parser.add_argument('--plot')
 args = parser.parse_args()
 
 import pandas as pd
@@ -24,13 +24,15 @@ if args.model.endswith('.csv'):
     del pars['target']
     base = os.path.dirname(args.model)
     
+    args.what = base.split('bdt_bo_')[1].replace('_noweight','')
     model = '%s/model_%d.pkl' % (base, best)
+    print 'using model', model
     dataset = glob('%s/*.hdf' % base)[0]
     plots = base
 else:
     model = args.model
     dataset = args.dataset
-    plots = os.dirname(model)
+    plots = os.dirname(model) if not args.plot else args.plot
     if not dataset:
         raise RuntimeError('You must specify a dataset if you are not running in Bayesian Optimization mode')
 
@@ -41,6 +43,7 @@ features, additional = get_features(args.what)
 from sklearn.externals import joblib
 import xgboost as xgb
 model = joblib.load(model)
+from datasets import HistWeighter
 
 def _monkey_patch():
     return model._Booster
@@ -49,6 +52,11 @@ if isinstance(model.booster, basestring):
     model.booster = _monkey_patch
 
 test = pd.read_hdf(dataset, key='data')
+if 'original_weight' not in test.columns:
+    test['original_weight'] = 1.
+else:
+    original_weight = HistWeighter('../data/fakesWeights.txt')
+    test['original_weight'] = np.invert(test.is_e)*original_weight.get_weight(test.log_trkpt, test.trk_eta)+test.is_e
 
 #
 # plot performance
@@ -56,10 +64,42 @@ test = pd.read_hdf(dataset, key='data')
 from sklearn.metrics import roc_curve, roc_auc_score
 from scipy.special import expit
 training_out = expit(model.predict_proba(test[features].as_matrix())[:,1])
+
+#weighted ROC (same as training)
 roc = roc_curve(
    test.is_e.as_matrix().astype(int), 
-   training_out)[:2]
-auc_score = roc_auc_score(test.is_e, training_out)
+   training_out,
+   sample_weight=test.weight)[:2]
+auc_score = roc_auc_score(test.is_e, training_out, 
+                          sample_weight=test.weight)
+
+plt.figure(figsize=[8, 8])
+plt.title('%s training' % args.what)
+plt.plot(
+   np.arange(0,1,0.01),
+   np.arange(0,1,0.01),
+   'k--')
+plt.plot(*roc, label='Retraining (AUC: %.2f)'  % auc_score)
+plt.xlabel('Mistag Rate')
+plt.ylabel('Efficiency')
+plt.legend(loc='best')
+plt.xlim(0., 1)
+plt.savefig('%s/weighted_ROC.png' % (plots))
+plt.savefig('%s/weighted_ROC.pdf' % (plots))
+plt.gca().set_xscale('log')
+plt.xlim(1e-4, 1)
+plt.savefig('%s/weighted_ROC_log.png' % (plots))
+plt.savefig('%s/weighted_ROC_log.pdf' % (plots))
+plt.clf()
+
+
+# ROC as in data
+roc = roc_curve(
+   test.is_e.as_matrix().astype(int), 
+   training_out,
+   sample_weight=test.original_weight)[:2]
+auc_score = roc_auc_score(test.is_e, training_out, 
+                          sample_weight=test.original_weight)
 
 # make plots
 plt.figure(figsize=[8, 8])
@@ -69,19 +109,17 @@ plt.plot(
    np.arange(0,1,0.01),
    'k--')
 plt.plot(*roc, label='Retraining (AUC: %.2f)'  % auc_score)
-if args.what in ['seeding', 'fullseeding']:
-   eff = float((test.baseline & test.is_e).sum())/test.is_e.sum()
-   mistag = float((test.baseline & np.invert(test.is_e)).sum())/np.invert(test.is_e).sum()
-   plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
+if 'seeding' in args.what and 'baseline' in test.columns:    
+    eff = test.original_weight[(test.baseline & test.is_e)].sum()/test.original_weight[test.is_e].sum()
+    mistag = test.original_weight[(test.baseline & np.invert(test.is_e))].sum()/test.original_weight[np.invert(test.is_e)].sum()
+    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
 elif 'id' in args.what:
-   mva_v1 = roc_curve(test.is_e, test.ele_mvaIdV1)[:2]   
-   mva_v2 = roc_curve(test.is_e, test.ele_mvaIdV2)[:2]
-   mva_v1_auc = roc_auc_score(test.is_e, test.ele_mvaIdV1)
-   mva_v2_auc = roc_auc_score(test.is_e, test.ele_mvaIdV2)
+   mva_v1 = roc_curve(test.is_e, test.ele_mvaIdV1, sample_weight=test.original_weight)[:2]   
+   mva_v2 = roc_curve(test.is_e, test.ele_mvaIdV2, sample_weight=test.original_weight)[:2]
+   mva_v1_auc = roc_auc_score(test.is_e, test.ele_mvaIdV1, sample_weight=test.original_weight)
+   mva_v2_auc = roc_auc_score(test.is_e, test.ele_mvaIdV2, sample_weight=test.original_weight)
    plt.plot(*mva_v1, label='MVA ID V1 (AUC: %.2f)'  % mva_v1_auc)
    plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
-else:
-   raise ValueError()
 
 plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
@@ -102,7 +140,55 @@ jmap = {
         ],
     'auc' : auc_score,
 }
-        
+
+#ROCs by pT
+plt.figure(figsize=[8, 8])
+plt.title('%s training' % args.what)
+plt.plot(
+   np.arange(0,1,0.01),
+   np.arange(0,1,0.01),
+   'k--')
+
+for low, high, col in [(0.,1., 'b'),
+                  (1.,2., 'g'),
+                  (2.,5., 'r'),
+                  (5.,10., 'c'),
+                  (10.,15., 'm')]:
+    mask = (low <= test.trk_pt) & (test.trk_pt < high)
+    masked = test[mask]
+    roc = roc_curve(
+        masked.is_e.as_matrix().astype(int), 
+        training_out[mask],
+        sample_weight=test.original_weight)[:2]
+    auc_score = roc_auc_score(masked.is_e, training_out[mask], sample_weight=test.original_weight)
+    plt.plot(*roc, c=col, label='p_T [%.2f, %.2f) (AUC: %.2f)'  % (low, high, auc_score))
+    key = 'trk_pt#%.2fto%.2f' % (low, high)
+    jmap[key] = {
+        'roc' : [
+            list(roc[0]),
+            list(roc[1])
+            ],
+        'auc' : auc_score,
+        }
+    if 'seeding' in args.what:
+        eff = masked.original_weight[(masked.baseline & masked.is_e)].sum()/masked.original_weight[masked.is_e].sum()
+        mistag = masked.original_weight[(masked.baseline & np.invert(masked.is_e))].sum()/masked.original_weight[np.invert(masked.is_e)].sum()
+        plt.plot([mistag], [eff], 'o', markersize=5, c=col)
+        jmap[key]['baseline_eff'] = eff
+        jmap[key]['baseline_mistag'] = mistag
+
+plt.xlabel('Mistag Rate')
+plt.ylabel('Efficiency')
+plt.legend(loc='best')
+plt.xlim(0., 1)
+plt.savefig('%s/test_bypt_BDT.png' % (plots))
+plt.savefig('%s/test_bypt_BDT.pdf' % (plots))
+plt.gca().set_xscale('log')
+plt.xlim(1e-4, 1)
+plt.savefig('%s/test_log_bypt_BDT.png' % (plots))
+plt.savefig('%s/test_log_bypt_BDT.pdf' % (plots))
+plt.clf()
+
 with open('%s/roc.json' % plots, 'w') as rr:
     rr.write(json.dumps(jmap))
 
