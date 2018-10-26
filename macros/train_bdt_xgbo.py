@@ -15,6 +15,10 @@ parser.add_argument(
    '--test', action='store_true'
 )
 
+parser.add_argument(
+   '--noweight', action='store_true'
+)
+
 args = parser.parse_args()
 
 import matplotlib.pyplot as plt
@@ -31,6 +35,8 @@ dataset = 'test' if args.test else target_dataset
 mods = get_models_dir()
 
 opti_dir = '%s/bdt_bo_%s' % (mods, args.what)
+if args.noweight:
+   opti_dir += '_noweight'
 if not os.path.isdir(opti_dir):
    os.makedirs(opti_dir)
 
@@ -43,7 +49,9 @@ features, additional = get_features(args.what)
 
 fields = features+labeling+additional
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
-data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
+data = pre_process_data(dataset, fields, 'seeding' in args.what)
+if args.noweight:
+   data.weight = 1
 
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(data, test_size=0.2, random_state=42)
