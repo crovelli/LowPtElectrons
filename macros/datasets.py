@@ -70,6 +70,8 @@ def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={
 def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
    if dataset not in input_files:
       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
+   print 'getting files: '
+   print ' \n'.join(input_files[dataset])
    infiles = [uproot.open(i) for i in input_files[dataset]]
    if columns == 'all':
       columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
