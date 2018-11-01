@@ -57,6 +57,12 @@ parser.add_argument(
 parser.add_argument(
    '--dataset'
 )
+parser.add_argument(
+   '--selection'
+)
+parser.add_argument(
+   '--as_weight'
+)
 
 args = parser.parse_args()
 
@@ -82,14 +88,14 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, pre_process_data, target_dataset
+from datasets import tag, pre_process_data, target_dataset, get_models_dir
 import os
 
 dataset = 'test' if args.test else target_dataset
 if args.dataset:
    dataset = args.dataset
 
-mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
+mods = get_models_dir()
 if not os.path.isdir(mods):
    os.mkdirs(mods)
 
@@ -103,11 +109,31 @@ features, additional = get_features(args.what)
 fields = features+labeling+additional
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
 
-data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
+if not dataset.endswith('.hdf'):
+   data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
+   if args.selection:
+      data = data.query(args.selection)
 
-from sklearn.model_selection import train_test_split
-train_test, validation = train_test_split(data, test_size=0.2, random_state=42)
-train, test = train_test_split(train_test, test_size=0.2, random_state=42)
+   if args.as_weight:
+      data['weight'] = data[args.as_weight]
+
+   from sklearn.model_selection import train_test_split
+   train_test, validation = train_test_split(data, test_size=0.2, random_state=42)
+   train, test = train_test_split(train_test, test_size=0.2, random_state=42)
+else:   
+   train = pd.read_hdf(dataset, 'train')
+   test  = pd.read_hdf(dataset, 'validation') #mis-used name in this script
+   validation = pd.read_hdf(dataset, 'test')
+   if args.selection:
+      train = train.query(args.selection)
+      test  = test.query(args.selection)
+      validation = validation.query(args.selection)
+
+   if args.as_weight:
+      train['weight'] = train[args.as_weight]
+      test['weight'] = test[args.as_weight]
+      validation['weight'] = validation[args.as_weight]
+   dataset = os.path.basename(dataset).split('.')[0]
 
 from hep_ml.reweight import GBReweighter
 from sklearn.externals import joblib
@@ -177,8 +203,8 @@ plt.plot(
    'k--')
 plt.plot(*rocs['validation'], label='Retraining (AUC: %.2f)'  % args_dict['validation_AUC'])
 if args.what in ['seeding', 'fullseeding']:
-   eff = float((data.baseline & data.is_e).sum())/data.is_e.sum()
-   mistag = float((data.baseline & np.invert(data.is_e)).sum())/np.invert(data.is_e).sum()
+   eff = float((validation.baseline & validation.is_e).sum())/validation.is_e.sum()
+   mistag = float((validation.baseline & np.invert(validation.is_e)).sum())/np.invert(validation.is_e).sum()
    rocs['baseline'] = [[mistag], [eff]]
    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)   
 elif 'id' in args.what:
