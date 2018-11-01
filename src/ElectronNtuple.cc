@@ -43,6 +43,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_high_purity",&trk_high_purity_	 , "trk_high_purity/i");
 	tree->Branch("trk_dxy",			  &trk_dxy_		  		 , "trk_dxy/f");
 	tree->Branch("trk_dxy_err",		&trk_dxy_err_			 , "trk_dxy_err/f");
+	tree->Branch("trk_dz",			  &trk_dz_		  		 , "trk_dz/f");
+	tree->Branch("trk_dz_err",		&trk_dz_err_			 , "trk_dz_err/f");
 	tree->Branch("trk_inp",  			&trk_inp_  	    	 , "trk_inp/f");
 	tree->Branch("trk_outp",	  		&trk_outp_	  	   , "trk_outp/f");
 	tree->Branch("trk_chi2red",    &trk_chi2red_      , "trk_chi2red/f"); 
@@ -73,6 +75,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 
 	tree->Branch("gsf_dxy",			  &gsf_dxy_		  		 , "gsf_dxy/f");
 	tree->Branch("gsf_dxy_err",		&gsf_dxy_err_			 , "gsf_dxy_err/f");
+	tree->Branch("gsf_dz",			  &gsf_dz_		  		 , "gsf_dz/f");
+	tree->Branch("gsf_dz_err",		&gsf_dz_err_			 , "gsf_dz_err/f");
 	tree->Branch("gsf_inp",  			&gsf_inp_  	    	 , "gsf_inp/f");
 	tree->Branch("gsf_outp",  		&gsf_outp_	  	   , "gsf_outp/f");
 	tree->Branch("gsf_chi2red",    &gsf_chi2red_      , "gsf_chi2red/f"); 
