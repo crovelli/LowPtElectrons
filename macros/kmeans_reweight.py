@@ -15,6 +15,9 @@ parser.add_argument(
 parser.add_argument(
    '--test', action='store_true',
 )
+parser.add_argument(
+   '--dataset'
+)
 args = parser.parse_args()
 
 import matplotlib.pyplot as plt
@@ -28,9 +31,11 @@ from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag, apply_weight, get_data_sync, target_dataset
+from datasets import get_data, tag, apply_weight, get_data_sync, target_dataset, HistWeighter
 import os
 dataset = 'test' if args.test else target_dataset
+if args.dataset:
+   dataset = args.dataset
 
 mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(mods):
@@ -49,6 +54,8 @@ data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 #remove things that do not yield tracks
 data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
 data['log_trkpt'] = np.log10(data.trk_pt)
+original_weight = HistWeighter('../data/fakesWeights.txt')
+data['original_weight'] = np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
 
 overall_scale = data.shape[0]/float(data.is_e.sum())
 reweight_feats = ['log_trkpt', 'trk_eta']
@@ -174,7 +181,8 @@ for plot in reweight_feats+['trk_pt']:
    x_range = cosmetics.ranges.get(plot, x_range)
    for name, weight in [
       ('unweighted', np.ones(data.shape[0])),
-      ('reweight', data.weight)]:
+      ('reweight', data.weight),
+      ('original', data.original_weight)]:
       plt.hist(
          data[data.is_e][plot], bins=50, normed=True,
          histtype='step', label='electrons', range=x_range, weights=weight[data.is_e]

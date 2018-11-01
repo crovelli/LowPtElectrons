@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('jobid')
 parser.add_argument('--se', default='/eos/cms/store/cmst3/user/mverzett/')
-parser.add_argument('--group', default=10, type=int)
+parser.add_argument('--group', default=120, type=int)
 args = parser.parse_args()
 
 import ROOT as R

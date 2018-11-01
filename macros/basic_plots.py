@@ -157,7 +157,7 @@ for feat in multi_dim_branches:
    except : pass
    plt.clf()
 
-exit()
+
       
 for to_plot in features:
    plt.clf()
