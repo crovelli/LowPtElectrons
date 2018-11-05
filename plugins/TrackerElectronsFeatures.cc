@@ -327,16 +327,18 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
 
-	std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
-		  << "  pf_ktf_tracks->size(): " << pf_ktf_tracks->size() << std::endl
-		  << "  ele_seeds->size(): " << ele_seeds->size() << std::endl
-		  << "  preids->size(): " << preids->size() << std::endl
-		  << "  trk_candidates->size(): " << trk_candidates->size() << std::endl
-		  << "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
-		  << "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
-		  << "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
-		  << "  ged_electrons->size(): " << ged_electrons->size() << std::endl
-		  << std::endl;
+	if (0) {
+	  std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
+		    << "  pf_ktf_tracks->size(): " << pf_ktf_tracks->size() << std::endl
+		    << "  ele_seeds->size(): " << ele_seeds->size() << std::endl
+		    << "  preids->size(): " << preids->size() << std::endl
+		    << "  trk_candidates->size(): " << trk_candidates->size() << std::endl
+		    << "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
+		    << "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
+		    << "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
+		    << "  ged_electrons->size(): " << ged_electrons->size() << std::endl
+		    << std::endl;
+	}
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
