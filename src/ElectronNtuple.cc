@@ -47,7 +47,6 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_outp",	  		&trk_outp_	  	   , "trk_outp/f");
 	tree->Branch("trk_chi2red",    &trk_chi2red_      , "trk_chi2red/f"); 
 
-	tree->Branch("preid_ibin", 					&preid_ibin_          , "preid_ibin/I");
 	tree->Branch("preid_bdtout",				 	&preid_bdtout_		  	, "preid_bdtout/f");
 	tree->Branch("preid_trk_ecal_Deta",	&preid_trk_ecal_Deta_ , "preid_trk_ecal_Deta/f");
 	tree->Branch("preid_trk_ecal_Dphi",	&preid_trk_ecal_Dphi_ , "preid_trk_ecal_Dphi/f");
@@ -146,7 +145,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_ecal_cluster_covPhiPhi", &gsf_ecal_cluster_covPhiPhi_, "gsf_ecal_cluster_covPhiPhi/f");
 	std::stringstream buffer;
 	buffer << "[" << ECAL_CLUSTER_SIZE << "][" << ECAL_CLUSTER_SIZE << "]/f";
-	tree->Branch("gsf_ecal_cluster_ematrix", &gsf_ecal_cluster_ematrix_, ("gsf_ecal_cluster_ematrix"+buffer.str()).c_str());
+//	tree->Branch("gsf_ecal_cluster_ematrix", &gsf_ecal_cluster_ematrix_, ("gsf_ecal_cluster_ematrix"+buffer.str()).c_str());
 
 	tree->Branch("gsf_hcal_cluster_e",    &gsf_hcal_cluster_e_,    "gsf_hcal_cluster_e/f");
 	tree->Branch("gsf_hcal_cluster_eta",  &gsf_hcal_cluster_eta_,  "gsf_hcal_cluster_eta/f");
@@ -166,7 +165,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("ktf_ecal_cluster_covEtaEta", &ktf_ecal_cluster_covEtaEta_, "ktf_ecal_cluster_covEtaEta/f");
 	tree->Branch("ktf_ecal_cluster_covEtaPhi", &ktf_ecal_cluster_covEtaPhi_, "ktf_ecal_cluster_covEtaPhi/f");
 	tree->Branch("ktf_ecal_cluster_covPhiPhi", &ktf_ecal_cluster_covPhiPhi_, "ktf_ecal_cluster_covPhiPhi/f");
-	tree->Branch("ktf_ecal_cluster_ematrix", &ktf_ecal_cluster_ematrix_, ("ktf_ecal_cluster_ematrix"+buffer.str()).c_str());
+//	tree->Branch("ktf_ecal_cluster_ematrix", &ktf_ecal_cluster_ematrix_, ("ktf_ecal_cluster_ematrix"+buffer.str()).c_str());
 	tree->Branch("ktf_ecal_cluster_r9", &ktf_ecal_cluster_r9_, "ktf_ecal_cluster_r9/f");
 	tree->Branch("ktf_ecal_cluster_circularity_", &ktf_ecal_cluster_circularity_, "ktf_ecal_cluster_circularity/f");
 
@@ -375,7 +374,6 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot,
 	
   // MVA output
   preid_bdtout_ = preid.mva();
-  preid_ibin_ = preid.ibin();
 
 	//How many GSF it will seed
 	preid_numGSF_ = num_gsf;
@@ -625,17 +623,17 @@ void ElectronNtuple::fill_GSF_ECAL_cluster_info(
 	gsf_ecal_cluster_covEtaPhi_ = covs[1];
 	gsf_ecal_cluster_covPhiPhi_ = covs[2];
 
-	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
-	DetId seedid = cluster->hitsAndFractions().front().first;
-	auto energies = tools.fullMatrixEnergy(
-		*cluster, seedid, -cluster_window, cluster_window, 
-		-cluster_window, cluster_window);
-
-	for(size_t i=0; i<ECAL_CLUSTER_SIZE; i++) {		
-		for(size_t j=0; j<ECAL_CLUSTER_SIZE; j++) {
-			gsf_ecal_cluster_ematrix_[i][j] = energies.at(i).at(j);			
-		}
-	}
+//	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
+//	DetId seedid = cluster->hitsAndFractions().front().first;
+//	auto energies = tools.fullMatrixEnergy(
+//		*cluster, seedid, -cluster_window, cluster_window,
+//		-cluster_window, cluster_window);
+//
+//	for(size_t i=0; i<ECAL_CLUSTER_SIZE; i++) {
+//		for(size_t j=0; j<ECAL_CLUSTER_SIZE; j++) {
+//			gsf_ecal_cluster_ematrix_[i][j] = energies.at(i).at(j);
+//		}
+//	}
 }
 
 void ElectronNtuple::fill_GSF_HCAL_cluster_info(
@@ -669,17 +667,17 @@ void ElectronNtuple::fill_KTF_ECAL_cluster_info(
 	float e1x5 = tools.e1x5(*cluster);
 	ktf_ecal_cluster_circularity_ = (ktf_ecal_cluster_e5x5_ > 0) ? 1 - e1x5/ktf_ecal_cluster_e5x5_ : -0.1;
 
-	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
-	DetId seedid = cluster->hitsAndFractions().front().first;
-	auto energies = tools.fullMatrixEnergy(
-		*cluster, seedid, -cluster_window, cluster_window, 
-		-cluster_window, cluster_window);
-
-	for(size_t i=0; i<ECAL_CLUSTER_SIZE; i++) {		
-		for(size_t j=0; j<ECAL_CLUSTER_SIZE; j++) {
-			ktf_ecal_cluster_ematrix_[i][j] = energies.at(i).at(j);			
-		}
-	}
+//	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
+//	DetId seedid = cluster->hitsAndFractions().front().first;
+//	auto energies = tools.fullMatrixEnergy(
+//		*cluster, seedid, -cluster_window, cluster_window,
+//		-cluster_window, cluster_window);
+//
+//	for(size_t i=0; i<ECAL_CLUSTER_SIZE; i++) {
+//		for(size_t j=0; j<ECAL_CLUSTER_SIZE; j++) {
+//			ktf_ecal_cluster_ematrix_[i][j] = energies.at(i).at(j);
+//		}
+//	}
 }
 
 void ElectronNtuple::fill_KTF_HCAL_cluster_info(
