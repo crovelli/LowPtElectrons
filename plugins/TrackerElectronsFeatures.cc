@@ -193,9 +193,9 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
   hcal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALClusters"))},
   eb_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EBRecHits"))},
   ee_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EERecHits"))},
-  mvaid_v1_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV1"))},
-  mvaid_v2_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))},
-  convVtxFitProb_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb"))},
+  //mvaid_v1_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV1"))},
+  //mvaid_v2_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))},
+  //convVtxFitProb_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb"))},
   gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
   beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))},
   trk_candidates_{consumes< vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
@@ -300,14 +300,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< TrackingParticleCollection > tracking_particles;
 	iEvent.getByToken(tracking_particles_, tracking_particles);
 
-	edm::Handle< edm::ValueMap<float> > mvaid_v1;
-	iEvent.getByToken(mvaid_v1_, mvaid_v1);
+	//edm::Handle< edm::ValueMap<float> > mvaid_v1;
+	//iEvent.getByToken(mvaid_v1_, mvaid_v1);
 
-	edm::Handle< edm::ValueMap<float> > mvaid_v2;
-	iEvent.getByToken(mvaid_v2_, mvaid_v2);
+	//edm::Handle< edm::ValueMap<float> > mvaid_v2;
+	//iEvent.getByToken(mvaid_v2_, mvaid_v2);
 
-	edm::Handle< edm::ValueMap<float> > convVtxFitProb;
-	iEvent.getByToken(convVtxFitProb_, convVtxFitProb);
+	//edm::Handle< edm::ValueMap<float> > convVtxFitProb;
+	//iEvent.getByToken(convVtxFitProb_, convVtxFitProb);
 
 	int ntrks = 0;
 	std::vector<reco::TrackRef> tracks;
@@ -327,15 +327,16 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
 
-//	std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
-//		  << "  ele_seeds->size(): " << ele_seeds->size() << std::endl
-//		  << "  preids->size(): " << preids->size() << std::endl
-//		  << "  trk_candidates->size(): " << trk_candidates->size() << std::endl
-//		  << "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
-//		  << "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
-//		  << "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
-//		  << "  ged_electrons->size(): " << ged_electrons->size() << std::endl
-//		  << std::endl;
+	std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
+		  << "  pf_ktf_tracks->size(): " << pf_ktf_tracks->size() << std::endl
+		  << "  ele_seeds->size(): " << ele_seeds->size() << std::endl
+		  << "  preids->size(): " << preids->size() << std::endl
+		  << "  trk_candidates->size(): " << trk_candidates->size() << std::endl
+		  << "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
+		  << "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
+		  << "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
+		  << "  ged_electrons->size(): " << ged_electrons->size() << std::endl
+		  << std::endl;
 
 	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
 
@@ -667,9 +668,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				const GsfElectronRef* ele_ref = 0;
         const auto& ele_match = gsf2ged.find(*best);
         if(ele_match != gsf2ged.end()) { //matched to GED Electron
-          float id1 = (*mvaid_v1)[ele_match->second];
-          float id2 = (*mvaid_v2)[ele_match->second];
-          float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
+          float id1 = 0.; // (*mvaid_v1)[ele_match->second];
+          float id2 = 0.; // (*mvaid_v2)[ele_match->second];
+          float conv_vtx_fit_prob = 0.; // (*convVtxFitProb)[ele_match->second];
 					vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
           ntuple_.fill_ele(ele_match->second, id1, id2, conv_vtx_fit_prob, iso_rings);
 					ele_ref = &(ele_match->second);
@@ -769,9 +770,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron
-				float id1 = (*mvaid_v1)[ele_match->second];
-				float id2 = (*mvaid_v2)[ele_match->second];
-				float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
+				float id1 = 0.; // (*mvaid_v1)[ele_match->second];
+				float id2 = 0.; // (*mvaid_v2)[ele_match->second];
+				float conv_vtx_fit_prob = 0.; // (*convVtxFitProb)[ele_match->second];
 				vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
 				ntuple_.fill_ele(ele_match->second, id1, id2, conv_vtx_fit_prob, iso_rings);
 			} //matched to GED Electron
@@ -877,9 +878,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			
 			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron
-				float id1 = (*mvaid_v1)[ele_match->second];
-				float id2 = (*mvaid_v2)[ele_match->second];
-				float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
+				float id1 = 0.; // (*mvaid_v1)[ele_match->second];
+				float id2 = 0.; // (*mvaid_v2)[ele_match->second];
+				float conv_vtx_fit_prob = 0.; // (*convVtxFitProb)[ele_match->second];
 				vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
 				ntuple_.fill_ele(ele_match->second, id1, id2, conv_vtx_fit_prob, iso_rings);
 			} //matched to GED Electron
