@@ -375,8 +375,8 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
 				myPreId.setECALMatching(EcalMatching);
 
 
-				bool GoodRange= ((std::abs(tketa)<maxEta_) & 
-												 (tkpt>minPt_));
+//				bool GoodRange= ((std::abs(tketa)<maxEta_) & 
+//												 (tkpt>minPt_));
 				//KF FILTERING FOR UNMATCHED EVENTS
 				int hit1max=int(thr[ibin+3]);
 				float chiredmin=thr[ibin+4];
@@ -385,7 +385,7 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
       
 
 				myPreId.setTrackFiltering(GoodKFFiltering);
-				myPreId.setBin(ibin);
+//				myPreId.setBin(ibin);
 
 				bool GoodTkId= false;
       
