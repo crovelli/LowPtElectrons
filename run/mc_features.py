@@ -196,23 +196,23 @@ else : # Use custom Ntuplizer code
    customiseForPreMixingInput(process)
 
    # Electron ID ...
-   from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
-   dataFormat = DataFormat.AOD
-   switchOnVIDElectronIdProducer(process, dataFormat)
-   my_id_modules = [
-      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff',
-      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
-   ]
-
-   # Add them to the VID producer
-   for idmod in my_id_modules :
-      setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
-
-   # Change inputs
-   process.electronMVAVariableHelper.src = 'lowPtGsfElectrons'
-   process.electronMVAValueMapProducer.src = 'lowPtGsfElectrons'
-   process.ntuplizer_seq *= process.electronMVAVariableHelper
-   process.ntuplizer_seq *= process.electronMVAValueMapProducer
+#   from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
+#   dataFormat = DataFormat.AOD
+#   switchOnVIDElectronIdProducer(process, dataFormat)
+#   my_id_modules = [
+#      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff',
+#      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
+#   ]
+#
+#   # Add them to the VID producer
+#   for idmod in my_id_modules :
+#      setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+#
+#   # Change inputs
+#   process.electronMVAVariableHelper.src = 'lowPtGsfElectrons'
+#   process.electronMVAValueMapProducer.src = 'lowPtGsfElectrons'
+#   process.ntuplizer_seq *= process.electronMVAVariableHelper
+#   process.ntuplizer_seq *= process.electronMVAValueMapProducer
 
    # Custom Ntuplizer code 
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
