@@ -33,6 +33,8 @@ Build and run.
 cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
-cmsRun mc_features.py maxEvents=1
+voms-proxy-init --voms cms
+export INPUT_FILES=root://cms-xrd-global.cern.ch//store/cmst3/group/bpark/BToKee_Pythia_PUMix_18_03_18_180318_112206_0000/BToKee_PUMix_10.root
+cmsRun mc_features.py maxEvents=1 inputFiles=$INPUT_FILES
 ```
 
