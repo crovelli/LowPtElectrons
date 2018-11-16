@@ -1,8 +1,8 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
 #tag = '2018Sep20'
-tag = '2018Oct22v2'
-posix = '2018Oct22v2'
+tag = '2018Nov01'
+posix = '2018Nov01'
 target_dataset = 'all'
 
 import socket
@@ -78,6 +78,7 @@ def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), excl
    try:
       ret = infiles[0]['features/tree'].arrays(columns)
    except:
+      set_trace()
       raise RuntimeError('Failed to open %s properly' % infiles[0])
    for infile in infiles[1:]:
       try:
@@ -143,20 +144,28 @@ import pandas as pd
 import numpy as np
 def pre_process_data(dataset, features, for_seeding=False):  
    mods = get_models_dir()
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err'])-{'trk_dxy_sig'})
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err', 'trk_charge'])-{'trk_dxy_sig'})
    data_dict = get_data_sync(dataset, features)
-   if 'gsf_ecal_cluster_ematrix' in features:
-      multi_dim = data_dict.pop('gsf_ecal_cluster_ematrix', None)
+   multi_dim = {}
+   for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:
+      if feat in features:
+         multi_dim[feat] = data_dict.pop(feat, None)
    data = pd.DataFrame(data_dict)
-   if 'gsf_ecal_cluster_ematrix' in features:
-      flattened = pd.DataFrame(multi_dim.reshape(multi_dim.shape[0], -1))
-      new_features = ['crystal_%d' % i for i in range(len(flattened.columns))]
-      flattened.columns = new_features
-      features += new_features
-      data = pd.concat([data, flattened], axis=1)
+   ##FIXME
+   ##if 'gsf_ecal_cluster_ematrix' in features:
+   ##   flattened = pd.DataFrame(multi_dim['gsf_ecal_cluster_ematrix'].reshape(multi_dim.shape[0], -1))
+   ##   new_features = ['crystal_%d' % i for i in range(len(flattened.columns))]
+   ##   flattened.columns = new_features
+   ##   features += new_features
+   ##   data = pd.concat([data, flattened], axis=1)
 
-   data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
-   data = data[training_selection(data)]
+   #remove non-matched electrons
+   multi_dim = {i : j[np.invert(data.is_e_not_matched)] for i, j in multi_dim.iteritems()}
+   data = data[np.invert(data.is_e_not_matched)] 
+   # training pre-selection
+   mask = training_selection(data)
+   multi_dim = {i : j[mask] for i, j in multi_dim.iteritems()}   
+   data = data[mask]
    data['trk_dxy_sig'] = data.trk_dxy_err/data.trk_dxy
    data['training_out'] = -1
    data['log_trkpt'] = np.log10(data.trk_pt)
@@ -172,8 +181,21 @@ def pre_process_data(dataset, features, for_seeding=False):
       )    
    data['weight'] = weights*np.invert(data.is_e) + data.is_e
 
-   original_weight = HistWeighter('../data/fakesWeights.txt')
-   data['original_weight'] = np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
+   ## original_weight = HistWeighter('../data/fakesWeights.txt')
+   ## data['original_weight'] = np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
+
+   #
+   # pre-process data
+   #   
+   if 'trk_charge' in data.columns:
+      for feat in ['ktf_ecal_cluster_dphi', 'ktf_hcal_cluster_dphi', 'preid_trk_ecal_Dphi']:
+         if feat in data.columns:
+            data[feat] = data[feat]*data['trk_charge']
+
+      charge = data.trk_charge
+      for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:
+         if feat in multi_dim:
+            multi_dim[feat][charge == -1] = np.flip(multi_dim[feat][charge == -1], axis=2)
 
    #add baseline seeding (for seeding only)
    if for_seeding:
@@ -184,7 +206,11 @@ def pre_process_data(dataset, features, for_seeding=False):
    
    from features import labeling
    #convert bools to integers
-   for c in features:
+   for c in data.columns:
       if data[c].dtype == np.dtype('bool') and c not in labeling:
          data[c] = data[c].astype(int)
-   return data
+
+   if not multi_dim:
+      return data
+   else:
+      return data, multi_dim

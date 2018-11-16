@@ -7,6 +7,9 @@ parser.add_argument(
    '--allTracks', action='store_true', help='use all tracks'
 )
 parser.add_argument(
+   '--fakes', action='store_true', help='use all tracks'
+)
+parser.add_argument(
    '--test', help='pass a test file'
 )
 args = parser.parse_args()
@@ -29,7 +32,8 @@ from glob import glob
 
 debug = False
 print 'Getting the data'
-from datasets import get_data, input_files, tag
+from datasets import get_data_sync, input_files, tag
+plot_type = 'efficiency' if not args.fakes else 'fakerate'
 
 def plot_efficiency(eff, **kw):
    graph = eff.graph   
@@ -42,12 +46,25 @@ def plot_efficiency(eff, **kw):
    xerr = np.array([i for i in graph.xerr()]).transpose()
    plt.errorbar(xs, effs, yerr=errs, xerr=xerr, **kw)
 
+class EfficiencyEncoder(json.JSONEncoder):
+   def default(self, obj):
+      if isinstance(obj, rplt.Efficiency):
+         graph = eff.graph
+         xs = [i for i in graph.x()]
+         xerr = [i for i in graph.xerr()]
+         effs = [i for i in graph.y()]
+         ret = [[i-j[0], i+j[1], k] for i, j, k in zip(xs, xerr, effs)]
+         return ret.__repr__()
+      return super(EfficiencyEncoder, self).default(obj)
+
+jinfo = {}
 for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_test']:
+   jmap_efficiencies = {}
    if args.test: 
       input_files['current_test'] = glob(args.test)
    print 'plotting for', dataset
    mc = pd.DataFrame(
-      get_data(
+      get_data_sync(
          dataset, 'all', 
          exclude={'gsf_hit_dpt', 'gsf_hit_dpt_unc', 'gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix'}
          )
@@ -58,13 +75,15 @@ for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_te
       )
    
    electrons = mc[mc.is_e == 1 & (np.abs(mc.gen_eta) < 2.4)] if not args.allTracks else mc[(np.abs(mc.trk_eta) < 2.4)]
+   if args.fakes:
+      electrons = mc[mc.is_other == 1 & (np.abs(mc.trk_eta) < 2.4) & (mc.trk_pt > 0.)]
    histos = {}
    seedings = [
-      ##('standard', (electrons.baseline & (np.abs(electrons.trk_eta) < 2.4) & (electrons.trk_pt > 2))),
-      ##('relaxed', (electrons.baseline & (np.abs(electrons.trk_eta) < 2.4))),
+      ('standard', (electrons.baseline & (np.abs(electrons.trk_eta) < 2.4) & (electrons.trk_pt > 2))),
+      ('relaxed',  (electrons.baseline & (np.abs(electrons.trk_eta) < 2.4))),
       ##('ECALmatch', ((electrons.trk_pt > 0) & (np.abs(electrons.trk_eta) < 2.4) & (electrons.preid_trk_ecal_Deta < 999))),
       ##('NOTECALmatch', ((electrons.trk_pt > 0) & (np.abs(electrons.trk_eta) < 2.4) & (electrons.preid_trk_ecal_Deta > 999))),
-      ('removed', ((electrons.trk_pt > 0) & (np.abs(electrons.trk_eta) < 2.4)))
+      ##('removed', ((electrons.trk_pt > 0) & (np.abs(electrons.trk_eta) < 2.4)))
       ]
 
    all_efficiencies = {}
@@ -91,12 +110,12 @@ for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_te
          ('GED Core', seeding & (electrons.gsf_pt > 0) & electrons.has_ele_core),
          ('GED Electrons', seeding & (electrons.ele_pt > 0)),
          ]
-      to_plot = {'GSF Track', 'PF GSFTrk', 'PF Block', 'PF Block+ECAL', 'PF Ele', 'GED Core'}
+      to_plot = {'KTF Track', 'seeding', 'GSF Track', 'GED Electrons'}
       masks = dict(ordered_masks)
       for name, mask in masks.iteritems():
-         hist = rplt.Hist([1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10] if not args.test else [1,2,5,10])
+         hist = rplt.Hist([1,2,4,5,6,7,8,9,10] if not args.test else [0,1,2,5,10])
          masked = electrons[mask] if mask is not None else electrons
-         root_numpy.fill_hist(hist, masked.gen_pt if not args.allTracks else masked.trk_pt)
+         root_numpy.fill_hist(hist, masked.gen_pt if not (args.allTracks or args.fakes) else masked.trk_pt)
          histos[name] = hist
          
       efficiencies = {}
@@ -108,7 +127,8 @@ for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_te
          if passing == 'all': continue
          efficiencies[passing] = rplt.Efficiency(histos[passing], histos['all'])
          if passing not in to_plot: continue
-         plot_efficiency(efficiencies[passing], offset=offset, fmt="o", markersize=markersize, 
+         plot_efficiency(efficiencies[passing], #offset=offset, 
+                         fmt="o", markersize=markersize, 
                          label=passing, markeredgewidth=0.0)
          offset -= 0.1
          first = False
@@ -116,13 +136,13 @@ for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_te
       all_efficiencies[seed_name] = efficiencies
       plt.legend(loc='lower right')
       plt.title('%s seeding' % seed_name)
-      plt.xlabel('gen $p_{T}$' if not args.allTracks else 'ktf $p_{T}$')
+      plt.xlabel('gen $p_{T}$' if not (args.allTracks or args.fakes) else 'ktf $p_{T}$')
       plt.ylabel('efficiency')
       plt.ylim(0., 1.)
       plt.grid()
       if args.allTracks: dataset += '_trk'
-      plt.savefig('plots/%s/%s_seeding_%s_efficiencies.png' % (tag, dataset, seed_name))
-      plt.savefig('plots/%s/%s_seeding_%s_efficiencies.pdf' % (tag, dataset, seed_name))
+      plt.savefig('plots/%s/%s_seeding_%s_%s.png' % (tag, dataset, seed_name, plot_type))
+      plt.savefig('plots/%s/%s_seeding_%s_%s.pdf' % (tag, dataset, seed_name, plot_type))
       plt.clf()
 
       normalization = float(electrons.shape[0])
@@ -162,7 +182,15 @@ for dataset in ['BToKeeByDR', 'BToKeeByHits'] if not args.test else ['current_te
    plt.ylim(0., 1.)
    plt.grid()
    if args.allTracks: dataset += '_trk'
-   plt.savefig('plots/%s/%s_GEDElectrons_efficiencies.png' % (tag, dataset))
-   plt.savefig('plots/%s/%s_GEDElectrons_efficiencies.pdf' % (tag, dataset))
+   plt.savefig('plots/%s/%s_GEDElectrons_%s.png' % (tag, dataset, plot_type))
+   plt.savefig('plots/%s/%s_GEDElectrons_%s.pdf' % (tag, dataset, plot_type))
    plt.clf()
-      
+   jinfo[dataset] = all_efficiencies
+
+with open('plots/%s/%s_%s.json' % (tag, dataset, plot_type), 'w') as jfile:
+   jfile.write(
+      json.dumps(
+         jinfo,cls=EfficiencyEncoder
+         )
+      )
+

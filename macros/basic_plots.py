@@ -18,7 +18,7 @@ import cosmetics
 
 debug = False
 print 'Getting the data'
-from datasets import dataset_names, tag, get_data_sync, kmeans_weighter, training_selection
+from datasets import dataset_names, tag, get_data_sync, kmeans_weighter, training_selection, pre_process_data, target_dataset
 
 plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(plots):
@@ -28,98 +28,76 @@ mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['C
 if not os.path.isdir(mods):
    os.makedirs(mods)
 
-all_data = {}
-for dataset in dataset_names:
-   print 'loading', dataset
-   all_data[dataset] = pd.DataFrame(
-      get_data_sync(
-         dataset, 
-         ['is_e', 'is_e_not_matched', 'is_other',
-          'gen_pt', 'gen_eta', 'trk_pt'
-          ]
-         )
-      )
-
-plt.figure(figsize=[8,8])
-for to_plot, nbins in [
-   ('gen_pt', 30),
-   ('gen_eta', 30),
-   ('trk_pt', 30),]:
-   plt.clf()
-   for dataset, sample in all_data.iteritems():
-      electrons = sample[sample.is_e]
-      plt.hist(
-         electrons[to_plot], bins=nbins, 
-         range=cosmetics.ranges[to_plot],
-         histtype='step', normed=True,
-         label = dataset_names[dataset],
-         )
-   plt.xlabel(cosmetics.beauty[to_plot])
-   plt.ylabel('Fraction')
-   plt.legend(loc='best')
-   plt.plot()
-   try : plt.savefig('%s/electrons_%s.png' % (plots, to_plot))
-   except : pass
-   try : plt.savefig('%s/electrons_%s.pdf' % (plots, to_plot))
-   except : pass
-   plt.clf()
-
-   plt.clf()
-   for dataset, sample in all_data.iteritems():
-      electrons = sample[(sample.is_e) & (sample.trk_pt > 0)]
-      plt.hist(
-         electrons[to_plot], bins=nbins, 
-         range=cosmetics.ranges[to_plot],
-         histtype='step', normed=True,
-         label = dataset_names[dataset],
-         )
-   plt.xlabel(cosmetics.beauty[to_plot])
-   plt.ylabel('Fraction')
-   plt.legend(loc='best')
-   plt.plot()
-   try : plt.savefig('%s/electrons_withTrk_%s.png' % (plots, to_plot))
-   except : pass
-   try : plt.savefig('%s/electrons_withTrk_%s.pdf' % (plots, to_plot))
-   except : pass
-   plt.clf()
+##all_data = {}
+##for dataset in dataset_names:
+##   print 'loading', dataset
+##   all_data[dataset] = pd.DataFrame(
+##      get_data_sync(
+##         dataset, 
+##         ['is_e', 'is_e_not_matched', 'is_other',
+##          'gen_pt', 'gen_eta', 'trk_pt'
+##          ]
+##         )
+##      )
+##
+##plt.figure(figsize=[8,8])
+##for to_plot, nbins in [
+##   ('gen_pt', 30),
+##   ('gen_eta', 30),
+##   ('trk_pt', 30),]:
+##   plt.clf()
+##   for dataset, sample in all_data.iteritems():
+##      electrons = sample[sample.is_e]
+##      plt.hist(
+##         electrons[to_plot], bins=nbins, 
+##         range=cosmetics.ranges[to_plot],
+##         histtype='step', normed=True,
+##         label = dataset_names[dataset],
+##         )
+##   plt.xlabel(cosmetics.beauty[to_plot])
+##   plt.ylabel('Fraction')
+##   plt.legend(loc='best')
+##   plt.plot()
+##   try : plt.savefig('%s/electrons_%s.png' % (plots, to_plot))
+##   except : pass
+##   try : plt.savefig('%s/electrons_%s.pdf' % (plots, to_plot))
+##   except : pass
+##   plt.clf()
+##
+##   plt.clf()
+##   for dataset, sample in all_data.iteritems():
+##      electrons = sample[(sample.is_e) & (sample.trk_pt > 0)]
+##      plt.hist(
+##         electrons[to_plot], bins=nbins, 
+##         range=cosmetics.ranges[to_plot],
+##         histtype='step', normed=True,
+##         label = dataset_names[dataset],
+##         )
+##   plt.xlabel(cosmetics.beauty[to_plot])
+##   plt.ylabel('Fraction')
+##   plt.legend(loc='best')
+##   plt.plot()
+##   try : plt.savefig('%s/electrons_withTrk_%s.png' % (plots, to_plot))
+##   except : pass
+##   try : plt.savefig('%s/electrons_withTrk_%s.pdf' % (plots, to_plot))
+##   except : pass
+##   plt.clf()
 
 
 from features import *
-features = id_features+new_features
+features = id_features+new_features+seed_features+improved_seed_features
+features = list(set(features))
 additional = id_additional
 
 multi_dim_branches = ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']
-dict_data = get_data_sync(
-   'BToKee',
+data, multi_dim = pre_process_data(
+   target_dataset,
    features+labeling+additional+multi_dim_branches
 )
-data = pd.DataFrame(
-   {i : dict_data[i] for i in dict_data if i not in multi_dim_branches}
-)
-multi_dim = {i : dict_data[i] for i in dict_data if i in multi_dim_branches}
-data_mask = np.invert(data.is_e_not_matched) & training_selection(data)
-for key in multi_dim:
-   multi_dim[key] = multi_dim[key][data_mask]
-data = data[data_mask] #remove non-matched electrons
-data['training_out'] = -1
-data['log_trkpt'] = np.log10(data.trk_pt)
-#convert bools to integers
-for c in features:
-   if data[c].dtype == np.dtype('bool'):
-      data[c] = data[c].astype(int)
-
-#apply pt-eta reweighting
-weights = kmeans_weighter(
-   data[['log_trkpt', 'trk_eta']],
-   '%s/kmeans_all_weighter.plk' % mods
-   ) 
-data['weight'] = weights*np.invert(data.is_e) + data.is_e
 print 'making plots'
 
 for feat in multi_dim_branches:
    vals = {}
-   charge = data.trk_charge
-   multi_dim[feat][charge == -1] = np.flip(multi_dim[feat][charge == -1], axis=2)
    for dataset in [
       {'name' : 'electrons',
        'mask' : data.is_e,

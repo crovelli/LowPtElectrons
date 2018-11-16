@@ -15,6 +15,9 @@ parser.add_argument(
 parser.add_argument(
    '--test', action='store_true'
 )
+parser.add_argument(
+   '--noweight', action='store_true'
+)
 
 parser.add_argument("--gpu",  help="select specific GPU",   type=int, metavar="OPT", default=-1)
 parser.add_argument("--gpufraction",  help="select memory fraction for GPU",   type=float, metavar="OPT", default=0.5)
@@ -67,6 +70,8 @@ if not os.path.isdir(mods):
    os.makedirs(mods)
 
 opti_dir = '%s/nn_bo_%s' % (mods, args.what)
+if args.noweight:
+   opti_dir += '_noweight'
 if not os.path.isdir(opti_dir):
    os.makedirs(opti_dir)
 
@@ -76,6 +81,8 @@ features, additional = get_features(args.what)
 fields = features+labeling+additional
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
 data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
+if args.noweight:
+   data.weight = 1
 
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(data, test_size=0.2, random_state=42)
@@ -84,6 +91,7 @@ test.to_hdf(
    'data'
    ) 
 
+train, validation = train_test_split(train, test_size=0.2, random_state=42)
 
 #
 # Train NN
@@ -97,6 +105,7 @@ from keras.layers import Dense, Dropout, Multiply, Add, \
     Concatenate, Reshape, LocallyConnected1D, Flatten
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import Adam, SGD
+from sklearn.metrics import roc_curve, roc_auc_score
 
 # These should become arguments for the bayesian optimization
 
@@ -126,6 +135,9 @@ def make_model(n_layers = 3, n_nodes = 2*len(features), dropout = 0.1):
 
 from DeepJetCore.modeltools import set_trainable
 from DeepJetCore.training.DeepJet_callbacks import DeepJet_callbacks
+from keras.callbacks import Callback, EarlyStopping, History, ModelCheckpoint
+from DeepJetCore.training.ReduceLROnPlateau import ReduceLROnPlateau
+from keras.models import load_model
 def train_model(**kwargs):
     print 'training:', kwargs
     train_hash = kwargs.__repr__().__hash__()
@@ -135,13 +147,10 @@ def train_model(**kwargs):
     else:
         train_dir = '%s_clash' % train_dir
         os.makedirs(train_dir)
-    
-    with open('%s/hyperparameters.json' % train_dir, 'w') as j:
-        j.write(json.dumps(kwargs))
-    
+        
     learn_rate = 10.**kwargs['log_learn_rate']
     batch_size = int(kwargs['batch_size'])
-    n_epochs   = 150 #int(kwargs['n_epochs'])
+    n_epochs   = 200 #int(kwargs['n_epochs'])
 
     del kwargs['log_learn_rate']
     del kwargs['batch_size']
@@ -159,7 +168,12 @@ def train_model(**kwargs):
         train[features].as_matrix(),
         train.is_e.as_matrix().astype(int),
         sample_weight=train.weight.as_matrix(),
-        batch_size=batch_size, epochs=1, verbose=0, validation_split=0.25,
+        batch_size=batch_size, epochs=1, verbose=0, 
+        validation_data=(
+            validation[features].as_matrix(), 
+            validation.is_e.as_matrix().astype(int),
+            validation.weight.as_matrix()
+            )
         )
     
     print model.summary()
@@ -172,23 +186,47 @@ def train_model(**kwargs):
         metrics = ['binary_accuracy']
         )
 
-    callbacks = DeepJet_callbacks(
-        model, 
-        outputDir=train_dir,
-        stop_patience=50,
-        lr_patience = 10,
-        verbose=False
-        )
+    callbacks = [
+        EarlyStopping(
+            monitor='val_loss', 
+            patience=40,
+            verbose=1, mode='min',
+            ),
+        ReduceLROnPlateau(
+            monitor='val_loss', factor=0.5, 
+            patience=10, mode='min', 
+            verbose=1, epsilon=0.001,
+            cooldown=4, min_lr=1e-5),
+        ModelCheckpoint(
+            train_dir+"/KERAS_check_best_model.h5", 
+            monitor='val_loss', verbose=1, 
+            save_best_only=True, save_weights_only=False),
+        History(),
+        ]
 
     history = model.fit(
         train[features].as_matrix(),
         train.is_e.as_matrix().astype(int),
         sample_weight=train.weight.as_matrix(),
-        batch_size=batch_size, epochs=n_epochs, verbose=2, validation_split=0.25,
-        callbacks=callbacks.callbacks
+        batch_size=batch_size, epochs=n_epochs, 
+        verbose=2, callbacks=callbacks,
+        validation_data=(
+            validation[features].as_matrix(), 
+            validation.is_e.as_matrix().astype(int),
+            validation.weight.as_matrix()
+            )
         )
     
-    return -1*min(history.history['val_loss'])
+    clf = load_model(train_dir+"/KERAS_check_best_model.h5")
+    training_out = clf.predict(validation[features].as_matrix())
+    training_out[np.isnan(training_out)] = -999 #happens rarely, but happens
+    auc = roc_auc_score(validation.is_e, training_out)
+
+    kwargs['nepochs'] = len(history.history['loss'])
+    with open('%s/hyperparameters.json' % train_dir, 'w') as j:
+        j.write(json.dumps(kwargs))
+
+    return auc
 
 #
 # Bayesian optimization

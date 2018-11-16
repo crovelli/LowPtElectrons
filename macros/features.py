@@ -3,11 +3,11 @@ trk_features = [
    'trk_eta',
    'trk_phi',
    'trk_p',
-   'trk_charge',
+   # 'trk_charge',
    'trk_nhits',
    'trk_high_purity',
-   'trk_inp',
-   'trk_outp',
+   # 'trk_inp',
+   # 'trk_outp',
    'trk_chi2red',
    ]
 
@@ -34,10 +34,13 @@ improved_seed_features = trk_features + [
    'ktf_hcal_cluster_dphi',
 ]
 
-fullseed_features = seed_features + [
+seed_gsf = [
    'preid_gsf_dpt',
    'preid_trk_gsf_chiratio',
    'preid_gsf_chi2red',]
+
+fullseed_features = seed_features + seed_gsf
+improved_fullseed_features = improved_seed_features + seed_gsf
 #'preid_numGSF', should be used as weight?
 
 id_features = trk_features + [
@@ -228,6 +231,9 @@ def get_features(ftype):
       additional = seed_additional
    elif ftype == 'improvedseeding':
       features = improved_seed_features
+      additional = seed_additional
+   elif ftype == 'improvedfullseeding':
+      features = improved_fullseed_features
       additional = seed_additional
    elif ftype == 'id':
       features = id_features
