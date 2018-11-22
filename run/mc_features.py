@@ -184,35 +184,16 @@ if options.MVANtuplizer == True : # Use the Egamma-default MVANtuplizer code
 
 else : # Use custom Ntuplizer code
 
-   process.ntuplizer_seq = cms.Sequence()
-
    # Track association by hits
    process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_cfi')
    process.quickTrackAssociatorByHits.useClusterTPAssociation = False
-   process.ntuplizer_seq *= process.tpClusterProducer
-   process.ntuplizer_seq *= process.quickTrackAssociatorByHits
-   process.ntuplizer_seq *= process.trackingParticleRecoTrackAsssociation
+   process.ntuplizer_seq = cms.Task(
+      process.tpClusterProducer,
+      process.quickTrackAssociatorByHits,
+      process.trackingParticleRecoTrackAsssociation,
+      )
    from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
    customiseForPreMixingInput(process)
-
-   # Electron ID ...
-#   from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
-#   dataFormat = DataFormat.AOD
-#   switchOnVIDElectronIdProducer(process, dataFormat)
-#   my_id_modules = [
-#      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff',
-#      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
-#   ]
-#
-#   # Add them to the VID producer
-#   for idmod in my_id_modules :
-#      setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
-#
-#   # Change inputs
-#   process.electronMVAVariableHelper.src = 'lowPtGsfElectrons'
-#   process.electronMVAValueMapProducer.src = 'lowPtGsfElectrons'
-#   process.ntuplizer_seq *= process.electronMVAVariableHelper
-#   process.ntuplizer_seq *= process.electronMVAValueMapProducer
 
    # Custom Ntuplizer code 
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
@@ -220,7 +201,6 @@ else : # Use custom Ntuplizer code
    if options.fakesMultiplier : process.features.fakesMultiplier = options.fakesMultiplier
    process.features.disableAssociation = options.disableAssociation
    process.features.checkFromB = options.checkFromB
-   process.ntuplizer_seq *= process.features
 
 ################################################################################
 # Path and EndPath definitions, TFileService, OutputModule
@@ -232,7 +212,8 @@ process.recosim_step = cms.Path(process.recosim)
 if options.MVANtuplizer == True : 
    process.reconstruction_step *= cms.Sequence(process.ntuplizer)
 else :
-   process.reconstruction_step *= process.ntuplizer_seq
+   process.reconstruction_step *= cms.Sequence(process.ntuplizer_seq)
+   process.reconstruction_step *= cms.Sequence(process.features)
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 
 process.schedule = cms.Schedule(
@@ -242,11 +223,6 @@ process.schedule = cms.Schedule(
    process.eventinterpretaion_step
    )
 
-# Run only the Ntuplizer code?
-#process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
-#process.path = cms.Path(process.features)
-#process.schedule = cms.Schedule(process.path)
-
 # Write ntuple to root file called "options.outname"
 process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
 
@@ -254,37 +230,13 @@ process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outn
 if options.edout:
    process.AODSIMoutput = cms.OutputModule(
       "PoolOutputModule",
+      outputCommands = process.AODSIMEventContent.outputCommands,
+      #outputCommands = process.AODEventContent.outputCommands,
+      #outputCommands = cms.untracked.vstring('keep *',)
       compressionAlgorithm = cms.untracked.string('LZMA'),
       compressionLevel = cms.untracked.int32(4),
       eventAutoFlushCompressedSize = cms.untracked.int32(31457280),
       fileName = cms.untracked.string('file:EDOutput.root'),
-      outputCommands = cms.untracked.vstring( 
-         'keep *',
-#         'drop *',
-#         "keep *_offlineBeamSpot_*_*",
-#         "keep *_genParticles_*_*",
-#         'keep *_generalTracks_*_*',
-#         "keep *_trackingParticleRecoTrackAsssociation_*_*",
-#         "keep *_trackerDrivenElectronSeeds*_*_*",
-#         "keep *_electronCkfTrackCandidates*_*_*",
-#         "keep *_electronGsfTracks*_*_*",
-#         'keep *_pfTrackElec*_*_*',
-#         'keep *_pfTrack*_*_*',
-#         "keep *_*GsfElectronCores*_*_*",
-#         "keep *_*GsfElectrons*_*_*",
-#         'keep *_mvaElectrons_*_*',
-#         'keep *_reducedEcalRecHitsEB_*_*',
-#         # missing futher collections? remove collections below?
-#         "keep *_particleFlowEGamma_*_*",
-#         'keep *_pfDisplacedTrackerVertex_*_*',
-#         'keep *_particleFlowBlock_*_*',
-#         'keep *_particleFlowSuperClusterECAL_*_*',
-#         'keep *_particleFlowClusterECAL_*_*',
-#         'keep *_particleFlowClusterHCAL_*_*',
-#         'keep *_particleFlowClusterHO_*_*',
-#         'keep *_particleFlowClusterHF_*_*',
-#         'keep *_particleFlowClusterPS_*_*',
-         )
       )
    process.end = cms.EndPath(process.AODSIMoutput)
    process.schedule.append(process.end)
@@ -292,13 +244,19 @@ if options.edout:
 ################################################################################
 # Expert settings ...
 
+#process.Timing = cms.Service(
+#   "Timing",
+#   summaryOnly = cms.untracked.bool(False),
+#   useJobReport = cms.untracked.bool(True)
+#   )
+
 # PAT stuff
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
    
 # Do not add changes to your config after this point (unless you know what you are doing)
 from FWCore.ParameterSet.Utilities import convertToUnscheduled
-process=convertToUnscheduled(process)
+#process=convertToUnscheduled(process)
 
 # Have logErrorHarvester wait for the same EDProducers to finish as those providing data for the OutputModule
 from FWCore.Modules.logErrorHarvester_cff import customiseLogErrorHarvesterUsingOutputCommands
