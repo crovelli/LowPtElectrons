@@ -36,7 +36,7 @@ import os
 if not os.path.isdir('plots/%s' % tag):
    os.mkdir('plots/%s' % tag)
 
-import concurrent.futures
+#import concurrent.futures
 import multiprocessing
 import uproot
 import numpy as np
@@ -51,21 +51,21 @@ def get_models_dir():
       os.makedirs(mods)
    return mods
 
-def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
-   thread_pool = concurrent.futures.ThreadPoolExecutor(nthreads)
-   if dataset not in input_files:
-      raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
-   infiles = [uproot.open(i) for i in input_files[dataset]]
-   if columns == 'all':
-      columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
-   ret = None
-   arrays = [i['features/tree'].arrays(columns, executor=thread_pool, blocking=False) for i in infiles]
-   ret = arrays[0]()   
-   for arr in arrays[1:]:
-      tmp = arr()
-      for column in columns:
-         ret[column] = np.concatenate((ret[column],tmp[column]))
-   return ret
+## def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
+##    thread_pool = concurrent.futures.ThreadPoolExecutor(nthreads)
+##    if dataset not in input_files:
+##       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
+##    infiles = [uproot.open(i) for i in input_files[dataset]]
+##    if columns == 'all':
+##       columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
+##    ret = None
+##    arrays = [i['features/tree'].arrays(columns, executor=thread_pool, blocking=False) for i in infiles]
+##    ret = arrays[0]()   
+##    for arr in arrays[1:]:
+##       tmp = arr()
+##       for column in columns:
+##          ret[column] = np.concatenate((ret[column],tmp[column]))
+##    return ret
 
 def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
    if dataset not in input_files:
