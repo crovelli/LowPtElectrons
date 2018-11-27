@@ -25,7 +25,7 @@ def check_consistency(pars, jfile):
     if 'auc' in jpars: del jpars['auc']
     if set(jpars.keys()) != set(pars.keys()):
         raise ValueError('The hyperparameter keys do not match!')
-    return all(abs(jpars[hyper]-pars[hyper])/(pars[hyper] if pars[hyper] else 1) < 0.001 for hyper in jpars)
+    return all(abs(jpars[hyper]-pars[hyper])/(abs(pars[hyper]) if pars[hyper] else 1) < 0.001 for hyper in jpars)
 
 def file_recovery(pars, dname):
     parfiles = glob('%s/pars_*.json' % base)
@@ -137,13 +137,13 @@ from itertools import cycle
 
 # xgb sklearn API assigns default names to the variables, use that to dump the XML
 # then convert them to the proper name
-## xgb_feats = ['f%d' % i for i in range(len(features))]
-## convert_model(model._Booster.get_dump(), zip(xgb_feats, cycle('F')), xml)
-## xml_str = open(xml).read()
-## for idx, feat in reversed(list(enumerate(features))):
-##     xml_str = xml_str.replace('f%d' % idx, feat)
-## with open(xml.replace('.xml', '.fixed.xml'), 'w') as XML:
-##     XML.write(xml_str)
+xgb_feats = ['f%d' % i for i in range(len(features))]
+convert_model(model._Booster.get_dump(), zip(xgb_feats, cycle('F')), xml)
+xml_str = open(xml).read()
+for idx, feat in reversed(list(enumerate(features))):
+    xml_str = xml_str.replace('f%d' % idx, feat)
+with open(xml.replace('.xml', '.fixed.xml'), 'w') as XML:
+    XML.write(xml_str)
 
 def _monkey_patch():
     return model._Booster
@@ -181,14 +181,8 @@ training_out[np.isnan(training_out)] = -999 #happens rarely, but happens
 # Working points
 info = roc_curve(
     test.is_e, training_out, 
-    sample_weight=test.weight
+    sample_weight=test.original_weight
     )
-
-with open('%s/wp.json' % plots, 'w') as rr:
-    rr.write('eff \tfr  \tthr\n')
-    for eff in [0.95, 0.9, 0.8]:
-        idx = np.abs(info[1] - eff).argmin()
-        rr.write('%.2f\t%.2f\t%.2f\n' % (info[1][idx], info[0][idx], info[2][idx]))
 
 #weighted ROC (same as training)
 roc = bootstrapped_roc(
@@ -229,9 +223,13 @@ auc_score = roc_auc_score(test.is_e, training_out,
 
 
 jmap = {
-    'roc' : [
+    'bootstrapped_roc' : [
         list(roc[0]),
         list(roc[1])
+        ],
+    'roc' : [
+        list(info[0]),
+        list(info[1])
         ],
     'auc' : auc_score,
 }
@@ -251,6 +249,12 @@ if 'seeding' in args.what and 'baseline' in test.columns:
     jmap['baseline_mistag'] = mistag
     jmap['baseline_eff'] = eff
     plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
+    
+    eff = test.original_weight[((test.trk_pt > 2) & test.baseline & test.is_e)].sum()/test.original_weight[test.is_e].sum()
+    mistag = test.original_weight[((test.trk_pt > 2) & test.baseline & np.invert(test.is_e))].sum()/test.original_weight[np.invert(test.is_e)].sum()
+    jmap['baseline_ptcut_mistag'] = mistag
+    jmap['baseline_ptcut_eff'] = eff
+    plt.plot([mistag], [eff], 'o', label='baseline_ptcut', markersize=5)    
 elif 'id' in args.what:
    mva_v1 = roc_curve(test.is_e, test.ele_mvaIdV1, sample_weight=test.original_weight)[:2]   
    mva_v2 = roc_curve(test.is_e, test.ele_mvaIdV2, sample_weight=test.original_weight)[:2]
@@ -270,6 +274,21 @@ plt.xlim(1e-4, 1)
 plt.savefig('%s/test_log_NN.png' % (plots))
 plt.savefig('%s/test_log_NN.pdf' % (plots))
 plt.clf()
+
+with open('%s/wp.json' % plots, 'w') as rr:
+    rr.write('eff \tfr  \tthr\n')
+    for eff in [0.95, 0.9, 0.8]:
+        idx = np.abs(info[1] - eff).argmin()
+        rr.write('%.2f\t%.2f\t%.2f\n' % (info[1][idx], info[0][idx], info[2][idx]))
+
+    rr.write('By fakerate\n')
+    if 'baseline_ptcut_mistag' in jmap:
+        frate = jmap['baseline_ptcut_mistag']
+        for fr in [frate, frate*3, frate*10]:
+            idx = np.abs(info[0] - fr).argmin()
+            rr.write('%.2f\t%.4f\t%.2f\n' % (info[1][idx], info[0][idx], info[2][idx]))
+
+
 
 #ROCs by pT
 plt.figure(figsize=[8, 8])

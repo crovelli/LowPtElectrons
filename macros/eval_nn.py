@@ -7,11 +7,9 @@ from pdb import set_trace
 import os
 
 parser = ArgumentParser()
-parser.add_argument(
-   'what', choices=['seeding', 'fullseeding', 'id'], 
-)
 parser.add_argument('model')
 parser.add_argument('--dataset')
+parser.add_argument('--what')
 
 parser.add_argument("--gpu",  help="select specific GPU",   type=int, metavar="OPT", default=-1)
 parser.add_argument("--gpufraction",  help="select memory fraction for GPU",   type=float, metavar="OPT", default=0.5)
@@ -33,10 +31,14 @@ if args.model.endswith('.csv'):
     for jfile in glob('%s/train_bo_*/hyperparameters.json' % base):
         #check for ~equality
         jpars = json.load(open(jfile))
+        if not set(jpars.keys()) == set(pars.keys()):
+            print 'skipping', jfile
+            continue
         equals = all(
-            abs(pars[i] - jpars[i])/abs(pars[i]) < 10**-3
+            abs(pars[i] - jpars[i])/(abs(pars[i]) if pars[i] else 1) < 10**-3 
             for i in pars
             )
+        #except: set_trace()
         if equals:
             break
     else: #for else! like, the third time I use it!
@@ -45,6 +47,7 @@ if args.model.endswith('.csv'):
     train_dir = os.path.dirname(jfile)
     model = '%s/KERAS_check_best_model.h5' % train_dir
     dataset = glob('%s/*.hdf' % base)[0]
+    args.what = base.split('nn_bo_')[1].replace('_noweight','')
     plots = base
 else:
     model = args.model

@@ -223,6 +223,9 @@ def get_features(ftype):
    if ftype == 'seeding':
       features = seed_features
       additional = seed_additional
+   elif ftype == 'trkonly':
+      features = trk_features
+      additional = seed_additional
    elif ftype == 'betterseeding':
       features = seed_features+['rho',]
       additional = seed_additional

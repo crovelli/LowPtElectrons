@@ -18,6 +18,10 @@ parser.add_argument(
 parser.add_argument(
    '--noweight', action='store_true'
 )
+parser.add_argument(
+   '--recover', action='store_true', 
+   help='recover lost best iteration due to bug'
+)
 
 parser.add_argument("--gpu",  help="select specific GPU",   type=int, metavar="OPT", default=-1)
 parser.add_argument("--gpufraction",  help="select memory fraction for GPU",   type=float, metavar="OPT", default=0.5)
@@ -138,23 +142,23 @@ from DeepJetCore.training.DeepJet_callbacks import DeepJet_callbacks
 from keras.callbacks import Callback, EarlyStopping, History, ModelCheckpoint
 from DeepJetCore.training.ReduceLROnPlateau import ReduceLROnPlateau
 from keras.models import load_model
+iteration_idx = 0
+
 def train_model(**kwargs):
     print 'training:', kwargs
-    train_hash = kwargs.__repr__().__hash__()
-    train_dir = '%s/train_bo_%d' % (opti_dir, train_hash)
+    global iteration_idx
+    train_dir = '%s/train_bo_%d' % (opti_dir, iteration_idx)
+    iteration_idx += 1
     if not os.path.isdir(train_dir):
-        os.makedirs(train_dir)
-    else:
-        train_dir = '%s_clash' % train_dir
         os.makedirs(train_dir)
         
     learn_rate = 10.**kwargs['log_learn_rate']
     batch_size = int(kwargs['batch_size'])
-    n_epochs   = 200 #int(kwargs['n_epochs'])
+    n_epochs   = 1000 #int(kwargs['n_epochs'])
 
     del kwargs['log_learn_rate']
     del kwargs['batch_size']
-    #del kwargs['n_epochs']  
+    # del kwargs['n_epochs']  
     
     model = make_model(**kwargs)
 
@@ -176,7 +180,6 @@ def train_model(**kwargs):
             )
         )
     
-    print model.summary()
     #fix batch norm to get the total means and std_dev 
     #instead of the batch one
     model = set_trainable(model, 'globals_input_batchnorm', False)
@@ -186,30 +189,21 @@ def train_model(**kwargs):
         metrics = ['binary_accuracy']
         )
 
-    callbacks = [
-        EarlyStopping(
-            monitor='val_loss', 
-            patience=40,
-            verbose=1, mode='min',
-            ),
-        ReduceLROnPlateau(
-            monitor='val_loss', factor=0.5, 
-            patience=10, mode='min', 
-            verbose=1, epsilon=0.001,
-            cooldown=4, min_lr=1e-5),
-        ModelCheckpoint(
-            train_dir+"/KERAS_check_best_model.h5", 
-            monitor='val_loss', verbose=1, 
-            save_best_only=True, save_weights_only=False),
-        History(),
-        ]
+    print model.summary()
+    callbacks = DeepJet_callbacks(
+        model, 
+        outputDir=train_dir,
+        stop_patience=999,
+        lr_patience = 10,
+        verbose=False
+        )
 
     history = model.fit(
         train[features].as_matrix(),
         train.is_e.as_matrix().astype(int),
         sample_weight=train.weight.as_matrix(),
         batch_size=batch_size, epochs=n_epochs, 
-        verbose=2, callbacks=callbacks,
+        verbose=2, callbacks=callbacks.callbacks,
         validation_data=(
             validation[features].as_matrix(), 
             validation.is_e.as_matrix().astype(int),
@@ -238,7 +232,7 @@ par_space = {
     'dropout'    : (0., 0.8),
     'log_learn_rate' : (-4., -1),
     'batch_size' : (500, 2000),
-    #'n_epochs'   : (10, 150),
+    #'n_epochs'   : (100, 500),
     }
 
 bo = BayesianOptimization(
@@ -258,53 +252,11 @@ with open('%s/nn_bo.json' % opti_dir, 'w') as j:
     info['value'] = mpoint['max_val']
     info['hash'] = thash
     j.write(json.dumps(info))
-## #
-## # plot performance
-## #
-## from sklearn.metrics import roc_curve, roc_auc_score
-## args_dict = args.__dict__
-## 
-## rocs = {}
-## for df, name in [
-##    (train, 'train'),
-##    (test, 'test'),
-##    ]:
-##    training_out = model.predict(df[features].as_matrix())
-##    rocs[name] = roc_curve(
-##       df.is_e.as_matrix().astype(int), 
-##       training_out)[:2]
-##    args_dict['%s_AUC' % name] = roc_auc_score(df.is_e, training_out)
-## 
-## # make plots
-## plt.figure(figsize=[8, 8])
-## plt.title('%s training' % args.what)
-## plt.plot(
-##    np.arange(0,1,0.01),
-##    np.arange(0,1,0.01),
-##    'k--')
-## plt.plot(*rocs['test'], label='Retraining (AUC: %.2f)'  % args_dict['test_AUC'])
-## if args.what in ['seeding', 'fullseeding']:
-##    eff = float((data.baseline & data.is_e).sum())/data.is_e.sum()
-##    mistag = float((data.baseline & np.invert(data.is_e)).sum())/np.invert(data.is_e).sum()
-##    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)
-## elif args.what == 'id':
-##    mva_v1 = roc_curve(test.is_e, test.ele_mvaIdV1)[:2]   
-##    mva_v2 = roc_curve(test.is_e, test.ele_mvaIdV2)[:2]
-##    mva_v1_auc = roc_auc_score(test.is_e, test.ele_mvaIdV1)
-##    mva_v2_auc = roc_auc_score(test.is_e, test.ele_mvaIdV2)
-##    plt.plot(*mva_v1, label='MVA ID V1 (AUC: %.2f)'  % mva_v1_auc)
-##    plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
-## else:
-##    raise ValueError()
-## 
-## plt.xlabel('Mistag Rate')
-## plt.ylabel('Efficiency')
-## plt.legend(loc='best')
-## plt.xlim(0., 1)
-## plt.savefig('%s/%s_%s_%s_NN.png' % (plots, dataset, args.jobtag, args.what))
-## plt.savefig('%s/%s_%s_%s_NN.pdf' % (plots, dataset, args.jobtag, args.what))
-## plt.gca().set_xscale('log')
-## plt.xlim(1e-4, 1)
-## plt.savefig('%s/%s_%s_%s_log_NN.png' % (plots, dataset, args.jobtag, args.what))
-## plt.savefig('%s/%s_%s_%s_log_NN.pdf' % (plots, dataset, args.jobtag, args.what))
-## plt.clf()
+
+if args.recover:
+   ## best_id = bo.Y.argmax()
+   ## iteration_idx = best_id
+   ## best_pars = bo.space.max_point()['max_params']
+    iteration_idx = 666
+    train_model(n_layers=8, n_nodes=2*len(features), dropout=0.1, log_learn_rate=-3, batch_size=700)
+
