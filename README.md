@@ -24,8 +24,8 @@ Checkout ntuplizer code.
 cd $CMSSW_BASE/src
 mkdir LowPtElectrons
 cd LowPtElectrons
-git clone https://github.com/bainbrid/LowPtElectrons.git
-git fetch bainbrid LowPtElectons_prod
+git clone git@github.com:bainbrid/LowPtElectrons.git
+git fetch origin LowPtElectons_prod
 ```
 
 Build and run.
