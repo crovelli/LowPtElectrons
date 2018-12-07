@@ -196,11 +196,13 @@ else : # Use custom Ntuplizer code
    customiseForPreMixingInput(process)
 
    # Custom Ntuplizer code 
+   process.load('LowPtElectrons.LowPtElectrons.LowPtGsfElectronsAnalyzer_cfi')
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
    process.features.hitAssociation = options.hitAssociation
    if options.fakesMultiplier : process.features.fakesMultiplier = options.fakesMultiplier
    process.features.disableAssociation = options.disableAssociation
    process.features.checkFromB = options.checkFromB
+
 
 ################################################################################
 # Path and EndPath definitions, TFileService, OutputModule
@@ -213,6 +215,7 @@ if options.MVANtuplizer == True :
    process.reconstruction_step *= cms.Sequence(process.ntuplizer)
 else :
    process.reconstruction_step *= cms.Sequence(process.ntuplizer_seq)
+   process.reconstruction_step *= cms.Sequence(process.simple)
    process.reconstruction_step *= cms.Sequence(process.features)
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 
