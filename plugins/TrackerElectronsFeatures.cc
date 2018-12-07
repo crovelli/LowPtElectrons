@@ -346,7 +346,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
 
-	if (1) {
+	if (0) {
 	  std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
 		    << "  pf_ktf_tracks->size(): " << pf_ktf_tracks->size() << std::endl
 		    << "  preids->size(): " << preids->size() << std::endl
