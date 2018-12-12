@@ -3,8 +3,8 @@
 Setup env and create release area.
 ```
 export SCRAM_ARCH=slc6_amd64_gcc700
-cmsrel CMSSW_10_4_X_2018-12-06-2300 # i.e. latest IB
-cd CMSSW_10_4_X_2018-12-06-2300/src
+cmsrel CMSSW_10_4_X_2018-12-12-1100 # i.e. latest IB
+cd CMSSW_10_4_X_2018-12-12-1100/src
 cmsenv
 ```
 
@@ -38,11 +38,9 @@ scram b -j8
 
 Add models from cms-data.
 ```
-cd $CMSSW_BASE/externals/$SCRAM_ARCH
+cd $CMSSW_BASE/external/$SCRAM_ARCH
 git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
-cd $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
-git fetch origin LowPtElectrons_10X
-git checkout LowPtElectrons_10X
+ls -l $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons
 ```
 
 Run.
