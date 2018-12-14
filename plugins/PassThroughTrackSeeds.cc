@@ -385,7 +385,7 @@ PassThroughTrackSeeds::produce(Event& iEvent, const EventSetup& iSetup)
       
 
 				myPreId.setTrackFiltering(GoodKFFiltering);
-				myPreId.setBin(ibin);
+				//myPreId.setBin(ibin);
 
 				bool GoodTkId= false;
       
