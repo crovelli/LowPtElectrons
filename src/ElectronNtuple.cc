@@ -50,7 +50,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_chi2red",    &trk_chi2red_      , "trk_chi2red/f"); 
 
 	tree->Branch("preid_ibin", 					&preid_ibin_          , "preid_ibin/I");
-	tree->Branch("preid_bdtout",				 	&preid_bdtout_		  	, "preid_bdtout/f");
+	tree->Branch("preid_bdtout1",				 	&preid_bdtout1_		  	, "preid_bdtout1/f");
+	tree->Branch("preid_bdtout2",				 	&preid_bdtout2_		  	, "preid_bdtout2/f");
 	tree->Branch("preid_trk_ecal_Deta",	&preid_trk_ecal_Deta_ , "preid_trk_ecal_Deta/f");
 	tree->Branch("preid_trk_ecal_Dphi",	&preid_trk_ecal_Dphi_ , "preid_trk_ecal_Dphi/f");
 	tree->Branch("preid_e_over_p",			 	&preid_e_over_p_			, "preid_e_over_p/f");
@@ -63,7 +64,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	//step-wise standard selection
 	tree->Branch("preid_trk_ecal_match", &preid_trk_ecal_match_, "preid_trk_ecal_match/O");
 	tree->Branch("preid_trkfilter_pass", &preid_trkfilter_pass_, "preid_trkfilter_pass/O");
-	tree->Branch("preid_mva_pass", &preid_mva_pass_, "preid_mva_pass/O");
+	tree->Branch("preid_mva1_pass", &preid_mva1_pass_, "preid_mva1_pass/O");
+	tree->Branch("preid_mva2_pass", &preid_mva2_pass_, "preid_mva2_pass/O");
 	
 	tree->Branch("gsf_pt",				 	&gsf_pt_				   , "gsf_pt/f");
 	tree->Branch("gsf_eta",		 	  &gsf_eta_		       , "gsf_eta/f");
@@ -83,6 +85,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/i");
 	tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
 	tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
+	tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
+	tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
 
 	//PFGSFTrack internal steps flags
 	tree->Branch("pfgsf_gsf_has_ktf", &pfgsf_gsf_has_ktf_, "pfgsf_gsf_has_ktf/O");
@@ -294,7 +298,9 @@ void ElectronNtuple::link_tree(TTree *tree) {
   tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
   tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
   
-  // SuperClusters //////////
+  // SuperClusters //////////	
+	tree->Branch("sc_cluster_eta", &sc_cluster_eta_);
+	tree->Branch("sc_cluster_phi", &sc_cluster_phi_);
 
   tree->Branch("sc_etaWidth",&sc_etaWidth_); 
   tree->Branch("sc_phiWidth",&sc_phiWidth_); 
@@ -358,6 +364,22 @@ void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &s
   }
 }
 
+void ElectronNtuple::fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf) {
+	const reco::PFTrajectoryPoint& point1 = pfgsf->extrapolatedPoint(reco::PFTrajectoryPoint::LayerType::ECALShowerMax);
+	if(point1.isValid()) {
+			gsf_extapolated_eta_.push_back(point1.positionREP().eta());
+			gsf_extapolated_phi_.push_back(point1.positionREP().phi());		
+	}
+
+	for(auto& brem : pfgsf->PFRecBrem()) {
+		const reco::PFTrajectoryPoint& brem_point = brem.extrapolatedPoint(reco::PFTrajectoryPoint::LayerType::ECALShowerMax);
+		if(brem_point.isValid()) {
+			gsf_extapolated_eta_.push_back(brem_point.positionREP().eta());
+			gsf_extapolated_phi_.push_back(brem_point.positionREP().phi());		
+		}
+	}
+}
+
 void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot, const int num_gsf) {
 
   // Extract KF track parameters
@@ -378,8 +400,9 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot,
   preid_gsf_chi2red_ = preid.gsfChi2();
 	
   // MVA output
-  preid_bdtout_ = preid.mva();
-  preid_ibin_ = preid.ibin();
+  preid_bdtout1_ = preid.mva(0);
+  preid_bdtout2_ = preid.mva(1);
+  //preid_ibin_ = preid.ibin();
 
 	//How many GSF it will seed
 	preid_numGSF_ = num_gsf;
@@ -387,7 +410,8 @@ void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot,
 	//step-wise standard selection
   preid_trk_ecal_match_ = preid.ecalMatching();
 	preid_trkfilter_pass_ = preid.trackFiltered();
-	preid_mva_pass_ = preid.mvaSelected();
+	preid_mva1_pass_ = preid.mvaSelected(0);
+	preid_mva2_pass_ = preid.mvaSelected(1);
 }
 
 void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2, float ele_conv_vtx_fit_prob, const std::vector<float>& iso_rings) {
@@ -526,6 +550,13 @@ void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
   
   if ( ele->superCluster().isNull() ) { return; }
   const SuperClusterRef& sc = ele->superCluster();
+	if(sc->clusters().size() == 0) std::cout << "NO CLUSTERS???" << std::endl;
+	//std::cout << "clustersSize: " << sc->clustersSize() << " clusters.size(): " << sc->clusters().size() << std::endl; 
+	for(auto& cluster : sc->clusters()) {
+		//std::cout << "(" << (cluster)->eta() << ", " << (cluster)->phi() << ")" << std::endl;
+		sc_cluster_eta_.push_back((cluster)->eta());
+		sc_cluster_phi_.push_back((cluster)->phi());
+	}
 
   sc_etaWidth_ = sc->etaWidth();
   sc_phiWidth_ = sc->phiWidth();

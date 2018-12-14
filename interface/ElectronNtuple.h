@@ -11,6 +11,8 @@
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "DataFormats/Math/interface/Point3D.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "DataFormats/ParticleFlowReco/interface/GsfPFRecTrackFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/GsfPFRecTrack.h"
 #include <vector>
 class TTree;
 /*namespace reco {
@@ -60,6 +62,7 @@ public:
 	void fill_evt(const edm::EventID &id);
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
+	void fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf);
 	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
 	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, 
 								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.});
@@ -160,14 +163,16 @@ private:
 	float preid_trk_gsf_chiratio_ = -1.;
 	float preid_gsf_chi2red_ = -1.;
 	// PreId: MVA output
-	float preid_bdtout_ = -1.;
+	float preid_bdtout1_ = -1.;
+	float preid_bdtout2_ = -1.;
 	int   preid_ibin_ = -1;
 	// PreId: # of seeded GSF Tracks
 	int   preid_numGSF_ = 0;
 	//step-wise standard selection
   bool preid_trk_ecal_match_ = false;
 	bool preid_trkfilter_pass_ = false;
-	bool preid_mva_pass_ = false;
+	bool preid_mva1_pass_ = false;
+	bool preid_mva2_pass_ = false;
 	
 	// GSF tracks: kine
 	float gsf_pt_ = -1.;
@@ -190,6 +195,8 @@ private:
 	int gsf_ntangents_ = 0;
  	float gsf_hit_dpt_[NHITS_MAX] = {0};
  	float gsf_hit_dpt_unc_[NHITS_MAX] = {0};
+	std::vector<float> gsf_extapolated_eta_;
+	std::vector<float> gsf_extapolated_phi_;
 
 
 	//PFGSFTrack internal steps flags
@@ -408,6 +415,8 @@ private:
   int p4kind_ = -1;
 
   // SuperClusters //////////
+	std::vector<float> sc_cluster_eta_;
+	std::vector<float> sc_cluster_phi_;
 
   float sc_etaWidth_ = -1.;
   float sc_phiWidth_ = -1.;
