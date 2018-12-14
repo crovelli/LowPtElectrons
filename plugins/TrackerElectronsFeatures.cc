@@ -625,9 +625,13 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
         ntuple_.has_ele_core(gsf2core.find(*best) != gsf2core.end());
         ntuple_.has_pfEgamma(pfElectrons_sources.find(*best) != pfElectrons_sources.end());
 	//ntuple_.unpack_pfgsf_flags(pf_gsf_flags->at(best->index()));
-        ntuple_.has_pfGSFTrk(
-          pfGSFTrks_sources.find(*best) != pfGSFTrks_sources.end()
-          );
+				auto pfgsf_match = pfGSFTrks_sources.find(*best);
+				ntuple_.has_pfGSFTrk(
+					pfgsf_match != pfGSFTrks_sources.end()
+					);
+				if(pfgsf_match != pfGSFTrks_sources.end()) {
+					ntuple_.fill_pfgsf_trk(pfgsf_match->second);
+				}
 
 
         // cout << "DEBUG " << endl 
@@ -734,9 +738,13 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
 			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
 			//ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
+			auto pfgsf_match = pfGSFTrks_sources.find(gsf_match->second.at(0));
 			ntuple_.has_pfGSFTrk(
-				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
+				pfgsf_match != pfGSFTrks_sources.end()
 				);
+			if(pfgsf_match != pfGSFTrks_sources.end()) {
+				ntuple_.fill_pfgsf_trk(pfgsf_match->second);
+			}
 
 			auto cluster_matching = ecal_clusters_map.find(gsf_match->second.at(0));				
 			if(cluster_matching != ecal_clusters_map.end()) {
@@ -755,7 +763,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 					pfGSFTrks_sources[gsf_match->second.at(0)]->extrapolatedPoint(reco::PFTrajectoryPoint::HCALEntrance)
 					);
 				ntuple_.is_HCAL_cluster_same((ktf_hcal_cluster == hcal_matching->second));
-			}
+			}				
 
 			ntuple_.has_pfBlock( 
 				pfBlocks_sources.find(gsf_match->second.at(0)) != pfBlocks_sources.end()
@@ -842,9 +850,13 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			ntuple_.has_ele_core(gsf2core.find(gsf_match->second.at(0)) != gsf2core.end());
 			ntuple_.has_pfEgamma(pfElectrons_sources.find(gsf_match->second.at(0)) != pfElectrons_sources.end());
 			//ntuple_.unpack_pfgsf_flags(gsf_match->second.at(0).index());
+			auto pfgsf_match = pfGSFTrks_sources.find(gsf_match->second.at(0));
 			ntuple_.has_pfGSFTrk(
-				pfGSFTrks_sources.find(gsf_match->second.at(0)) != pfGSFTrks_sources.end()
+				pfgsf_match != pfGSFTrks_sources.end()
 				);
+			if(pfgsf_match != pfGSFTrks_sources.end()) {
+				ntuple_.fill_pfgsf_trk(pfgsf_match->second);
+			}
 
 			auto cluster_matching = ecal_clusters_map.find(gsf_match->second.at(0));				
 			if(cluster_matching != ecal_clusters_map.end()) {
