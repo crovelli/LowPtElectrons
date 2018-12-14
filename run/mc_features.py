@@ -214,6 +214,10 @@ else : # Use custom Ntuplizer code
    process.ntuplizer_seq *= process.electronMVAVariableHelper
    process.ntuplizer_seq *= process.electronMVAValueMapProducer
 
+   # Make seeding pass through 
+   process.lowPtGsfElectronSeeds.PassThrough = True
+   # process.lowPtGsfElectronSuperClusters.MaxDeltaR2 = 9999.
+
    # Custom Ntuplizer code 
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
    process.features.hitAssociation = options.hitAssociation
