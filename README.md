@@ -3,8 +3,8 @@
 Setup env and create release area.
 ```
 export SCRAM_ARCH=slc6_amd64_gcc700
-cmsrel CMSSW_10_4_X_2018-12-12-1100 # i.e. latest IB
-cd CMSSW_10_4_X_2018-12-12-1100/src
+cmsrel CMSSW_10_4_0_pre4 # or latest usable IB
+cd CMSSW_10_4_0_pre4/src
 cmsenv
 ```
 
@@ -26,7 +26,6 @@ mkdir $CMSSW_BASE/src/LowPtElectrons
 cd $CMSSW_BASE/src/LowPtElectrons
 git clone git@github.com:bainbrid/LowPtElectrons.git
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
-git fetch origin LowPtElectrons_10X
 git checkout LowPtElectrons_10X
 ```
 
