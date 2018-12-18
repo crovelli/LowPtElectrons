@@ -12,12 +12,8 @@ cd LowPtElectrons
 git clone https://github.com/CMSBParking/LowPtElectrons.git
 ```
 
-For full installation instructions, see the README files on the following two branches:
+For installation instructions including the low pT electron chain, see this README file on the following branches:
 
-1) ```bainbrid/LowPtElectrons:LowPtElectrons_prod```
+1) Recipe for 9_4_X: ```bainbrid/LowPtElectrons:LowPtElectrons_prod```
 
-Requires the ```bainbrid/cmssw:LowPtElectrons_prod``` branch.
-
-2) ```bainbrid/LowPtElectrons:LowPtElectrons_dev```
-
-Requires the ```bainbrid/cmssw:LowPtElectrons_dev``` branch.
+2) Recipe for 10_4_X: ```bainbrid/LowPtElectrons:LowPtElectrons_10X```
