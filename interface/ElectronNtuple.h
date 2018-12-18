@@ -63,7 +63,9 @@ public:
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
 	void fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf);
-	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
+	void fill_preid(const reco::PreId &preid_ecal, const reco::PreId &preid_hcal, 
+									const reco::BeamSpot &spot, const double rho, const int num_gsf,
+									noZS::EcalClusterLazyTools& ecalTools);
 	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, 
 								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.});
 	void fill_supercluster(const reco::GsfElectronRef ele);
@@ -154,23 +156,35 @@ private:
 	float trk_dz_err_ = -1;
 
 	// PreId: ECAL/track matching
-	float preid_e_over_p_ = -1.;
-	float preid_trk_ecal_Deta_ = -1.;
-	float preid_trk_ecal_Dphi_ = -1.;
-	// PreId: GSF track parameters
-	bool  preid_gsf_success_ = false;
-	float preid_gsf_dpt_ = -1.;
-	float preid_trk_gsf_chiratio_ = -1.;
-	float preid_gsf_chi2red_ = -1.;
+	float preid_trk_pt_  = -1.;
+	float preid_trk_eta_ = -1.;
+	float preid_trk_phi_ = -1.;
+  float preid_trk_p_   = -1.;
+  float preid_trk_nhits_ = -1.;
+  float preid_trk_high_quality_ = -1.;
+  float preid_trk_chi2red_ = -1.;
+  float preid_rho_ = -1.;
+  float preid_ktf_ecal_cluster_e_ = -1.;
+  float preid_ktf_ecal_cluster_deta_ = -1.;
+  float preid_ktf_ecal_cluster_dphi_ = -1.;
+  float preid_ktf_ecal_cluster_e3x3_ = -1.;
+  float preid_ktf_ecal_cluster_e5x5_ = -1.;
+  float preid_ktf_ecal_cluster_covEtaEta_ = -1.;
+  float preid_ktf_ecal_cluster_covEtaPhi_ = -1.;
+  float preid_ktf_ecal_cluster_covPhiPhi_ = -1.;
+  float preid_ktf_ecal_cluster_r9_ = -1.;
+  float preid_ktf_ecal_cluster_circularity_ = -1.;
+  float preid_ktf_hcal_cluster_e_ = -1.;
+  float preid_ktf_hcal_cluster_deta_ = -1.;
+  float preid_ktf_hcal_cluster_dphi_ = -1.;
+  float preid_gsf_dpt_ = -1.;
+  float preid_trk_gsf_chiratio_ = -1.;
+  float preid_gsf_chi2red_ = -1.;
+  float preid_trk_dxy_sig_ = -1.; // must be last (not used by unbiased model)
+
 	// PreId: MVA output
 	float preid_bdtout1_ = -1.;
 	float preid_bdtout2_ = -1.;
-	int   preid_ibin_ = -1;
-	// PreId: # of seeded GSF Tracks
-	int   preid_numGSF_ = 0;
-	//step-wise standard selection
-  bool preid_trk_ecal_match_ = false;
-	bool preid_trkfilter_pass_ = false;
 	bool preid_mva1_pass_ = false;
 	bool preid_mva2_pass_ = false;
 	

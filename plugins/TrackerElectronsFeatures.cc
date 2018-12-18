@@ -141,7 +141,8 @@ private:
         std::vector<float> bins_eta_;
         std::vector< std::vector<float> > weights_;
 	const edm::EDGetTokenT< double > rho_;	
-	const edm::EDGetTokenT< vector<reco::PreId> > preid_;	
+	const edm::EDGetTokenT< vector<reco::PreId> > preid_ecal_;	
+	const edm::EDGetTokenT< vector<reco::PreId> > preid_hcal_;	
 	const edm::EDGetTokenT< vector<reco::GsfTrack> > gsf_tracks_;
 	const edm::EDGetTokenT< edm::View<reco::Track> > gsf_tracks_view_;
 	const edm::EDGetTokenT< vector<int> > pf_gsf_flags_;
@@ -179,7 +180,8 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
   fake_multiplier_{cfg.getParameter<double>("fakesMultiplier")},
   fakes_weights_{cfg.getParameter<std::string>("fakesWeights")},
   rho_{consumes< double >(cfg.getParameter<edm::InputTag>("rho"))},	
-  preid_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
+	preid_ecal_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preIdEcal"))},		
+	preid_hcal_{consumes< vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preIdHcal"))},		
   gsf_tracks_   {consumes< vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
   gsf_tracks_view_{consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("gsfTracks"))},
   pf_gsf_flags_{consumes< vector<int> >(cfg.getParameter<edm::InputTag>("PFGsfFlags"))},
@@ -247,8 +249,11 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< double > rho;
 	iEvent.getByToken(rho_, rho);
 
-	edm::Handle< vector<reco::PreId> > preids;
-	iEvent.getByToken(preid_, preids);
+	edm::Handle< vector<reco::PreId> > preids_ecal;
+	iEvent.getByToken(preid_ecal_, preids_ecal);
+
+	edm::Handle< vector<reco::PreId> > preids_hcal;
+	iEvent.getByToken(preid_hcal_, preids_hcal);
 
 	edm::Handle< vector<reco::GsfTrack> > gsf_tracks;
 	iEvent.getByToken(gsf_tracks_, gsf_tracks);
@@ -311,9 +316,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 	int ntrks = 0;
 	std::vector<reco::TrackRef> tracks;
-	for ( unsigned int ii = 0; ii < preids->size(); ++ii ) {
-	  if ( preids.product()->at(ii).trackRef().isNonnull() ) { 
-			tracks.push_back(preids.product()->at(ii).trackRef());
+	for ( unsigned int ii = 0; ii < preids_ecal->size(); ++ii ) {
+	  if ( preids_ecal.product()->at(ii).trackRef().isNonnull() ) { 
+			tracks.push_back(preids_ecal.product()->at(ii).trackRef());
 			++ntrks; 
 		}
 	}
@@ -327,17 +332,18 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
 
-//	std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
-//		  << "  ele_seeds->size(): " << ele_seeds->size() << std::endl
-//		  << "  preids->size(): " << preids->size() << std::endl
-//		  << "  trk_candidates->size(): " << trk_candidates->size() << std::endl
-//		  << "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
-//		  << "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
-//		  << "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
-//		  << "  ged_electrons->size(): " << ged_electrons->size() << std::endl
-//		  << std::endl;
+	// std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
+	// 					<< "  ele_seeds->size(): " << ele_seeds->size() << std::endl
+	// 					<< "  preids_ecal->size(): " << preids_ecal->size() << std::endl
+	// 					<< "  preids_hcal->size(): " << preids_hcal->size() << std::endl
+	// 					<< "  trk_candidates->size(): " << trk_candidates->size() << std::endl
+	// 					<< "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
+	// 					<< "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
+	// 					<< "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
+	// 					<< "  ged_electrons->size(): " << ged_electrons->size() << std::endl
+	// 					<< std::endl;
 
-	//assert(gsf_tracks->size() == preids->size()); //this is bound to fail, but better check
+	//assert(gsf_tracks->size() == preids_ecal->size()); //this is bound to fail, but better check
 
 	std::map<reco::TrackRef, reco::PFRecTrackRef> trk2pftrk;
 	for(size_t i=0; i<pf_ktf_tracks->size(); i++) {
@@ -352,7 +358,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	// PFTrack and Cluster association
 	std::map<reco::TrackRef, PFClusterRef> ecal_ktf_clusters_map;
 	std::map<reco::TrackRef, PFClusterRef> hcal_ktf_clusters_map;
-	for(const auto& preid : *preids) {
+	for(const auto& preid : *preids_ecal) {
 		reco::TrackRef trk = preid.trackRef();
 		reco::PFRecTrackRef pftrk;
 		auto match = trk2pftrk.find(trk);
@@ -541,8 +547,8 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		for(const auto& gen : electrons_from_B) {
 			size_t best_idx = 666;
 			double min_dr = dr_max_;
-			for(size_t idx=0; idx<preids->size(); ++idx) {
-				double dr = reco::deltaR(*(preids->at(idx).trackRef()), *gen);
+			for(size_t idx=0; idx<preids_ecal->size(); ++idx) {
+				double dr = reco::deltaR(*(preids_ecal->at(idx).trackRef()), *gen);
 				if(dr < min_dr) {
 					min_dr = dr;
 					best_idx = idx;
@@ -555,8 +561,8 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			}
 		}
 
-		other_tracks.reserve(preids->size() - matched.size());
-		for(size_t i=0; i<preids->size(); i++) {
+		other_tracks.reserve(preids_ecal->size() - matched.size());
+		for(size_t i=0; i<preids_ecal->size(); i++) {
 			if(matched.find(i) == matched.end()) {
 				//be extra safe and check hit matching, anyhow we have a LOT of tracks
 				RefToBase<TrajectorySeed> key(ele_seeds, i);
@@ -584,11 +590,13 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
     const auto& match = gen2seed.find(gen);
     if(match != gen2seed.end()) { //matched to SEED
       const auto& gsf_match = seed2gsf.find(match->second);
-			const reco::PreIdRef preid(preids,match->second);
-      const reco::TrackRef& ktf = preid->trackRef();
+			const reco::PreIdRef preid_ecal(preids_ecal,match->second);
+      const reco::TrackRef& ktf = preid_ecal->trackRef();
       ntuple_.fill_preid(
-        *preid,
-        *beamspot, (gsf_match != seed2gsf.end())
+        *preid_ecal,
+				preids_hcal->at(match->second),
+        *beamspot, *rho, 
+				(gsf_match != seed2gsf.end()), ecal_tools
         );
 
       auto ktf_ecal = ecal_ktf_clusters_map.find(ktf);        
@@ -682,7 +690,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				std::pair<float,float> block(-1.,-1.);
 				if ( iter != pfBlocks_sources.end() ) {
 					block = printPfBlock(gen,
-															 preid,
+															 preid_ecal,
 															 iter->second,
 															 *best,
 															 ele_ref);
@@ -704,12 +712,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_e_not_matched();
 		const auto& gsf_match = seed2gsf.find(seed_idx);
-		const auto& preid = preids->at(seed_idx);
+		const auto& preid = preids_ecal->at(seed_idx);
 		const reco::TrackRef& ktf = preid.trackRef();
 		ntuple_.fill_preid(
 			preid,
-			*beamspot,
-			(gsf_match != seed2gsf.end()) ? gsf_match->second.size() : 0
+			preids_hcal->at(seed_idx),
+			*beamspot, *rho, 
+			(gsf_match != seed2gsf.end()) ? gsf_match->second.size() : 0,
+			ecal_tools
 			);
 		
 		auto ktf_ecal = ecal_ktf_clusters_map.find(ktf);				
@@ -806,7 +816,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		size_t& seed_idx = other_tracks[index];
 		// If map is populated, select tracks according to (pT,eta) PDF ...
 		if ( !empty_weights() ) {
-		  const reco::TrackRef& ktf = preids->at(seed_idx).trackRef();
+		  const reco::TrackRef& ktf = preids_ecal->at(seed_idx).trackRef();
 		  if ( gRandom->Rndm() > weight(log10(ktf->pt()),fabs(ktf->eta())) ) { continue; }
 		}
 		nfakes++;
@@ -816,12 +826,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		ntuple_.fill_evt(iEvent.id());
 		ntuple_.is_other();
 		const auto& gsf_match = seed2gsf.find(seed_idx);
-		const auto& preid = preids->at(seed_idx);
+		const auto& preid = preids_ecal->at(seed_idx);
 		const reco::TrackRef& ktf = preid.trackRef();
 		ntuple_.fill_preid(
 			preid,
-			*beamspot,
-			(gsf_match != seed2gsf.end()) ? gsf_match->second.size() : 0
+			preids_hcal->at(seed_idx),
+			*beamspot, *rho, 
+			(gsf_match != seed2gsf.end()) ? gsf_match->second.size() : 0,
+			ecal_tools
 			);
 		
 		auto ktf_ecal = ecal_ktf_clusters_map.find(ktf);				
