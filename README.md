@@ -1,10 +1,12 @@
 # LowPtElectrons (production branch)
 
+Choose option ```#1``` or ```#2``` (in two places, be consistent)
+
 Setup env and create release area.
 ```
 export SCRAM_ARCH=slc6_amd64_gcc700
-cmsrel CMSSW_10_4_0_pre4 # or latest usable IB
-cd CMSSW_10_4_0_pre4/src
+cmsrel CMSSW_10_4_0_pre4; cd CMSSW_10_4_0_pre4/src #1
+cmsrel CMSSW_10_2_9; cd CMSSW_10_2_9/src  #2
 cmsenv
 ```
 
@@ -17,7 +19,8 @@ git remote -v
 
 Merge topic for new electron reco (production branch).
 ```
-git cms-merge-topic bainbrid:LowPtElectrons_10X
+git cms-merge-topic bainbrid:LowPtElectrons_10X #1
+git cms-merge-topic bainbrid:LowPtElectrons_10_2_9 #2
 ```
 
 Checkout ntuplizer code.
