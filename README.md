@@ -1,4 +1,4 @@
-# LowPtElectrons (production branch)
+# LowPtElectrons (10X branches)
 
 Choose option ```#1``` or ```#2``` (in two places, be consistent)
 
@@ -12,12 +12,12 @@ cmsenv
 
 Some initialisation.
 ```
-git cms-init
+git cms-initproduction
 git remote add bainbrid git@github.com:bainbrid/cmssw.git
 git remote -v
 ```
 
-Merge topic for new electron reco (production branch).
+Merge topic for new electron reco (10X branches).
 ```
 git cms-merge-topic bainbrid:LowPtElectrons_10X      #1
 git cms-merge-topic bainbrid:LowPtElectrons_10_2_9   #2
