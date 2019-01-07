@@ -1,5 +1,7 @@
 # LowPtElectrons (10X branches)
 
+Link to bainbrid/cmssw:LowPtElectrons_10X branch [here](https://github.com/bainbrid/cmssw/tree/LowPtElectrons_10X).
+
 Choose option ```#1``` for the branch used for the "up to GsfTracks" PR.
 
 Or choose ```#2``` or ```#3``` for the full chain (up to GsfElectrons) in 10.4 or 10.2.
