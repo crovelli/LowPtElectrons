@@ -19,7 +19,7 @@ cmsenv
 
 Some initialisation.
 ```
-git cms-initproduction
+git cms-init
 git remote add bainbrid git@github.com:bainbrid/cmssw.git
 git remote -v
 ```
