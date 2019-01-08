@@ -1,6 +1,6 @@
 # LowPtElectrons (10X branches)
 
-Link to bainbrid/cmssw:LowPtElectrons_10X branch [here](https://github.com/bainbrid/cmssw/tree/LowPtElectrons_10X).
+Link to ```RecoEgamma/EgammaElectronProducers``` package on ```bainbrid/cmssw:LowPtElectrons_10X branch``` [here](https://github.com/bainbrid/cmssw/tree/LowPtElectrons_10X/RecoEgamma/EgammaElectronProducers).
 
 Choose option ```#1``` for the branch used for the "up to GsfTracks" PR.
 
