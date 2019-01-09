@@ -25,6 +25,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -47,7 +48,8 @@ private:
   const edm::EDGetTokenT< reco::PFClusterCollection > ecal_clusters_;
   const edm::EDGetTokenT< reco::PFClusterCollection > hcal_clusters_;
   const edm::EDGetTokenT< reco::PFRecTrackCollection > pf_ktf_tracks_;
-  const edm::EDGetTokenT< std::vector<reco::PreId> > preid_;	
+  const edm::EDGetTokenT< std::vector<reco::PreId> > preids_;
+  const edm::EDGetTokenT< edm::ValueMap<reco::PreIdRef> > preids_valuemap_;
   const edm::EDGetTokenT< edm::View<TrajectorySeed> > ele_seeds_;
   const edm::EDGetTokenT< std::vector<TrackCandidate> > trk_candidates_;
   const edm::EDGetTokenT< std::vector<reco::GsfTrack> > gsf_tracks_;
@@ -58,14 +60,19 @@ private:
   const edm::EDGetTokenT< std::vector<reco::SuperCluster> > electron_sc_;
   const edm::EDGetTokenT< std::vector<reco::GsfElectronCore> > electron_cores_;
   const edm::EDGetTokenT< std::vector<reco::GsfElectron> > electrons_;
-
+  //const edm::EDGetTokenT< edm::ValueMap<double> > mvaId_;
+  const std::vector<edm::InputTag> mvaIdTags_;
+  std::vector< edm::EDGetTokenT< edm::ValueMap<float> > >  mvaIds_;
+  const std::vector<edm::InputTag> mvaSeedTags_;
+  std::vector< edm::EDGetTokenT< edm::ValueMap<float> > >  mvaSeeds_;
 };
 
 LowPtGsfElectronsAnalyzer::LowPtGsfElectronsAnalyzer( const edm::ParameterSet& cfg ) :
   ecal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("ECALClusters"))},
   hcal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALClusters"))},
   pf_ktf_tracks_{consumes< reco::PFRecTrackCollection >(cfg.getParameter<edm::InputTag>("PFTracks"))},
-  preid_{consumes< std::vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preId"))},	
+  preids_{consumes< std::vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preIds"))},
+  preids_valuemap_{consumes< edm::ValueMap<reco::PreIdRef> >(cfg.getParameter<edm::InputTag>("preIdsValueMap"))},
   ele_seeds_{consumes< edm::View<TrajectorySeed> >(cfg.getParameter<edm::InputTag>("eleSeeds"))},
   trk_candidates_{consumes< std::vector<TrackCandidate> >(cfg.getParameter<edm::InputTag>("trkCandidates"))},
   gsf_tracks_{consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))}, 
@@ -75,8 +82,20 @@ LowPtGsfElectronsAnalyzer::LowPtGsfElectronsAnalyzer( const edm::ParameterSet& c
   electron_scref_{consumes< edm::ValueMap<reco::SuperClusterRef> >(cfg.getParameter<edm::InputTag>("electronSCRefs"))},
   electron_sc_{consumes< std::vector<reco::SuperCluster> >(cfg.getParameter<edm::InputTag>("electronSCs"))},
   electron_cores_{consumes< std::vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("electronCores"))},
-  electrons_{consumes< std::vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("electrons"))}
-{;}
+  electrons_{consumes< std::vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("electrons"))},
+  //mvaId_{consumes< edm::ValueMap<double> >(cfg.getParameter<edm::InputTag>("mvaId"))},
+  mvaIdTags_(cfg.getParameter< std::vector<edm::InputTag> >("mvaIds")),
+  mvaIds_(),
+  mvaSeedTags_(cfg.getParameter< std::vector<edm::InputTag> >("mvaSeeds")),
+  mvaSeeds_()
+{
+  for ( const auto& tag : mvaIdTags_ ) { 
+    mvaIds_.push_back( consumes< edm::ValueMap<float> >(tag) ); 
+  }
+  for ( const auto& tag : mvaSeedTags_ ) { 
+    mvaSeeds_.push_back( consumes< edm::ValueMap<float> >(tag) ); 
+  }
+}
 
 void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent, 
 					 const edm::EventSetup& iSetup )
@@ -95,7 +114,11 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
   catch (...) {;}
   
   edm::Handle< std::vector<reco::PreId> > preids;
-  try { iEvent.getByToken(preid_, preids); }
+  try { iEvent.getByToken(preids_, preids); }
+  catch (...) {;}
+
+  edm::Handle< edm::ValueMap<reco::PreIdRef> > preids_valuemap;
+  try { iEvent.getByToken(preids_valuemap_, preids_valuemap); }
   catch (...) {;}
 
   edm::Handle< edm::View<TrajectorySeed> > ele_seeds;
@@ -145,12 +168,33 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
   edm::Handle< std::vector<reco::GsfElectron> > electrons;
   try { iEvent.getByToken(electrons_, electrons); }
   catch (...) {;}
+
+//  edm::Handle< edm::ValueMap<float> > mvaId;
+//  try { iEvent.getByToken(mvaId_, mvaId); }
+//  catch (...) {;}
+    
+  std::vector< edm::Handle< edm::ValueMap<float> > > mvaIds;
+  for ( const auto& token : mvaIds_ ) { 
+    edm::Handle< edm::ValueMap<float> > h;
+    try { iEvent.getByToken(token, h); }
+    catch (...) {;}
+    mvaIds.push_back(h);
+  }
+
+  std::vector< edm::Handle< edm::ValueMap<float> > > mvaSeeds;
+  for ( const auto& token : mvaSeeds_ ) { 
+    edm::Handle< edm::ValueMap<float> > h;
+    try { iEvent.getByToken(token, h); }
+    catch (...) {;}
+    mvaSeeds.push_back(h);
+  }
     
   std::cout << "[LowPtGsfElectronsAnalyzer::analyze]" << std::endl
 	    << "  ecal_clusters:     " << int( ecal_clusters.isValid() ? ecal_clusters->size() : -1 ) << std::endl
 	    << "  hcal_clusters:     " << int( hcal_clusters.isValid() ? hcal_clusters->size() : -1 ) << std::endl
 	    << "  pf_ktf_tracks:     " << int( pf_ktf_tracks.isValid() ? pf_ktf_tracks->size() : -1 ) << std::endl
 	    << "  preids:            " << int( preids.isValid() ? preids->size() : -1 ) << std::endl
+	    << "  preids_valuemap:   " << int( preids_valuemap.isValid() ? preids_valuemap->size() : -1 ) << std::endl
 	    << "  ele_seeds:         " << int( ele_seeds.isValid() ? ele_seeds->size() : -1 ) << std::endl
 	    << "  trk_candidates:    " << int( trk_candidates.isValid() ? trk_candidates->size() : -1 ) << std::endl
 	    << "  gsf_tracks:        " << int( gsf_tracks.isValid() ? gsf_tracks->size() : -1 ) << std::endl
@@ -160,8 +204,34 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
 	    << "  electron_scref:    " << int( electron_scref.isValid() ? electron_scref->size() : -1 ) << std::endl
 	    << "  electron_sc:       " << int( electron_sc.isValid() ? electron_sc->size() : -1 ) << std::endl
 	    << "  electron_cores:    " << int( electron_cores.isValid() ? electron_cores->size() : -1 ) << std::endl
-	    << "  electrons:         " << int( electrons.isValid() ? electrons->size() : -1 ) << std::endl
-	    << std::endl;
+	    << "  electrons:         " << int( electrons.isValid() ? electrons->size() : -1 ) << std::endl;
+  //<< "  mvaId:             " << int( mvaId.isValid() ? mvaId->size() : -1 ) << std::endl;
+  for ( unsigned int iter = 0; iter < mvaIds.size(); ++iter ) {
+    std::cout << "  mvaId:             " 
+	      << int( mvaIds[iter].isValid() ? mvaIds[iter]->size() : -1 ) 
+	      << ", ";
+    if ( mvaIds[iter].isValid() &&
+	 !mvaIds[iter]->empty() &&
+	 electrons.isValid() ) {
+      reco::GsfElectronRef ele(electrons,0);
+      std::cout << "\"" << mvaIdTags_[iter].instance() << "\"";
+      if ( ele.isNonnull() ) { std::cout << "(example value: " << float( (*mvaIds[iter])[ele] ) << ")"; }
+    }
+    std::cout << std::endl;
+  }
+  for ( unsigned int iter = 0; iter < mvaSeeds.size(); ++iter ) {
+    std::cout << "  mvaSeed:           " 
+	      << int( mvaSeeds[iter].isValid() ? mvaSeeds[iter]->size() : -1 ) 
+	      << ", ";
+    if ( mvaSeeds[iter].isValid() && 
+	 !mvaSeeds[iter]->empty() &&
+	 electrons.isValid() ) {
+      reco::GsfElectronRef ele(electrons,0);
+      std::cout << "\"" << mvaSeedTags_[iter].instance() << "\"";
+      if ( ele.isNonnull() ) { std::cout << "(example value: " << float( (*mvaSeeds[iter])[ele] ) << ")"; }
+    }
+    std::cout << std::endl;
+  }
 
 }
 
