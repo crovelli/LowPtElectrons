@@ -9,11 +9,18 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('python')
 options.setDefault('maxEvents',1)
 options.setDefault('inputFiles',['root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_4_0_pre3/RelValZEE_13/GEN-SIM-DIGI-RAW/PU25ns_103X_upgrade2018_realistic_v8-v1/20000/03156BB2-7F39-5B4E-B636-AB7C58CFF19D.root'])
+#options.register(
+#    'eras','',
+#    VarParsing.multiplicity.list,
+#    VarParsing.varType.string,
+#    "List of eras"
+#    )
+#options.eras = 'Run2_2018','bParking'
 options.parseArguments()
 
 from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process('RECO',eras.Run2_2018)
+process = cms.Process('RECO',eras.Run2_2018,eras.bParking) # ,eras.bParkingOpen
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -94,3 +101,5 @@ process = customiseLogErrorHarvesterUsingOutputCommands(process)
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)
 # End adding early deletion
+
+open('pydump.py','w').write(process.dumpPython())
