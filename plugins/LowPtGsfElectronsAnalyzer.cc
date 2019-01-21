@@ -45,8 +45,10 @@ private:
 
   virtual void analyze( const edm::Event&, const edm::EventSetup& );
 
-  const edm::EDGetTokenT< reco::PFClusterCollection > ecal_clusters_;
-  const edm::EDGetTokenT< reco::PFClusterCollection > hcal_clusters_;
+  const edm::EDGetTokenT< reco::PFClusterCollection > ecal_pf_clusters_;
+  const edm::EDGetTokenT< reco::PFClusterCollection > hcal_pf_clusters_;
+  const edm::EDGetTokenT<EcalRecHitCollection> eb_rechits_;
+  const edm::EDGetTokenT<EcalRecHitCollection> ee_rechits_;
   const edm::EDGetTokenT< reco::PFRecTrackCollection > pf_ktf_tracks_;
   const edm::EDGetTokenT< std::vector<reco::PreId> > preids_;
   const edm::EDGetTokenT< edm::ValueMap<reco::PreIdRef> > preids_valuemap_;
@@ -68,8 +70,10 @@ private:
 };
 
 LowPtGsfElectronsAnalyzer::LowPtGsfElectronsAnalyzer( const edm::ParameterSet& cfg ) :
-  ecal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("ECALClusters"))},
-  hcal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALClusters"))},
+  ecal_pf_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("ECALPFClusters"))},
+  hcal_pf_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALPFClusters"))},
+  eb_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EBRecHits"))},
+  ee_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EERecHits"))},
   pf_ktf_tracks_{consumes< reco::PFRecTrackCollection >(cfg.getParameter<edm::InputTag>("PFTracks"))},
   preids_{consumes< std::vector<reco::PreId> >(cfg.getParameter<edm::InputTag>("preIds"))},
   preids_valuemap_{consumes< edm::ValueMap<reco::PreIdRef> >(cfg.getParameter<edm::InputTag>("preIdsValueMap"))},
@@ -101,12 +105,20 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
 					 const edm::EventSetup& iSetup )
 {
 
-  edm::Handle<reco::PFClusterCollection> ecal_clusters;
-  try { iEvent.getByToken(ecal_clusters_, ecal_clusters); }
+  edm::Handle<reco::PFClusterCollection> ecal_pf_clusters;
+  try { iEvent.getByToken(ecal_pf_clusters_, ecal_pf_clusters); }
   catch (...) {;}
   
-  edm::Handle<reco::PFClusterCollection> hcal_clusters;
-  try { iEvent.getByToken(hcal_clusters_, hcal_clusters); }
+  edm::Handle<reco::PFClusterCollection> hcal_pf_clusters;
+  try { iEvent.getByToken(hcal_pf_clusters_, hcal_pf_clusters); }
+  catch (...) {;}
+  
+  edm::Handle<EcalRecHitCollection> eb_rechits;
+  try { iEvent.getByToken(eb_rechits_, eb_rechits); }
+  catch (...) {;}
+  
+  edm::Handle<EcalRecHitCollection> ee_rechits;
+  try { iEvent.getByToken(ee_rechits_, ee_rechits); }
   catch (...) {;}
   
   edm::Handle< reco::PFRecTrackCollection > pf_ktf_tracks;
@@ -190,8 +202,10 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
   }
     
   std::cout << "[LowPtGsfElectronsAnalyzer::analyze]" << std::endl
-	    << "  ecal_clusters:     " << int( ecal_clusters.isValid() ? ecal_clusters->size() : -1 ) << std::endl
-	    << "  hcal_clusters:     " << int( hcal_clusters.isValid() ? hcal_clusters->size() : -1 ) << std::endl
+	    << "  ecal_pf_clusters:  " << int( ecal_pf_clusters.isValid() ? ecal_pf_clusters->size() : -1 ) << std::endl
+	    << "  hcal_pf_clusters:  " << int( hcal_pf_clusters.isValid() ? hcal_pf_clusters->size() : -1 ) << std::endl
+	    << "  eb_rechits:        " << int( eb_rechits.isValid() ? eb_rechits->size() : -1 ) << std::endl
+	    << "  ee_rechits:        " << int( ee_rechits.isValid() ? ee_rechits->size() : -1 ) << std::endl
 	    << "  pf_ktf_tracks:     " << int( pf_ktf_tracks.isValid() ? pf_ktf_tracks->size() : -1 ) << std::endl
 	    << "  preids:            " << int( preids.isValid() ? preids->size() : -1 ) << std::endl
 	    << "  preids_valuemap:   " << int( preids_valuemap.isValid() ? preids_valuemap->size() : -1 ) << std::endl
