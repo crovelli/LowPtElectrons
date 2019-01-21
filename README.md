@@ -49,7 +49,7 @@ scram b -j8
 Add models from cms-data.
 ```
 cd $CMSSW_BASE/external/$SCRAM_ARCH
-git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
+git clone git@github.com:bainbrid/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
 ls -l $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons
 ```
 
