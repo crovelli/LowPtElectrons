@@ -71,6 +71,13 @@ process.RECOoutput = cms.OutputModule("PoolOutputModule",
 
 # Additional output definition
 
+#import FWCore.ParameterSet.Config as cms
+#bParkingOpen = cms.Modifier()
+#bParkingOpen.toModify( process.RECOoutput,
+#                       func=lambda outputCommands : outputCommands.extend(['keep *_lowPtGsfEle*_*_*'])
+#                       )
+#bParkingOpen.toModify(process.lowPtGsfElectronSeeds, PassThrough = cms.bool(True) )
+
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2018_realistic', '')
