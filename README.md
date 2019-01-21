@@ -39,22 +39,13 @@ git cms-merge-topic bainbrid:LowPtElectronsFull_102X #4
 git cms-merge-topic bainbrid:LowPtElectronsFull_105X #5
 ```
 
-Extra instructions for ```#4``` only:
+Extra instructions for ```#4``` only.
 ```
 cd $CMSSW_BASE/src
 rm -r Validation/ SimTracker/ SimG4CMS/ L1Trigger/ DQM/ CalibTracker/ HLTrigger/ 
 enw .git/info/sparse-checkout # remove from this list all packages consistent with above rm command
 git read-tree -mu HEAD
 git status # there should be no add/rm files
-```
-
-Checkout ntuplizer code.
-```
-mkdir $CMSSW_BASE/src/LowPtElectrons
-cd $CMSSW_BASE/src/LowPtElectrons
-git clone git@github.com:bainbrid/LowPtElectrons.git
-cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
-git checkout LowPtElectrons_10X
 ```
 
 Build.
@@ -70,6 +61,22 @@ git clone git@github.com:bainbrid/RecoEgamma-ElectronIdentification.git data/Rec
 ls -l $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons
 ```
 
+The following instructions are optional only. 
+
+Checkout ntuplizer code.
+```
+mkdir $CMSSW_BASE/src/LowPtElectrons
+cd $CMSSW_BASE/src/LowPtElectrons
+git clone git@github.com:bainbrid/LowPtElectrons.git
+cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
+git checkout LowPtElectrons_10X
+```
+
+Build.
+``` 
+cd $CMSSW_BASE/src
+scram b -j8
+```
 Run.
 ``` 
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
