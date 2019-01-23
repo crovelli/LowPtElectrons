@@ -641,7 +641,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 					ntuple_.fill_pfgsf_trk(pfgsf_match->second);
 				}
 
-
         // cout << "DEBUG " << endl 
         //      << "#GSF " << gsf_tracks->size() << endl
         //      << "#PFGSF " << pf_gsf_tracks->size() << endl

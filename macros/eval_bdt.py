@@ -14,6 +14,7 @@ parser.add_argument('--dataset')
 parser.add_argument('--plot')
 parser.add_argument('--query')
 parser.add_argument('--weights', help='train_weight:original_weight')
+#parser.add_argument('--consistency')
 args = parser.parse_args()
 
 def check_consistency(pars, jfile):

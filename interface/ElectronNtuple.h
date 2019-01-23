@@ -81,6 +81,9 @@ public:
 		//noZS::EcalClusterLazyTools& tools //Something similar for HCAL?
 		);
 
+	void print_val(int i=0) {
+		std::cout<< "  Fill ntuple: " << i << " " << preid_ktf_ecal_cluster_e_ << std::endl;
+	}
 
 	//TODO: refactor to avoid repetitions
 	//TODO: refactor to avoid repetitions

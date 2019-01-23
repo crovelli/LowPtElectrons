@@ -34,7 +34,7 @@ options.register('data', 'RAWMCTest',
     VarParsing.varType.string,
     ""
 )
-options.register('globalTag', '94X_mc2017_realistic_v12',
+options.register('globalTag', '102X_upgrade2018_realistic_v15',
     VarParsing.multiplicity.singleton,
     VarParsing.varType.string,
     ""
@@ -44,7 +44,7 @@ options.register('hitAssociation', False,
     VarParsing.varType.bool,
     ""
 )
-options.register('disableAssociation', False,
+options.register('disableAssociation', True,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.bool,
     ""
@@ -103,8 +103,9 @@ for i in range(len(leftovers)):
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.StandardSequences.Eras import eras
+from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
 
-process = cms.Process('RECO',eras.Run2_2017)
+process = cms.Process('RECO', eras.Run2_2018, eras.bParking, premix_stage2)
 
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
@@ -114,11 +115,10 @@ process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.L1Reco_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
-process.load('Configuration.StandardSequences.DigiDMPreMix_cff')
-process.load('SimGeneral.MixingModule.digi_MixPreMix_cfi')
-process.load('Configuration.StandardSequences.DataMixerPreMix_cff')
+# process.load('Configuration.StandardSequences.DigiDMPreMix_cff')
+# process.load('SimGeneral.MixingModule.digi_MixPreMix_cfi')
+# process.load('Configuration.StandardSequences.DataMixerPreMix_cff')
 process.load('Configuration.StandardSequences.SimL1EmulatorDM_cff')
 process.load('Configuration.StandardSequences.DigiToRawDM_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
@@ -188,12 +188,32 @@ else : # Use custom Ntuplizer code
 
    # Track association by hits
    process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_cfi')
-   process.quickTrackAssociatorByHits.useClusterTPAssociation = False
+   process.quickTrackAssociatorByHits = cms.EDProducer(
+      "QuickTrackAssociatorByHitsProducer",
+      AbsoluteNumberOfHits = cms.bool(False),
+      Cut_RecoToSim = cms.double(0.75),
+      PixelHitWeight = cms.double(1.0),
+      Purity_SimToReco = cms.double(0.75),
+      Quality_SimToReco = cms.double(0.5),
+      SimToRecoDenominator = cms.string('reco'),
+      ThreeHitTracksAreSpecial = cms.bool(True),
+      associatePixel = cms.bool(True),
+      associateStrip = cms.bool(True),
+      cluster2TPSrc = cms.InputTag("tpClusterProducer"),
+      pixelSimLinkSrc = cms.InputTag("mixData","PixelDigiSimLink"),
+      stripSimLinkSrc = cms.InputTag("mixData","StripDigiSimLink"),
+      useClusterTPAssociation = cms.bool(False)
+      )
+   ## .useClusterTPAssociation = False
+   ## process.quickTrackAssociatorByHits.associatePixel = cms.bool(True)
+   ## process.quickTrackAssociatorByHits.associateStrip = cms.bool(True)
+   ## process.quickTrackAssociatorByHits.pixelSimLinkSrc = cms.InputTag("simSiPixelDigis")
+   ## process.quickTrackAssociatorByHits.stripSimLinkSrc = cms.InputTag("simSiStripDigis")
    process.ntuplizer_seq *= process.tpClusterProducer
    process.ntuplizer_seq *= process.quickTrackAssociatorByHits
    process.ntuplizer_seq *= process.trackingParticleRecoTrackAsssociation
-   from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
-   customiseForPreMixingInput(process)
+   #from SimGeneral.DataMixingModule.customiseForPremixingInput import customiseForPreMixingInput
+   #customiseForPreMixingInput(process)
 
    # Electron ID ...
    from PhysicsTools.SelectorUtils.tools.vid_id_tools import *

@@ -166,7 +166,7 @@ def pre_process_data(dataset, features, for_seeding=False):
    mask = training_selection(data)
    multi_dim = {i : j[mask] for i, j in multi_dim.iteritems()}   
    data = data[mask]
-   data['trk_dxy_sig'] = data.trk_dxy_err/data.trk_dxy
+   data['trk_dxy_sig'] =  data.trk_dxy/data.trk_dxy_err
    data['training_out'] = -1
    data['log_trkpt'] = np.log10(data.trk_pt)
    
