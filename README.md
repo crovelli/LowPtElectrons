@@ -2,6 +2,9 @@
 
 Link to ```RecoEgamma/EgammaElectronProducers``` package on ```bainbrid/cmssw:LowPtElectrons_10X branch``` [here](https://github.com/bainbrid/cmssw/tree/LowPtElectrons_10X/RecoEgamma/EgammaElectronProducers).
 
+Merged:
+- "Up to GsfTracks" has been integrated since ```CMSSW_10_5_X_2019-01-22-2300``` (ie this can supersede ```#1```)
+
 Recommended:
 - Choose ```#4``` for full chain in ```CMSSW_10_2_X```
 - Choose ```#5``` for full chain in ```CMSSW_10_5_X```
