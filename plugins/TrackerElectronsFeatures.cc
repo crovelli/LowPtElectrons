@@ -99,6 +99,11 @@ private:
 
 	virtual void beginRun(const edm::Run & run,const edm::EventSetup&);
 	virtual void analyze(const edm::Event&, const edm::EventSetup&);
+	virtual void endJob() override {
+		std::cout << "Number of electrons stored: " << npassed_[0] << std::endl
+							<< "Number of other electrons: " << npassed_[1] << std::endl
+							<< "Number of other tracks: " << npassed_[2] << std::endl;
+	}
 
   class Bin {
   public:
@@ -166,6 +171,7 @@ private:
 	const edm::EDGetTokenT< edm::View<TrajectorySeed> > ele_seeds_;
 	const edm::EDGetTokenT< reco::TrackToTrackingParticleAssociator > associator_;
 	const edm::EDGetTokenT< TrackingParticleCollection > tracking_particles_;
+	unsigned long long int npassed_[3] = {0,0,0};
 };
 
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
@@ -486,14 +492,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco::GenParticleRef genp(gen_particles, idx);
 		bool is_ele = genp->isLastCopy() && std::abs(genp->pdgId()) == 11;
 		bool comes_from_B = genp->numberOfMothers() >= 1 &&
-		  genp->mother()->pdgId() > 510 &&
-		  genp->mother()->pdgId() < 546;
+		  std::abs(genp->mother()->pdgId()) > 510 &&
+		  std::abs(genp->mother()->pdgId()) < 546;		
 		if (!comes_from_B && // check resonant (J/psi) production?
 		    genp->numberOfMothers() >= 1 && genp->mother() && // has mother
 		    genp->mother()->pdgId() == 443 && // mother is J/psi
 		    genp->mother()->numberOfMothers() >= 1 && genp->mother()->mother() && // has grandmother
-		    genp->mother()->mother()->pdgId() > 510 &&
-		    genp->mother()->mother()->pdgId() < 546 ) { // grandmother is B
+		    std::abs(genp->mother()->mother()->pdgId()) > 510 &&
+		    std::abs(genp->mother()->mother()->pdgId()) < 546 ) { // grandmother is B
 		  comes_from_B = true;
 		}
 		if(is_ele && (comes_from_B || !check_from_B_)) { //is coming from a B
@@ -562,6 +568,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				RefToBase<TrajectorySeed> key(ele_seeds, i);
 				auto match = reco2sim.find(key);
 		
+				if(!disable_association_ && match != reco2sim.end() && std::abs(match->val.front().first->pdgId()) == 11)
+					other_electrons.push_back(i);
+				
 				//check matching
 				if(disable_association_ || match == reco2sim.end() || std::abs(match->val.front().first->pdgId()) != 11) { 
 					other_tracks.push_back(i);
@@ -569,6 +578,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			}
 		}
 	}
+	npassed_[0] += electrons_from_B.size();
+	npassed_[1] += other_electrons.size();
+	npassed_[2] += other_tracks.size();
 	/*cout << "Found " << electrons_from_B.size() << " gen electrons, " 
 			 << gen2seed.size() << " matched electron seeds, "
 			 << other_electrons.size() << " non-gen electrons, " 
