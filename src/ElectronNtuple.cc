@@ -12,6 +12,7 @@
 #include <sstream>
 #include <cmath>
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
 
 using namespace reco;
 using namespace edm;
@@ -147,13 +148,37 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("ele_p",				 	&ele_p_				   , "ele_p/f");
 	tree->Branch("ele_eta",		 	  &ele_eta_		       , "ele_eta/f");
 	tree->Branch("ele_phi",		 	  &ele_phi_     		 , "ele_phi/f");
-	tree->Branch("ele_mvaIdV1",		 	  &ele_mvaIdV1_     		 , "ele_mvaIdV1/f");
 	tree->Branch("ele_mvaIdV2",		 	  &ele_mvaIdV2_     		 , "ele_mvaIdV2/f");
+	tree->Branch("ele_lowPtMva",		 	&ele_lowPtMva_     		 , "ele_lowPtMva/f");
 	tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
 	tree->Branch("ele_iso01", &ele_iso01_, "ele_iso01/f");
 	tree->Branch("ele_iso02", &ele_iso02_, "ele_iso02/f");
 	tree->Branch("ele_iso03", &ele_iso03_, "ele_iso03/f");
 	tree->Branch("ele_iso04", &ele_iso04_, "ele_iso04/f");
+
+	tree->Branch("eid_trk_p", &eid_trk_p_, "eid_trk_p/f");
+  tree->Branch("eid_trk_nhits", &eid_trk_nhits_, "eid_trk_nhits/f");
+  tree->Branch("eid_trk_chi2red", &eid_trk_chi2red_, "eid_trk_chi2red/f");
+  tree->Branch("eid_gsf_nhits", &eid_gsf_nhits_, "eid_gsf_nhits/f");
+  tree->Branch("eid_gsf_chi2red", &eid_gsf_chi2red_, "eid_gsf_chi2red/f");
+  tree->Branch("eid_sc_E", &eid_sc_E_, "eid_sc_E/f");
+  tree->Branch("eid_sc_eta", &eid_sc_eta_, "eid_sc_eta/f");
+  tree->Branch("eid_sc_etaWidth", &eid_sc_etaWidth_, "eid_sc_etaWidth/f");
+  tree->Branch("eid_sc_phiWidth", &eid_sc_phiWidth_, "eid_sc_phiWidth/f");
+  tree->Branch("eid_match_seed_dEta", &eid_match_seed_dEta_, "eid_match_seed_dEta/f");
+  tree->Branch("eid_match_eclu_EoverP", &eid_match_eclu_EoverP_, "eid_match_eclu_EoverP/f");
+  tree->Branch("eid_match_SC_EoverP", &eid_match_SC_EoverP_, "eid_match_SC_EoverP/f");
+  tree->Branch("eid_match_SC_dEta", &eid_match_SC_dEta_, "eid_match_SC_dEta/f");
+  tree->Branch("eid_match_SC_dPhi", &eid_match_SC_dPhi_, "eid_match_SC_dPhi/f");
+  tree->Branch("eid_shape_full5x5_sigmaIetaIeta", &eid_shape_full5x5_sigmaIetaIeta_, "eid_shape_full5x5_sigmaIetaIeta/f");
+  tree->Branch("eid_shape_full5x5_sigmaIphiIphi", &eid_shape_full5x5_sigmaIphiIphi_, "eid_shape_full5x5_sigmaIphiIphi/f");
+  tree->Branch("eid_shape_full5x5_HoverE", &eid_shape_full5x5_HoverE_, "eid_shape_full5x5_HoverE/f");
+  tree->Branch("eid_shape_full5x5_r9", &eid_shape_full5x5_r9_, "eid_shape_full5x5_r9/f");
+  tree->Branch("eid_shape_full5x5_circularity", &eid_shape_full5x5_circularity_, "eid_shape_full5x5_circularity/f");
+  tree->Branch("eid_rho", &eid_rho_, "eid_rho/f");
+  tree->Branch("eid_brem_frac", &eid_brem_frac_, "eid_brem_frac/f");
+  tree->Branch("eid_ele_pt", &eid_ele_pt_, "eid_ele_pt/f");
+
 
 	//Bottom up approach
 	tree->Branch("gsf_ecal_cluster_e", &gsf_ecal_cluster_e_, "gsf_ecal_cluster_e/f");
@@ -442,12 +467,16 @@ void ElectronNtuple::fill_preid( const reco::PreId &preid_ecal, const reco::PreI
 	preid_mva2_pass_ = preid_ecal.mvaSelected(1);
 }
 
-void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2, float ele_conv_vtx_fit_prob, const std::vector<float>& iso_rings) {
+void ElectronNtuple::fill_ele(
+	const reco::GsfElectronRef ele, float mvaid_v1, 
+	float mvaid_v2, float ele_conv_vtx_fit_prob, 
+	const std::vector<float>& iso_rings, const double rho) {
+
 	ele_p_			 = ele->p();
 	ele_pt_			 = ele->pt();
 	ele_eta_		 = ele->eta();
 	ele_phi_     = ele->phi();
-	ele_mvaIdV1_ = mvaid_v1;
+	ele_lowPtMva_ = mvaid_v1;
 	ele_mvaIdV2_ = mvaid_v2;
 	ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob;
 	ele_iso01_ = iso_rings.at(0);
@@ -455,6 +484,33 @@ void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, fl
 	ele_iso03_ = iso_rings.at(2);
 	ele_iso04_ = iso_rings.at(3);
 	fill_supercluster(ele);
+
+	lowptgsfeleid::Features feats;
+	feats.set(ele, rho);
+	auto feat_v = feats.get();
+	size_t idx=0;
+	eid_trk_p_ = feat_v[idx++];
+  eid_trk_nhits_ = feat_v[idx++];
+  eid_trk_chi2red_ = feat_v[idx++];
+  eid_gsf_nhits_ = feat_v[idx++];
+  eid_gsf_chi2red_ = feat_v[idx++];
+  eid_sc_E_ = feat_v[idx++];
+  eid_sc_eta_ = feat_v[idx++];
+  eid_sc_etaWidth_ = feat_v[idx++];
+  eid_sc_phiWidth_ = feat_v[idx++];
+  eid_match_seed_dEta_ = feat_v[idx++];
+  eid_match_eclu_EoverP_ = feat_v[idx++];
+  eid_match_SC_EoverP_ = feat_v[idx++];
+  eid_match_SC_dEta_ = feat_v[idx++];
+  eid_match_SC_dPhi_ = feat_v[idx++];
+  eid_shape_full5x5_sigmaIetaIeta_ = feat_v[idx++];
+  eid_shape_full5x5_sigmaIphiIphi_ = feat_v[idx++];
+  eid_shape_full5x5_HoverE_ = feat_v[idx++];
+  eid_shape_full5x5_r9_ = feat_v[idx++];
+  eid_shape_full5x5_circularity_ = feat_v[idx++];
+  eid_rho_ = feat_v[idx++];
+  eid_brem_frac_ = feat_v[idx++];
+  eid_ele_pt_ = feat_v[idx++];
 }
 
 void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {

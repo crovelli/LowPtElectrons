@@ -67,7 +67,8 @@ public:
 									const reco::BeamSpot &spot, const double rho, const int num_gsf,
 									noZS::EcalClusterLazyTools& ecalTools);
 	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, 
-								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.});
+								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.},
+								const double rho=0);
 	void fill_supercluster(const reco::GsfElectronRef ele);
 	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
 	void fill_GSF_ECAL_cluster_info(
@@ -261,13 +262,37 @@ private:
 	float ele_eta_ = -1.;
 	float ele_phi_ = -1.;
 	float ele_p_ = -1.;
-	float ele_mvaIdV1_ = -2.;
 	float ele_mvaIdV2_ = -2.;
+	float ele_lowPtMva_ = -999.;
 	float ele_conv_vtx_fit_prob_ = -1.;
 	float ele_iso01_ = 0.;
 	float ele_iso02_ = 0.;
 	float ele_iso03_ = 0.;
 	float ele_iso04_ = 0.;
+
+	float eid_trk_p_ = -666;
+  float eid_trk_nhits_ = -666;
+  float eid_trk_chi2red_ = -666;
+  float eid_gsf_nhits_ = -666;
+  float eid_gsf_chi2red_ = -666;
+  float eid_sc_E_ = -666;
+  float eid_sc_eta_ = -666;
+  float eid_sc_etaWidth_ = -666;
+  float eid_sc_phiWidth_ = -666;
+  float eid_match_seed_dEta_ = -666;
+  float eid_match_eclu_EoverP_ = -666;
+  float eid_match_SC_EoverP_ = -666;
+  float eid_match_SC_dEta_ = -666;
+  float eid_match_SC_dPhi_ = -666;
+  float eid_shape_full5x5_sigmaIetaIeta_ = -666;
+  float eid_shape_full5x5_sigmaIphiIphi_ = -666;
+  float eid_shape_full5x5_HoverE_ = -666;
+  float eid_shape_full5x5_r9_ = -666;
+  float eid_shape_full5x5_circularity_ = -666;
+  float eid_rho_ = -666;
+  float eid_brem_frac_ = -666;
+  float eid_ele_pt_ = -666;
+
 
 	// Bottom up approach	
 	float gsf_ecal_cluster_e_ = -1;
