@@ -156,7 +156,7 @@ private:
 	const edm::EDGetTokenT< reco::PFClusterCollection > hcal_clusters_;
 	const edm::EDGetTokenT< EcalRecHitCollection > eb_rechits_;
 	const edm::EDGetTokenT< EcalRecHitCollection > ee_rechits_;
-	const edm::EDGetTokenT< edm::ValueMap<float> > mvaid_v1_;
+	const edm::EDGetTokenT< edm::ValueMap<float> > lowptmvaid_;
 	const edm::EDGetTokenT< edm::ValueMap<float> > mvaid_v2_;
 	const edm::EDGetTokenT< edm::ValueMap<float> > convVtxFitProb_;
 
@@ -195,7 +195,7 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
   hcal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("HCALClusters"))},
   eb_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EBRecHits"))},
   ee_rechits_{consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("EERecHits"))},
-  mvaid_v1_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV1"))},
+  lowptmvaid_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("LowPtMvaID"))},
   mvaid_v2_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))},
   convVtxFitProb_{consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb"))},
   gen_particles_{consumes< reco::GenParticleCollection >(cfg.getParameter<edm::InputTag>("genParticles"))},
@@ -305,8 +305,8 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< TrackingParticleCollection > tracking_particles;
 	iEvent.getByToken(tracking_particles_, tracking_particles);
 
-	edm::Handle< edm::ValueMap<float> > mvaid_v1;
-	iEvent.getByToken(mvaid_v1_, mvaid_v1);
+	edm::Handle< edm::ValueMap<float> > lowptmvaid;
+	iEvent.getByToken(lowptmvaid_, lowptmvaid);
 
 	edm::Handle< edm::ValueMap<float> > mvaid_v2;
 	iEvent.getByToken(mvaid_v2_, mvaid_v2);
@@ -492,14 +492,14 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco::GenParticleRef genp(gen_particles, idx);
 		bool is_ele = genp->isLastCopy() && std::abs(genp->pdgId()) == 11;
 		bool comes_from_B = genp->numberOfMothers() >= 1 &&
-		  genp->mother()->pdgId() > 510 &&
-		  genp->mother()->pdgId() < 546;
+		  std::abs(genp->mother()->pdgId()) > 510 &&
+		  std::abs(genp->mother()->pdgId()) < 546;
 		if (!comes_from_B && // check resonant (J/psi) production?
 		    genp->numberOfMothers() >= 1 && genp->mother() && // has mother
-		    genp->mother()->pdgId() == 443 && // mother is J/psi
+		    std::abs(genp->mother()->pdgId()) == 443 && // mother is J/psi
 		    genp->mother()->numberOfMothers() >= 1 && genp->mother()->mother() && // has grandmother
-		    genp->mother()->mother()->pdgId() > 510 &&
-		    genp->mother()->mother()->pdgId() < 546 ) { // grandmother is B
+		    std::abs(genp->mother()->mother()->pdgId()) > 510 &&
+		    std::abs(genp->mother()->mother()->pdgId()) < 546 ) { // grandmother is B
 		  comes_from_B = true;
 		}
 		if(is_ele && (comes_from_B || !check_from_B_)) { //is coming from a B
@@ -678,7 +678,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 				const GsfElectronRef* ele_ref = 0;
         const auto& ele_match = gsf2ged.find(*best);
         if(ele_match != gsf2ged.end()) { //matched to GED Electron
-          float id1 = (*mvaid_v1)[ele_match->second];
+          float id1 = (*lowptmvaid)[ele_match->second];
           float id2 = (*mvaid_v2)[ele_match->second];
           float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
 					vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
@@ -786,7 +786,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron
-				float id1 = (*mvaid_v1)[ele_match->second];
+				float id1 = (*lowptmvaid)[ele_match->second];
 				float id2 = (*mvaid_v2)[ele_match->second];
 				float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
 				vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
@@ -900,7 +900,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			
 			const auto& ele_match = gsf2ged.find(gsf_match->second.at(0));
 			if(ele_match != gsf2ged.end()) { //matched to GED Electron
-				float id1 = (*mvaid_v1)[ele_match->second];
+				float id1 = (*lowptmvaid)[ele_match->second];
 				float id2 = (*mvaid_v2)[ele_match->second];
 				float conv_vtx_fit_prob = (*convVtxFitProb)[ele_match->second];
 				vector<float> iso_rings = get_iso_rings(ele_match->second, ktf, tracks);
