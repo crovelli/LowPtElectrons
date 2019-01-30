@@ -496,7 +496,7 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		  std::abs(genp->mother()->pdgId()) < 546;		
 		if (!comes_from_B && // check resonant (J/psi) production?
 		    genp->numberOfMothers() >= 1 && genp->mother() && // has mother
-		    genp->mother()->pdgId() == 443 && // mother is J/psi
+		    std::abs(genp->mother()->pdgId()) == 443 && // mother is J/psi
 		    genp->mother()->numberOfMothers() >= 1 && genp->mother()->mother() && // has grandmother
 		    std::abs(genp->mother()->mother()->pdgId()) > 510 &&
 		    std::abs(genp->mother()->mother()->pdgId()) < 546 ) { // grandmother is B
