@@ -39,7 +39,7 @@ git cms-merge-topic bainbrid:LowPtElectrons_10X      #1
 git cms-merge-topic bainbrid:LowPtElectronsFull_10X  #2
 git cms-merge-topic bainbrid:LowPtElectrons_10_2_9   #3
 git cms-merge-topic bainbrid:LowPtElectronsFull_102X #4
-git cms-merge-topic bainbrid:LowPtElectronsFull_105X_squash #5
+git cms-merge-topic bainbrid:LowPtElectronsFull_105X_squash2 #5
 ```
 
 Extra instructions for ```#4``` only.
