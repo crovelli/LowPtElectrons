@@ -22,7 +22,7 @@ cmsrel CMSSW_10_4_0_pre4; cd CMSSW_10_4_0_pre4/src   #1
 cmsrel CMSSW_10_4_0_pre4; cd CMSSW_10_4_0_pre4/src   #2
 cmsrel CMSSW_10_2_9; cd CMSSW_10_2_9/src             #3
 cmsrel CMSSW_10_2_10; cd CMSSW_10_2_10/src           #4
-cmsrel CMSSW_10_5_X_2019-02-01-1100; cd CMSSW_10_5_X_2019-02-01-1100/src #5
+cmsrel CMSSW_10_5_X_2019-02-04-1100; cd CMSSW_10_5_X_2019-02-04-1100/src #5
 cmsenv
 ```
 
@@ -39,7 +39,7 @@ git cms-merge-topic bainbrid:LowPtElectrons_10X      #1
 git cms-merge-topic bainbrid:LowPtElectronsFull_10X  #2
 git cms-merge-topic bainbrid:LowPtElectrons_10_2_9   #3
 git cms-merge-topic bainbrid:LowPtElectronsFull_102X #4
-git cms-merge-topic bainbrid:LowPtElectronsFull_105X_squash2 #5
+git cms-merge-topic bainbrid:LowPtElectronsFull_105X_squash #5
 ```
 
 Extra instructions for ```#4``` only.
