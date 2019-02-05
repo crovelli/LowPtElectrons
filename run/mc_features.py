@@ -220,7 +220,6 @@ else : # Use custom Ntuplizer code
    dataFormat = DataFormat.AOD
    switchOnVIDElectronIdProducer(process, dataFormat)
    my_id_modules = [
-      'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff',
       'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
    ]
 
@@ -283,8 +282,9 @@ if options.edout:
       eventAutoFlushCompressedSize = cms.untracked.int32(31457280),
       fileName = cms.untracked.string('file:EDOutput.root'),
       outputCommands = cms.untracked.vstring( 
-         'keep *',
-#         'drop *',
+         'drop *',
+         'keep *_lowPt*_*_*',
+         'keep *_generalTracks_*_*',
 #         "keep *_offlineBeamSpot_*_*",
 #         "keep *_genParticles_*_*",
 #         'keep *_generalTracks_*_*',
