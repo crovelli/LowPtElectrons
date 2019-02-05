@@ -255,8 +255,16 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
     for ( unsigned int iter = 0; iter < electrons->size(); ++iter ) {
       reco::GsfElectronRef ele(electrons,iter);
       if ( ele.isNonnull() ) { 
-	std::cout << "                     " 
-		  << float( (*mvaSeeds[0])[ele] ) << std::endl; 
+	std::cout << std::setprecision(2) 
+		  << std::setw(8)
+		  << " pt: " << ele->gsfTrack()->pt()
+		  << std::setw(8)
+		  << " eta: " << ele->gsfTrack()->eta()
+		  << std::setw(8)
+		  << " phi: " << ele->gsfTrack()->phi()
+		  << std::setw(8)
+	  	  << " mva: " << float( (*mvaSeeds[0])[ele] ) 
+		  << std::endl; 
       }
     }
     std::cout << std::endl;
