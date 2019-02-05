@@ -33,6 +33,9 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gen_e", &gen_e_, "gen_e/f");
 	tree->Branch("gen_p", &gen_p_, "gen_p/f");
 	tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
+	tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
+	tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
+	tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
 
 	tree->Branch("trk_pt",				 	&trk_pt_				   , "trk_pt/f");
 	tree->Branch("trk_eta",		 	  &trk_eta_		       , "trk_eta/f");
@@ -50,6 +53,7 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_inp",  			&trk_inp_  	    	 , "trk_inp/f");
 	tree->Branch("trk_outp",	  		&trk_outp_	  	   , "trk_outp/f");
 	tree->Branch("trk_chi2red",    &trk_chi2red_      , "trk_chi2red/f"); 
+	tree->Branch("trk_pass_default_preid", &trk_pass_default_preid_, "trk_pass_default_preid/O"); 
 
 	tree->Branch("preid_trk_pt", &preid_trk_pt_  , "preid_trk_pt/f");
 	tree->Branch("preid_trk_eta", &preid_trk_eta_ , "preid_trk_eta/f");
@@ -370,6 +374,9 @@ void ElectronNtuple::fill_gen(const GenParticleRef genp) {
 	gen_e_ = genp->energy();
 	gen_p_ = genp->p();
 	gen_charge_ = genp->charge();
+	gen_pdgid_ = 0;
+	gen_mom_pdgid_ = 0;
+	gen_gran_pdgid_ = 0;
 }
 
 void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &spot) {
@@ -421,10 +428,10 @@ void ElectronNtuple::fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf) {
 
 void ElectronNtuple::fill_preid( const reco::PreId &preid_ecal, const reco::PreId &preid_hcal, 
 																 const reco::BeamSpot &spot, const double rho, const int num_gsf,
-																 noZS::EcalClusterLazyTools& ecalTools) {
+																 noZS::EcalClusterLazyTools& ecalTools, bool pass_preid) {
 
   // Extract KF track parameters
-  fill_ktf_trk( preid_ecal.trackRef(), spot );
+  fill_ktf_trk( preid_ecal.trackRef(), spot, pass_preid);
 	
 	lowptgsfeleseed::Features preid_features;
 	preid_features.set(preid_ecal, preid_hcal,
@@ -489,28 +496,29 @@ void ElectronNtuple::fill_ele(
 	feats.set(ele, rho);
 	auto feat_v = feats.get();
 	size_t idx=0;
+
+	eid_rho_ = feat_v[idx++];
+	eid_ele_pt_ = feat_v[idx++];
+	eid_sc_eta_ = feat_v[idx++];
+	eid_shape_full5x5_sigmaIetaIeta_ = feat_v[idx++];
+	eid_shape_full5x5_sigmaIphiIphi_ = feat_v[idx++];
+	eid_shape_full5x5_circularity_ = feat_v[idx++];
+	eid_shape_full5x5_r9_ = feat_v[idx++];
+	eid_sc_etaWidth_ = feat_v[idx++];
+	eid_sc_phiWidth_ = feat_v[idx++];
+	eid_shape_full5x5_HoverE_ = feat_v[idx++];
+	eid_trk_nhits_ = feat_v[idx++];
+	eid_trk_chi2red_ = feat_v[idx++];
+	eid_gsf_chi2red_ = feat_v[idx++];
+	eid_brem_frac_ = feat_v[idx++];
+	eid_gsf_nhits_ = feat_v[idx++];
+	eid_match_SC_EoverP_ = feat_v[idx++];
+	eid_match_eclu_EoverP_ = feat_v[idx++];
+	eid_match_SC_dEta_ = feat_v[idx++];
+	eid_match_SC_dPhi_ = feat_v[idx++];
+	eid_match_seed_dEta_ = feat_v[idx++];
+	eid_sc_E_ = feat_v[idx++];
 	eid_trk_p_ = feat_v[idx++];
-  eid_trk_nhits_ = feat_v[idx++];
-  eid_trk_chi2red_ = feat_v[idx++];
-  eid_gsf_nhits_ = feat_v[idx++];
-  eid_gsf_chi2red_ = feat_v[idx++];
-  eid_sc_E_ = feat_v[idx++];
-  eid_sc_eta_ = feat_v[idx++];
-  eid_sc_etaWidth_ = feat_v[idx++];
-  eid_sc_phiWidth_ = feat_v[idx++];
-  eid_match_seed_dEta_ = feat_v[idx++];
-  eid_match_eclu_EoverP_ = feat_v[idx++];
-  eid_match_SC_EoverP_ = feat_v[idx++];
-  eid_match_SC_dEta_ = feat_v[idx++];
-  eid_match_SC_dPhi_ = feat_v[idx++];
-  eid_shape_full5x5_sigmaIetaIeta_ = feat_v[idx++];
-  eid_shape_full5x5_sigmaIphiIphi_ = feat_v[idx++];
-  eid_shape_full5x5_HoverE_ = feat_v[idx++];
-  eid_shape_full5x5_r9_ = feat_v[idx++];
-  eid_shape_full5x5_circularity_ = feat_v[idx++];
-  eid_rho_ = feat_v[idx++];
-  eid_brem_frac_ = feat_v[idx++];
-  eid_ele_pt_ = feat_v[idx++];
 }
 
 void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
@@ -669,7 +677,7 @@ void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
 
 }
 
-void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spot ) {
+void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spot, bool pass_preid) {
   if ( trk.isNonnull() ) {
     // kine
     trk_pt_ = trk->pt();
@@ -690,6 +698,7 @@ void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spo
     trk_dxy_err_ = trk->dxyError();
     trk_dz_ = trk->dz(spot.position());
     trk_dz_err_ = trk->dzError();
+		trk_pass_default_preid_ = pass_preid;
   } else {
     //@@ Shouldn't happen, but we take dummy values ...?
   }

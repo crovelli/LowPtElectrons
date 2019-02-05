@@ -65,12 +65,12 @@ public:
 	void fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf);
 	void fill_preid(const reco::PreId &preid_ecal, const reco::PreId &preid_hcal, 
 									const reco::BeamSpot &spot, const double rho, const int num_gsf,
-									noZS::EcalClusterLazyTools& ecalTools);
+									noZS::EcalClusterLazyTools& ecalTools, bool pass_preid);
 	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, 
 								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.},
 								const double rho=0);
 	void fill_supercluster(const reco::GsfElectronRef ele);
-	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
+	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot, bool pass_preid);
 	void fill_GSF_ECAL_cluster_info(
 		const reco::PFClusterRef cluster,
 		const reco::PFTrajectoryPoint &gsf,
@@ -137,7 +137,10 @@ private:
 	float gen_phi_ = -1;
 	float gen_e_ = -1;
 	float gen_p_ = -1;
-	int   gen_charge_ = 0;
+	int   gen_charge_ = -1;
+	int   gen_pdgid_ = 0;
+	int   gen_mom_pdgid_ = 0;
+	int   gen_gran_pdgid_ = 0;
 
 	// KF tracks: kine
 	float trk_pt_ = -1.;
@@ -158,6 +161,7 @@ private:
 	float trk_dxy_err_ = -1;
 	float trk_dz_ = -1;
 	float trk_dz_err_ = -1;
+	bool trk_pass_default_preid_ = false;
 
 	// PreId: ECAL/track matching
 	float preid_trk_pt_  = -1.;
