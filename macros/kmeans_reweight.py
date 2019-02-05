@@ -31,7 +31,7 @@ from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import get_data, tag, apply_weight, get_data_sync, target_dataset, HistWeighter
+from datasets import tag, apply_weight, get_data_sync, target_dataset, HistWeighter
 import os
 dataset = 'test' if args.test else target_dataset
 if args.dataset:
@@ -47,7 +47,7 @@ if not os.path.isdir(plots):
 
 print 'Getting dataset "{:s}"...'.format(dataset)
 data = pd.DataFrame(
-   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other'])
+   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other', 'evt'])
 )
 print '...Done'
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
@@ -202,9 +202,10 @@ for plot in reweight_feats+['trk_pt']:
 
 #compute separation with a BDT   
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.model_selection import train_test_split
+from datasets import train_test_split
 from sklearn.metrics import roc_curve, roc_auc_score
-train_bdt, test_bdt = train_test_split(data, test_size=0.5, random_state=42)
+
+train_bdt, test_bdt = train_test_split(data, 10, 5)
 pre_separation = GradientBoostingClassifier(
    n_estimators=50, learning_rate=0.1,
    max_depth=4, random_state=42, verbose=1
