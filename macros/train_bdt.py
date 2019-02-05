@@ -63,6 +63,15 @@ parser.add_argument(
 parser.add_argument(
    '--as_weight'
 )
+parser.add_argument(
+   '--noweight', action='store_true'
+)
+parser.add_argument(
+   '--SW94X', action='store_true'
+)
+parser.add_argument(
+   '--usenomatch', action='store_true'
+)
 
 args = parser.parse_args()
 
@@ -88,38 +97,60 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, pre_process_data, target_dataset, get_models_dir
+from datasets import tag, pre_process_data, target_dataset, get_models_dir, train_test_split
 import os
 
 dataset = 'test' if args.test else target_dataset
 if args.dataset:
    dataset = args.dataset
 
-mods = get_models_dir()
+mods = '%s/bdt_%s' % (get_models_dir(), args.what)
 if not os.path.isdir(mods):
-   os.mkdirs(mods)
+   os.makedirs(mods)
 
 plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(plots):
-   os.mkdirs(plots)
+   os.makedirs(plots)
 
 from features import *
 features, additional = get_features(args.what)
 
-fields = features+labeling+additional
+fields = features+labeling
+if args.SW94X and 'seeding' in args.what:
+   fields += seed_94X_additional
+else:
+   fields += additional
+
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
 
 if not dataset.endswith('.hdf'):
-   data = pre_process_data(dataset, fields, args.what in ['seeding', 'fullseeding'])
+   data = pre_process_data(
+      dataset, fields, 
+      for_seeding=('seeding' in args.what) and args.SW94X),
+      keep_nonmatch=args.usenomatch
+      )
    if args.selection:
       data = data.query(args.selection)
 
    if args.as_weight:
       data['weight'] = data[args.as_weight]
 
-   from sklearn.model_selection import train_test_split
-   train_test, validation = train_test_split(data, test_size=0.2, random_state=42)
-   train, test = train_test_split(train_test, test_size=0.2, random_state=42)
+   if args.noweight:
+      data['weight'] = 1
+   train_test, validation = train_test_split(data, 10, 8)
+   train, test = train_test_split(train_test, 10, 6)
+   validation.to_hdf(
+      '%s/bdt_%s_testdata.hdf' % (mods, args.what),
+      'data'
+      ) 
+   train.to_hdf(
+      '%s/bdt_%s_traindata.hdf' % (mods, args.what),
+      'data'
+      ) 
+   test.to_hdf(
+      '%s/bdt_%s_valdata.hdf' % (mods, args.what),
+      'data'
+      ) 
 else:   
    train = pd.read_hdf(dataset, 'train')
    test  = pd.read_hdf(dataset, 'validation') #mis-used name in this script
@@ -133,9 +164,12 @@ else:
       train['weight'] = train[args.as_weight]
       test['weight'] = test[args.as_weight]
       validation['weight'] = validation[args.as_weight]
+   if args.noweight:
+      train['weight'] = 1
+      test['weight'] = 1
+      validation['weight'] = 1
    dataset = os.path.basename(dataset).split('.')[0]
 
-from hep_ml.reweight import GBReweighter
 from sklearn.externals import joblib
 import xgboost as xgb
 #
@@ -217,7 +251,7 @@ elif 'id' in args.what:
    plt.plot(*mva_v1, label='MVA ID V1 (AUC: %.2f)'  % mva_v1_auc)
    plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
 else:
-   raise ValueError()
+   pass #raise ValueError()
 
 for key in rocs:
    fpr, tpr = rocs[key]

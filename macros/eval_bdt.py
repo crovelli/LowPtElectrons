@@ -15,6 +15,12 @@ parser.add_argument('--plot')
 parser.add_argument('--query')
 parser.add_argument('--weights', help='train_weight:original_weight')
 #parser.add_argument('--consistency')
+parser.add_argument(
+   '--SW94X', action='store_true'
+)
+parser.add_argument(
+   '--usenomatch', action='store_true'
+)
 args = parser.parse_args()
 
 def check_consistency(pars, jfile):
@@ -66,7 +72,8 @@ if args.model.endswith('.csv'):
                 )
         
     print 'using model', model
-    dataset = glob('%s/*.hdf' % base)[0]
+    dataset = glob('%s/*_testdata.hdf' % base)[0]
+    print 'Testing on dataset:',dataset
     plots = base if not args.plot else args.plot
 else:
     model = args.model
@@ -122,6 +129,7 @@ def bootstrapped_roc(y_true, y_pred, sample_weight=None, n_boots=200):
       coords['tpr'] = effs
       clean = coords.drop_duplicates(subset=['fpr'])
       #fit with a spline
+      clean = clean.sort_values(['fpr'])
       spline = InterpolatedUnivariateSpline(clean.fpr, clean.tpr,k=1)
       #make uniform spacing to allow averaging
       tprs[iboot] = spline(newx)
@@ -149,13 +157,29 @@ with open(xml.replace('.xml', '.fixed.xml'), 'w') as XML:
 def _monkey_patch():
     return model._Booster
 
-if isinstance(model.booster, basestring):
-    model.booster = _monkey_patch
+#if isinstance(model.booster, basestring):
+#    model.booster = _monkey_patch
 
-test = pd.read_hdf(dataset, key='data') \
-   if ':' not in dataset else \
-   pd.read_hdf(dataset.split(':')[0], key=dataset.split(':')[1])
+from datasets import pre_process_data
+if '.hdf' in dataset:
+    test = pd.read_hdf(dataset, key='data') \
+       if ':' not in dataset else \
+       pd.read_hdf(dataset.split(':')[0], key=dataset.split(':')[1])
+else:
+    print 'Reading a FULL dataset, this may be dangerous as the train dataset might be included!'
+    fields = features+labeling
+    if args.SW94X and 'seeding' in args.what:
+        fields += seed_94X_additional
+    else:
+        fields += additional
+    test = pre_process_data(
+        dataset, fields, 
+        for_seeding=('seeding' in args.what),
+        keep_nonmatch=args.usenomatch
+        )
 
+from pdb import set_trace
+set_trace()
 if args.query:
     test = test.query(args.query)
 
@@ -176,7 +200,7 @@ if args.weights:
 #
 from sklearn.metrics import roc_curve, roc_auc_score
 from scipy.special import expit
-training_out = model.predict_proba(test[features].as_matrix())[:,1]
+training_out = model.predict_proba(test[features].values)[:,1]
 training_out[np.isnan(training_out)] = -999 #happens rarely, but happens
 
 # Working points
@@ -187,9 +211,9 @@ info = roc_curve(
 
 #weighted ROC (same as training)
 roc = bootstrapped_roc(
-   test.is_e.as_matrix().astype(int), 
+   test.is_e.values.astype(int), 
    training_out,
-   sample_weight=test.weight.as_matrix())
+   sample_weight=test.weight.values)
 auc_score = roc_auc_score(test.is_e, training_out, 
                           sample_weight=test.weight)
 
@@ -216,9 +240,9 @@ plt.clf()
 
 # ROC as in data
 roc = bootstrapped_roc(
-   test.is_e.as_matrix().astype(int), 
+   test.is_e.values.astype(int), 
    training_out,
-   sample_weight=test.original_weight.as_matrix())
+   sample_weight=test.original_weight.values)
 auc_score = roc_auc_score(test.is_e, training_out, 
                           sample_weight=test.original_weight)
 
@@ -244,7 +268,7 @@ plt.plot(
    'k--')
 plt.plot(roc[0], roc[1], label='Retraining (AUC: %.2f)'  % auc_score)
 plt.fill_between(roc[0], roc[1]-roc[2], roc[1]+roc[2], color='b', alpha=0.3)
-if 'seeding' in args.what and 'baseline' in test.columns:    
+if 'seeding' in args.what and 'baseline' in test.columns:
     eff = test.original_weight[(test.baseline & test.is_e)].sum()/test.original_weight[test.is_e].sum()
     mistag = test.original_weight[(test.baseline & np.invert(test.is_e))].sum()/test.original_weight[np.invert(test.is_e)].sum()
     jmap['baseline_mistag'] = mistag
@@ -307,10 +331,10 @@ for low, high, col in [(0.,1., 'b'),
     mask = (low <= test.trk_pt) & (test.trk_pt < high)
     masked = test[mask]
     roc = roc_curve(
-        masked.is_e.as_matrix().astype(int), 
+        masked.is_e.values.astype(int), 
         training_out[mask],
-        sample_weight=test.original_weight)[:2]
-    auc_score = roc_auc_score(masked.is_e, training_out[mask], sample_weight=test.original_weight)
+        sample_weight=masked.original_weight)[:2]
+    auc_score = roc_auc_score(masked.is_e, training_out[mask], sample_weight=masked.original_weight)
     plt.plot(*roc, c=col, label='p_T [%.2f, %.2f) (AUC: %.2f)'  % (low, high, auc_score))
     key = 'trk_pt#%.2fto%.2f' % (low, high)
     jmap[key] = {
@@ -320,7 +344,7 @@ for low, high, col in [(0.,1., 'b'),
             ],
         'auc' : auc_score,
         }
-    if 'seeding' in args.what:
+    if 'seeding' in args.what and 'baseline' in test.columns:
         eff = masked.original_weight[(masked.baseline & masked.is_e)].sum()/masked.original_weight[masked.is_e].sum()
         mistag = masked.original_weight[(masked.baseline & np.invert(masked.is_e))].sum()/masked.original_weight[np.invert(masked.is_e)].sum()
         plt.plot([mistag], [eff], 'o', markersize=5, c=col)
@@ -342,7 +366,11 @@ plt.clf()
 with open('%s/roc.json' % plots, 'w') as rr:
     rr.write(json.dumps(jmap))
 
-importances = zip(features, model.feature_importances_)
+try:
+    importances = zip(features, model.feature_importances_)
+except AttributeError:
+    print 'XGB version mis-match, cannot compute feature importances'
+    exit()
 importances.sort(key=lambda x: -x[1])
 with open('%s/importances.txt' % plots, 'w') as rr:
     for name, val in importances:
