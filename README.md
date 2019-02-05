@@ -47,7 +47,7 @@ git cms-merge-topic bainbrid:LowPtElectronsFull_102X_new #6
 Extra instructions for ```#4``` only (optional).
 ```
 cd $CMSSW_BASE/src
-rm -r Validation/ SimTracker/ SimG4CMS/ L1Trigger/ DQM/ CalibTracker/ HLTrigger/ 
+rm -r CalibTracker/ DQM/ HLTrigger/ L1Trigger/ SimG4CMS/ SimTracker/ Validation/  
 enw .git/info/sparse-checkout # remove from this list all packages consistent with above rm command
 git read-tree -mu HEAD
 git status # there should be no add/rm files
