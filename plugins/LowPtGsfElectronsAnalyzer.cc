@@ -246,6 +246,21 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
     }
     std::cout << std::endl;
   }
+  //
+  std::cout << "  all mvaSeeds:       " << std::endl;
+  if ( !mvaSeeds.empty() &&
+       mvaSeeds[0].isValid() && 
+       !mvaSeeds[0]->empty() &&
+       electrons.isValid() ) {
+    for ( unsigned int iter = 0; iter < electrons->size(); ++iter ) {
+      reco::GsfElectronRef ele(electrons,iter);
+      if ( ele.isNonnull() ) { 
+	std::cout << "                     " 
+		  << float( (*mvaSeeds[0])[ele] ) << std::endl; 
+      }
+    }
+    std::cout << std::endl;
+  }
 
 }
 
