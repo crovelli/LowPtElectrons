@@ -6,10 +6,10 @@ Merged:
 - "Up to GsfTracks" has been integrated since ```CMSSW_10_5_X_2019-01-22-2300``` (ie this can supersede ```#1```)
 
 Recommended:
-- Choose ```#4``` for full chain in ```CMSSW_10_2_X```
+- Choose ```#4``` for full chain in ```CMSSW_10_2_X``` (or ```#6``` for latest 102X IB)
 - Choose ```#5``` for full chain in ```CMSSW_10_5_X```
 
-Obsolete:
+**Obsolete**:
 - Choose option ```#1``` for the branch used for the "up to GsfTracks" PR.
 - Or choose ```#2``` or ```#3``` for the full chain (up to GsfElectrons) in 10.4 or 10.2.
 
@@ -23,6 +23,7 @@ cmsrel CMSSW_10_4_0_pre4; cd CMSSW_10_4_0_pre4/src   #2
 cmsrel CMSSW_10_2_9; cd CMSSW_10_2_9/src             #3
 cmsrel CMSSW_10_2_10; cd CMSSW_10_2_10/src           #4
 cmsrel CMSSW_10_5_X_2019-02-04-1100; cd CMSSW_10_5_X_2019-02-04-1100/src #5
+cmsrel CMSSW_10_2_X_2019-02-04-1100; cd CMSSW_10_2_X_2019-02-04-1100/src #6
 cmsenv
 ```
 
@@ -38,11 +39,12 @@ Merge topic for new electron reco (10X branches).
 git cms-merge-topic bainbrid:LowPtElectrons_10X      #1
 git cms-merge-topic bainbrid:LowPtElectronsFull_10X  #2
 git cms-merge-topic bainbrid:LowPtElectrons_10_2_9   #3
-git cms-merge-topic bainbrid:LowPtElectronsFull_102X #4
+git cms-merge-topic bainbrid:LowPtElectronsFull_102X_new #4
 git cms-merge-topic bainbrid:LowPtElectronsFull_105X_squash #5
+git cms-merge-topic bainbrid:LowPtElectronsFull_102X_new #6
 ```
 
-Extra instructions for ```#4``` only.
+Extra instructions for ```#4``` only (optional).
 ```
 cd $CMSSW_BASE/src
 rm -r Validation/ SimTracker/ SimG4CMS/ L1Trigger/ DQM/ CalibTracker/ HLTrigger/ 
