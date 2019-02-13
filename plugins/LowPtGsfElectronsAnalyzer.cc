@@ -239,10 +239,10 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
 	      << ", ";
     if ( mvaSeeds[iter].isValid() && 
 	 !mvaSeeds[iter]->empty() &&
-	 electrons.isValid() ) {
-      reco::GsfElectronRef ele(electrons,0);
+	 gsf_tracks.isValid() ) {
+      reco::GsfTrackRef gsf(gsf_tracks,0);
       std::cout << "\"" << mvaSeedTags_[iter].instance() << "\"";
-      if ( ele.isNonnull() ) { std::cout << "(example value: " << float( (*mvaSeeds[iter])[ele] ) << ")"; }
+      if ( gsf.isNonnull() ) { std::cout << "(example value: " << float( (*mvaSeeds[iter])[gsf] ) << ")"; }
     }
     std::cout << std::endl;
   }
@@ -251,19 +251,19 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
   if ( !mvaSeeds.empty() &&
        mvaSeeds[0].isValid() && 
        !mvaSeeds[0]->empty() &&
-       electrons.isValid() ) {
-    for ( unsigned int iter = 0; iter < electrons->size(); ++iter ) {
-      reco::GsfElectronRef ele(electrons,iter);
-      if ( ele.isNonnull() ) { 
+       gsf_tracks.isValid() ) {
+    for ( unsigned int iter = 0; iter < gsf_tracks->size(); ++iter ) {
+      reco::GsfTrackRef gsf(gsf_tracks,iter);
+      if ( gsf.isNonnull() ) { 
 	std::cout << std::setprecision(2) 
 		  << std::setw(8)
-		  << " pt: " << ele->gsfTrack()->pt()
+		  << " pt: " << gsf->pt()
 		  << std::setw(8)
-		  << " eta: " << ele->gsfTrack()->eta()
+		  << " eta: " << gsf->eta()
 		  << std::setw(8)
-		  << " phi: " << ele->gsfTrack()->phi()
+		  << " phi: " << gsf->phi()
 		  << std::setw(8)
-	  	  << " mva: " << float( (*mvaSeeds[0])[ele] ) 
+	  	  << " mva: " << float( (*mvaSeeds[0])[gsf] ) 
 		  << std::endl; 
       }
     }
