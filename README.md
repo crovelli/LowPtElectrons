@@ -8,18 +8,12 @@ export SCRAM_ARCH=slc6_amd64_gcc700
 cmsrel CMSSW_10_5_X_2019-02-18-2300
 cd CMSSW_10_5_X_2019-02-18-2300/src
 cmsenv
-```
-
-Some initialisation.
-```
 git cms-init
-git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git remote -v
 ```
 
 Merge topics.
 ```
-git cms-merge-topic bainbrid: LowPtElectronsFull_105X_SCbugfix
+git cms-merge-topic bainbrid:LowPtElectronsFull_105X_SCbugfix
 ```
 
 Build.
@@ -35,6 +29,7 @@ git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSS
 
 Optional: checkout and run simple ntuplizer.
 ```
+git remote add bainbrid git@github.com:bainbrid/cmssw.git
 git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
@@ -51,19 +46,13 @@ export SCRAM_ARCH=slc6_amd64_gcc700
 cmsrel CMSSW_10_2_X_2019-02-18-2300
 cd CMSSW_10_2_X_2019-02-18-2300/src
 cmsenv
-```
-
-Some initialisation.
-```
 git cms-init
-git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git remote -v
 ```
 
 Merge topics.
 ```
-git cms-merge-topic bainbrid: LowPtElectronsFull_102X
-git cms-merge-topic bainbrid: LowPtElectronsFull_102X_update
+git cms-merge-topic bainbrid:LowPtElectronsFull_102X
+git cms-merge-topic bainbrid:LowPtElectronsFull_102X_update
 ```
 
 Build.
@@ -79,6 +68,7 @@ git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSS
 
 Optional: checkout and run simple ntuplizer.
 ```
+git remote add bainbrid git@github.com:bainbrid/cmssw.git
 git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
