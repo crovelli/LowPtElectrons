@@ -161,7 +161,6 @@ private:
 	float preid_gsf_chi2red_ = -1.;
 	// PreId: MVA output
 	float preid_bdtout_ = -1.;
-	int   preid_ibin_ = -1;
 	// PreId: # of seeded GSF Tracks
 	int   preid_numGSF_ = 0;
 	//step-wise standard selection
@@ -256,7 +255,7 @@ private:
 	float gsf_ecal_cluster_covEtaEta_ = -42;
 	float gsf_ecal_cluster_covEtaPhi_ = -42;
 	float gsf_ecal_cluster_covPhiPhi_ = -42;
-	float gsf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
+//	float gsf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
 
 	float gsf_hcal_cluster_e_ = -1;
 	float gsf_hcal_cluster_eta_ = -1;
@@ -276,7 +275,7 @@ private:
 	float ktf_ecal_cluster_covEtaEta_ = -42;
 	float ktf_ecal_cluster_covEtaPhi_ = -42;
 	float ktf_ecal_cluster_covPhiPhi_ = -42;
-	float ktf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
+//	float ktf_ecal_cluster_ematrix_[ECAL_CLUSTER_SIZE][ECAL_CLUSTER_SIZE] = {{0}};
 	float ktf_ecal_cluster_r9_ = -0.1;
 	float ktf_ecal_cluster_circularity_ = -0.1;
 
