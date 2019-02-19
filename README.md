@@ -30,7 +30,7 @@ git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSS
 Optional: checkout and run simple ntuplizer.
 ```
 git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons --branch LowPtElectrons_10X_rekey
+git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
@@ -69,7 +69,7 @@ git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSS
 Optional: checkout and run simple ntuplizer.
 ```
 git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons --branch LowPtElectrons_10X_rekey
+git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
