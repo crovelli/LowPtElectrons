@@ -26,6 +26,8 @@
 #include "CondFormats/EgammaObjects/interface/GBRForest.h"
 
 #include "RecoTracker/TransientTrackingRecHit/interface/TkTransientTrackingRecHitBuilder.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 
 /// \brief Abstract
 /*!
@@ -113,6 +115,7 @@ class PassThroughTrackSeeds final : public edm::stream::EDProducer<edm::GlobalCa
 
       ///Number of hits in the seed;
       int nHitsInSeed_;
+			bool matchToGen_;
 
       ///Minimum transverse momentum and maximum pseudorapidity
       double minPt_;
@@ -154,6 +157,7 @@ class PassThroughTrackSeeds final : public edm::stream::EDProducer<edm::GlobalCa
       edm::EDGetTokenT<reco::PFClusterCollection> pfCLusTagPSLabel_;
       edm::EDGetTokenT<reco::PFClusterCollection> pfCLusTagECLabel_;
       edm::EDGetTokenT<reco::PFClusterCollection> pfCLusTagHCLabel_;
+			edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
       std::vector<edm::EDGetTokenT<std::vector<Trajectory> > > trajContainers_;
       std::vector<edm::EDGetTokenT<reco::TrackCollection > > tracksContainers_;
       

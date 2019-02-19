@@ -16,4 +16,7 @@ __pycache__
 *.root
 *.json
 *.pkl
-#*.*#
+#*#
+*.hdf
+*/#*.*#
+production/mc/crab*

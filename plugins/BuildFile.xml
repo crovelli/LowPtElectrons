@@ -13,6 +13,7 @@
 <use name="DataFormats/HLTReco"/>
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/ParticleFlowReco"/>
+<use name="DataFormats/ParticleFlowCandidate"/>
 <use name="TrackingTools/PatternTools"/>
 <use name="RecoParticleFlow/PFTracking"/>
 <use name="RecoTracker/TransientTrackingRecHit"/>
@@ -28,6 +29,9 @@
 <use name="DataFormats/Math"/>
 
 <use name="root"/>
+<use name="LowPtElectrons/LowPtElectrons"/>
+<use name="DataFormats/TrackCandidate"/>
+
 <!--<use name="TMVA"/>-->
 
 <flags CXXFLAGS="-g"/>  
