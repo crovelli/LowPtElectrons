@@ -72,6 +72,8 @@ cmssw_improvedfullseeding = [
 #  preid_trk_dxy_sig
 
 cmssw_displaced_improvedfullseeding = cmssw_improvedfullseeding + ['preid_trk_dxy_sig']
+cmssw_displaced_improvedfullseeding_fixSIP = cmssw_improvedfullseeding + ['trk_dxy_sig']
+cmssw_displaced_improvedfullseeding_fixInvSIP = cmssw_improvedfullseeding + ['trk_dxy_sig_inverted']
 
 id_features = trk_features + [
    'gsf_pt',
@@ -180,9 +182,9 @@ new_features = [
    'sc_Nclus',
 ]
 
-seed_additional = ['trk_pass_default_preid']
+seed_additional = ['trk_pass_default_preid', 'preid_bdtout1', 'preid_bdtout2']
 seed_94X_additional = ['preid_trk_ecal_match', 'preid_trkfilter_pass', 'preid_mva_pass']
-id_additional = ['ele_mvaIdV2']
+id_additional = ['ele_mvaIdV2', 'ele_lowPtMva', 'ele_pt']
 
 labeling = ['is_e', 'is_e_not_matched', 'is_other']
 gen_features = [
@@ -313,6 +315,12 @@ def get_features(ftype):
    elif ftype == 'cmssw_mva_id':
       features = cmssw_mva_id
       additional = id_additional
+   elif ftype == 'cmssw_displaced_improvedfullseeding_fixSIP':
+      features = cmssw_displaced_improvedfullseeding_fixSIP
+      additional = seed_additional
+   elif ftype == 'cmssw_displaced_improvedfullseeding_fixInvSIP':
+      features = cmssw_displaced_improvedfullseeding_fixInvSIP
+      additional = seed_additional
    else:
       raise ValueError('%s is not among the possible feature collection' % ftype)
    return features+add_ons, additional
