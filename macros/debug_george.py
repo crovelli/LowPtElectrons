@@ -10,8 +10,8 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 from features import *
-biased_features, additional = get_features('displaced_improvedfullseeding')
-unbiased_features, additional = get_features('improvedfullseeding')
+biased_features, additional = get_features('cmssw_displaced_improvedfullseeding')
+unbiased_features, additional = get_features('cmssw_improvedfullseeding')
 
 import uproot
 import datasets as dsets
@@ -33,7 +33,7 @@ to_dump = [
    'gsf_phi',
    ]
 
-dsets.input_files['debug'] = ['/afs/cern.ch/work/m/mverzett/RK102v2/src/LowPtElectrons/LowPtElectrons/run/george_synch_10_2.root']
+dsets.input_files['debug'] = ['/afs/cern.ch/work/m/mverzett/RK102v3/src/LowPtElectrons/LowPtElectrons/run/george_synch_all.root']
 #fields = set(biased_features+additional+unbiased_features+to_dump+labeling)
 fields = set(biased_features+unbiased_features+to_dump+labeling)
 data = dsets.pre_process_data(
@@ -93,6 +93,7 @@ wp = {
 }
 
 electrons = data[data.is_e].copy()
+electrons['matched_to'] = -1
 nelectrons = float(electrons.shape[0])
 print 'Total electrons: %d' % electrons.shape[0]
 print 'Track efficiency: %.3f' % ((electrons.trk_pt > 0).sum()/nelectrons)
@@ -134,31 +135,51 @@ from itertools import product
 
 from pdb import set_trace
 george['matched_to'] = -1
-gen_match_pass = []
-trk_match_pass = []
-bdt_match_pass = []
-matched_to = []
+same_gen = []
+same_trk = []
+same_gsf = []
+same_biased = []
+same_unbias = []
+mached_to = []
+
 for idx, entry in electrons.iterrows():
-   gen_match_pass.append(False)
-   trk_match_pass.append(False)
-   bdt_match_pass.append(False)
+   same_gen.append(False)
+   same_trk.append(False)
+   same_gsf.append(False)
+   same_biased.append(-999)
+   same_unbias.append(-999)
+   mached_to.append(-1)
    lumi, evt = entry.lumi, entry.evt
    geor = george[(george.lumi == lumi) & (george.evt == evt)]    
    for george_idx, e2 in geor.iterrows():
       if almost_same(entry, e2, 'gen'):
-         gen_match_pass[-1] = True
+         same_gen[-1] = True
          george['matched_to'].loc[george_idx] = idx
-         trk_match_pass[-1] = almost_same(entry, e2, 'trk')
-         bdt_match_pass[-1] = (entry.trk_pt > 0 and not almost_equal(entry.biased_out, e2.biased_out) and e2.biased_out != -1)
-         if not almost_same(entry, e2, 'trk'):              
-            print 'tracking match failure'
-            #set_trace()
-         elif entry.trk_pt > 0 and not almost_equal(entry.biased_out, e2.biased_out) and e2.biased_out != -1:
-            if entry.biased_out > wp['biased']['L']:
-               print 'Seeding BDT failure'
-               #set_trace()              
-         break
+         mached_to[-1] = george_idx
+         entry.matched_to = george_idx
+         if almost_same(entry, e2, 'trk'):
+            same_trk[-1] = True
+            if almost_same(entry, e2, 'gsf'):
+               same_gsf[-1] = True
+               same_biased[-1] = e2.biased_out
+               same_unbias[-1] = e2.unbiased_out
      
-electrons['gen_match_pass'] = gen_match_pass
-electrons['trk_match_pass'] = trk_match_pass
-electrons['bdt_match_pass'] = bdt_match_pass
+electrons['same_gen'] = same_gen
+electrons['same_trk'] = same_trk
+electrons['same_gsf'] = same_gsf
+electrons['george_bias'] = same_biased
+electrons['george_unbias'] = same_unbias
+electrons['matched_to'] = mached_to
+
+#failing = (electrons.trk_pt > 0) & np.invert(electrons['bdt_match_pass'])
+same_gsf = electrons[electrons.same_gsf & (electrons.gsf_pt > 0)][['george_bias', 'george_unbias', 'biased_out', 'unbiased_out']]
+
+not_same_gsf = electrons[electrons.same_trk & np.invert(electrons.same_gsf)]['matched_to']
+
+def compare(e1, e2):
+  for val in to_dump:
+    print ('%20s' % val),'\t',e1[val], '  -->  ',e2[val]
+
+for i, j in zip(not_same_gsf.keys(), not_same_gsf):
+  compare(electrons.loc[i], george.loc[j])
+  print '\n'
