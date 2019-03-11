@@ -54,8 +54,8 @@ data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 #remove things that do not yield tracks
 data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
 data['log_trkpt'] = np.log10(data.trk_pt)
-original_weight = HistWeighter('../data/fakesWeights.txt')
-data['original_weight'] = np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
+# original_weight = HistWeighter('../data/fakesWeights.txt')
+data['original_weight'] = 1. #np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
 
 overall_scale = data.shape[0]/float(data.is_e.sum())
 reweight_feats = ['log_trkpt', 'trk_eta']
