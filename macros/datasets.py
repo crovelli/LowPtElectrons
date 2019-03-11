@@ -1,10 +1,11 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
 #tag = '2018Sep20'
-tag = '2019Jan30CMSSW94X'
-posix = '2019Jan30CMSSW94X'
-## tag = '2019Jan30CMSSW102X'
-## posix = '2019Jan30CMSSW102X'
+#tag = '2019Feb05'
+#posix = '2019Feb05'
+
+tag = '2019Feb22'
+posix = '2019Feb22'
 target_dataset = 'all'
 
 import socket
@@ -151,7 +152,7 @@ import pandas as pd
 import numpy as np
 def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):  
    mods = get_models_dir()
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err', 'trk_charge', 'evt'])-{'trk_dxy_sig'})
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err', 'trk_charge', 'evt'])-{'trk_dxy_sig', 'trk_dxy_sig_inverted'})
    data_dict = get_data_sync(dataset, features)
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
@@ -183,7 +184,12 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
    mask = training_selection(data)
    multi_dim = {i : j[mask] for i, j in multi_dim.iteritems()}   
    data = data[mask]
-   data['trk_dxy_sig'] =  data.trk_dxy_err/data.trk_dxy
+   sip = data.trk_dxy/data.trk_dxy_err
+   sip[np.isinf(sip)] = 0
+   data['trk_dxy_sig'] = sip
+   inv_sip = data.trk_dxy_err/data.trk_dxy
+   inv_sip[np.isinf(inv_sip)] = 0
+   data['trk_dxy_sig_inverted'] = inv_sip
    data['training_out'] = -1
    log_trkpt = np.log10(data.trk_pt)
    log_trkpt[np.isnan(log_trkpt)] = -9999
@@ -227,9 +233,11 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
             data.preid_trk_ecal_match | 
             (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
             )
+      elif 'trk_pass_default_preid' in data.columns:
+         data['baseline'] = data.trk_pass_default_preid
       else:
-         data['baseline'] = 'trk_pass_default_preid'
-   
+         data['baseline'] = False
+
    from features import labeling
    #convert bools to integers
    for c in data.columns:
