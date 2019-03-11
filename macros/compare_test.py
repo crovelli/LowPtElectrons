@@ -19,7 +19,7 @@ mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['C
 if not os.path.isdir(mods):
    os.mkdirs(mods)
 
-plots = 'genfix_plots_v2'
+plots = 'sip_checks'
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
@@ -33,6 +33,13 @@ if not os.path.isdir(plots):
 ## seeding_nw = json.loads(open('models/2018Oct22v2/bdt_bo_seeding_noweight/roc.json').read())
 ## full_seeding = json.loads(open('models/2018Oct22v2/bdt_bo_fullseeding/roc.json').read())
 ## old = json.loads(open('plots/2018Oct22v2/BToKee__combined_id_ROCS.json').read())
+
+ids = [
+   (json.loads(open('models/2019Feb05/bdt_cmssw_mva_id/roc.json').read()), 'previous RECO settings + OLD model', False),
+   (json.loads(open('models/2019Feb22/id_2019Feb05/roc.json').read()), 'What is currently in CMSSW', False),
+   (json.loads(open('models/2019Feb22/bdt_cmssw_mva_id/roc.json').read()), 'retraining', False),
+]
+
 seedings = [
    ## (json.loads(open('models/2018Nov01/bdt_bo_seeding/roc.json').read()), 'seeding', False),
    ## (json.loads(open('models/2018Nov01/bdt_bo_trkonly/roc.json').read()), 'TRK Only', False),
@@ -40,13 +47,22 @@ seedings = [
    ## (json.loads(open('models/2018Nov01/bdt_bo_betterseeding/roc.json').read()), 'seeding + rho', False),
    ## (json.loads(open('models/2018Nov01/bdt_bo_improvedseeding/roc.json').read()), 'seeding + ECAL + HCAL', True),
 
-   (json.loads(open('models/2019Jan30CMSSW94X/cmssw_biased_bdt_with_nomatch/roc.json').read()), '9.4.X biased model on 9.4.X simulation, 10.2.X gen truth', False),
-   (json.loads(open('models/2019Jan30CMSSW94X/cmssw_biased_bdt_withOUT_nomatch/roc.json').read()), '9.4.X biased model on 9.4.X simulation, 9.4.X gen truth', False),
-   ## (json.loads(open('models/2019Jan30CMSSW102X/cmssw_biased_bdt_with_nomatch/roc.json').read()), '9.4.X biased model on 10.2.X simulation, 10.2.X gen truth', False),
+   ## (json.loads(open('models/2018Nov01/bdt_bo_displaced_improvedfullseeding_noweight/roc.json').read()), '9.4.X biased model on 9.4.X simulation', False),
+   ## (json.loads(open('models/2019Feb05/cmssw_biased_bdt/roc.json').read()), '9.4.X biased model on 10.2.X simulation', False),
+   ## (json.loads(open('models/2019Feb05/cmssw_biased_bdt_myvars/roc.json').read()), 'myvars', False),
+   ## (json.loads(open('models/2019Jan30CMSSW102X/cmssw_biased_bdt_with_nomatch/roc.json').read()), 'old', False),
+   ## (json.loads(open('models/2019Jan26Selected/94XTraining_displaced_improvedfullseeding/roc.json').read()), 'older', False),
+   ## (json.loads(open('models/2019Jan26Selected/94XTraining_try2/roc.json').read()), 'older V2', False),
+   ## (json.loads(open('models/2019Jan26Selected/94XTraining_myvars/roc.json').read()), 'older myvars', False),
+   (json.loads(open('models/2019Feb05/bdt_cmssw_displaced_improvedfullseeding/roc.json').read()), '10.2.X biased model, 9.4.X Hyperparameters', False),
+   ## (json.loads(open('models/2019Feb05/bdt_bo_cmssw_displaced_improvedfullseeding_noweight/roc.json').read()), '10.2.X biased model, new Bayesian Optimisation', False),
+   (json.loads(open('models/2019Feb05/bdt_cmssw_displaced_improvedfullseeding_fixSIP/roc.json').read()), '10.2.X biased model, correct IP', False),
+   (json.loads(open('models/2019Feb05/bdt_cmssw_displaced_improvedfullseeding_fixInvSIP/roc.json').read()), '10.2.X biased model, correct 1/IP', False),
 
-   (json.loads(open('models/2019Jan30CMSSW94X/cmssw_unbiased_bdt_with_nomatch/roc.json').read()), '9.4.X unbiased model on 9.4.X simulation, 10.2.X gen truth', False),
-   (json.loads(open('models/2019Jan30CMSSW94X/cmssw_unbiased_bdt_withOUT_nomatch/roc.json').read()), '9.4.X unbiased model on 9.4.X simulation, 9.4.X gen truth', False),
-   ## (json.loads(open('models/2019Jan30CMSSW102X/cmssw_unbiased_bdt_with_nomatch/roc.json').read()), '9.4.X unbiased model on 10.2.X simulation, 10.2.X gen truth', False),
+   ## (json.loads(open('models/2018Nov01/bdt_bo_improvedfullseeding/roc.json').read()), '9.4.X unbiased model on 9.4.X simulation', False),
+   ## (json.loads(open('models/2019Feb05/cmssw_unbiased_bdt/roc.json').read()), '9.4.X unbiased model on 10.2.X simulation', False),
+   ## (json.loads(open('models/2019Feb05/bdt_cmssw_improvedfullseeding/roc.json').read()), '10.2.X unbiased model, 9.4.X Hyperparameters', False),
+   ## (json.loads(open('models/2019Feb05/bdt_bo_cmssw_improvedfullseeding/roc.json').read()), '10.2.X unbiased model, new Bayesian Optimisation', False),
 
    ## (json.loads(open('models/2018Nov01/bdt_bo_improvedfullseeding/roc.json').read()), '9.4.X unbiased model on 9.4.X simulation', False),
    ## (json.loads(open('models/2019Jan26Selected/94XTraining_improvedfullseeding/roc.json').read()), '9.4.X unbiased model on 10.2.X simulation', False),
@@ -102,8 +118,8 @@ yticks_to_add = [seedings[0][0]['baseline_eff'], seedings[0][0]['baseline_ptcut_
 plt.plot([seedings[0][0]['baseline_ptcut_mistag']], [seedings[0][0]['baseline_ptcut_eff']], 
          'o', markersize=5, c='b', label = '10.2.X truth baseline')
 
-plt.plot([seedings[1][0]['baseline_ptcut_mistag']], [seedings[1][0]['baseline_ptcut_eff']], 
-         'o', markersize=5, c='g', label = '9.4.X truth baseline')
+## plt.plot([seedings[1][0]['baseline_ptcut_mistag']], [seedings[1][0]['baseline_ptcut_eff']], 
+##          'o', markersize=5, c='g', label = '9.4.X truth baseline')
 
 if os.path.isfile('model_or.json'):
    or_model = json.load(open('model_or.json'))
@@ -173,6 +189,30 @@ plt.savefig('%s/log_BDT_comparison.png' % plots,
 plt.savefig('%s/log_BDT_comparison.pdf' % plots,
             bbox_extra_artists=(ensure,), bbox_inches='tight')
 plt.clf()
+
+
+#
+# Plot IDs
+#
+for seeding, label, ticks in ids:
+   plt.plot(*seeding['roc'], label=label)
+
+plt.xlabel('Mistag Rate')
+plt.ylabel('Efficiency')
+ensure = plt.legend(bbox_to_anchor=(1e-4, 1.4), loc=2, borderaxespad=0.)
+plt.xlim(0., 1)
+plt.grid()
+plt.savefig('%s/ID_comparison.png' % plots, 
+            bbox_extra_artists=(ensure,), bbox_inches='tight')
+plt.savefig('%s/ID_comparison.pdf' % plots, 
+            bbox_extra_artists=(ensure,), bbox_inches='tight')
+plt.gca().set_xscale('log')
+plt.xlim(1e-4, 1)
+plt.savefig('%s/log_ID_comparison.png' % plots,
+            bbox_extra_artists=(ensure,), bbox_inches='tight')
+plt.savefig('%s/log_ID_comparison.pdf' % plots,
+            bbox_extra_artists=(ensure,), bbox_inches='tight')
+
 
 ## plt.figure(figsize=[8, 8])
 ## plt.title('ID training')
