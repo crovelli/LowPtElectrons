@@ -257,7 +257,7 @@ if options.MVANtuplizer == True :
    process.reconstruction_step *= cms.Sequence(process.ntuplizer)
 else :
    process.reconstruction_step *= process.ntuplizer_seq
-   process.reconstruction_step *= cms.Sequence(process.simple)
+   process.reconstruction_step *= process.simple
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 
 process.schedule = cms.Schedule(

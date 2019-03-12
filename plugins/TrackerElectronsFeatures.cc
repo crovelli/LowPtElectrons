@@ -1104,6 +1104,7 @@ std::pair<float,float> TrackerElectronsFeatures::printPfBlock( const reco::GenPa
     }
   }
 
+  if ( ele > 0 ) {
     const reco::GsfElectronRef ref = *ele;
     float dr = deltaR(*ref,*gen);
     std::cout << "    ELE:"
