@@ -51,10 +51,6 @@ Ntuplizer for everything you need to know about tracker-driven electrons
 #include "DataFormats/ParticleFlowReco/interface/PreId.h"
 #include "DataFormats/ParticleFlowReco/interface/PreIdFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
-#include "DataFormats/CaloRecHit/interface/CaloClusterFwd.h"
-#include "DataFormats/EgammaReco/interface/SuperCluster.h"
-#include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
@@ -103,11 +99,6 @@ private:
 
 	virtual void beginRun(const edm::Run & run,const edm::EventSetup&);
 	virtual void analyze(const edm::Event&, const edm::EventSetup&);
-	virtual void endJob() override {
-		std::cout << "Number of electrons stored: " << npassed_[0] << std::endl
-							<< "Number of other electrons: " << npassed_[1] << std::endl
-							<< "Number of other tracks: " << npassed_[2] << std::endl;
-	}
 
   class Bin {
   public:
@@ -160,9 +151,6 @@ private:
 	const edm::EDGetTokenT< vector<reco::GsfPFRecTrack> > pf_gsf_tracks_;
 	const edm::EDGetTokenT< vector<reco::PFBlock> > pfblocks_;
         const edm::EDGetTokenT< reco::PFCandidateCollection > pf_electrons_;
-        const edm::EDGetTokenT< vector<reco::SuperCluster> > ged_electron_sc_;
-        const edm::EDGetTokenT< vector<reco::CaloCluster> > ged_electron_clu_;
-        const edm::EDGetTokenT< edm::ValueMap<reco::SuperClusterRef> > ged_electron_scref_;
 	const edm::EDGetTokenT< vector<reco::GsfElectronCore> > ged_electron_cores_;
 	const edm::EDGetTokenT< vector<reco::GsfElectron> > ged_electrons_;
 	const edm::EDGetTokenT< reco::PFClusterCollection > ecal_clusters_;
@@ -180,7 +168,6 @@ private:
 	const edm::EDGetTokenT< edm::View<TrajectorySeed> > ele_seeds_;
 	const edm::EDGetTokenT< reco::TrackToTrackingParticleAssociator > associator_;
 	const edm::EDGetTokenT< TrackingParticleCollection > tracking_particles_;
-	unsigned long long int npassed_[3] = {0,0,0};
 };
 
 TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
@@ -204,9 +191,6 @@ TrackerElectronsFeatures::TrackerElectronsFeatures(const ParameterSet& cfg):
   pf_gsf_tracks_{consumes< vector<reco::GsfPFRecTrack> >(cfg.getParameter<edm::InputTag>("PFGsfTracks"))},
   pfblocks_{consumes< vector<reco::PFBlock> >(cfg.getParameter<edm::InputTag>("PFBlocks"))},
   pf_electrons_{consumes<reco::PFCandidateCollection>(cfg.getParameter<edm::InputTag>("PFElectrons"))},
-  ged_electron_sc_{consumes< std::vector<reco::SuperCluster> >(cfg.getParameter<edm::InputTag>("gedElectronSCs"))},
-  ged_electron_clu_{consumes< std::vector<reco::CaloCluster> >(cfg.getParameter<edm::InputTag>("gedElectronCaloClusters"))},
-  ged_electron_scref_{consumes< edm::ValueMap<reco::SuperClusterRef> >(cfg.getParameter<edm::InputTag>("gedElectronSCRefs"))},
   ged_electron_cores_{consumes< vector<reco::GsfElectronCore> >(cfg.getParameter<edm::InputTag>("gedElectronCores"))},
   ged_electrons_{consumes< vector<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gedElectrons"))},
   ecal_clusters_{consumes<reco::PFClusterCollection>(cfg.getParameter<edm::InputTag>("ECALClusters"))},
@@ -297,15 +281,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< reco::PFCandidateCollection > pf_electrons;
 	iEvent.getByToken(pf_electrons_, pf_electrons);
 
-	edm::Handle< vector<reco::SuperCluster> > ged_electron_sc;
-	iEvent.getByToken(ged_electron_sc_, ged_electron_sc);
-
-	edm::Handle< vector<reco::CaloCluster> > ged_electron_clu;
-	iEvent.getByToken(ged_electron_clu_, ged_electron_clu);
-
-	edm::Handle< edm::ValueMap<reco::SuperClusterRef> > ged_electron_scref;
-	iEvent.getByToken(ged_electron_scref_, ged_electron_scref);
-
 	edm::Handle< vector<reco::GsfElectronCore> > ged_electron_cores;
 	iEvent.getByToken(ged_electron_cores_, ged_electron_cores);
 
@@ -338,11 +313,11 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 	edm::Handle< edm::ValueMap<float> > lowptmvaid;
 	iEvent.getByToken(lowptmvaid_, lowptmvaid);
 
-	//edm::Handle< edm::ValueMap<float> > mvaid_v2;
-	//iEvent.getByToken(mvaid_v2_, mvaid_v2);
+	edm::Handle< edm::ValueMap<float> > mvaid_v2;
+	iEvent.getByToken(mvaid_v2_, mvaid_v2);
 
-	//edm::Handle< edm::ValueMap<float> > convVtxFitProb;
-	//iEvent.getByToken(convVtxFitProb_, convVtxFitProb);
+	edm::Handle< edm::ValueMap<float> > convVtxFitProb;
+	iEvent.getByToken(convVtxFitProb_, convVtxFitProb);
 
 	int ntrks = 0;
 	std::vector<reco::TrackRef> tracks;
@@ -364,7 +339,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 
 
 	//assert(gsf_tracks->size() == preids_ecal->size()); //this is bound to fail, but better check
-
 
 	std::map<reco::TrackRef, reco::PFRecTrackRef> trk2pftrk;
 	for(size_t i=0; i<pf_ktf_tracks->size(); i++) {
@@ -471,7 +445,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		}
 	}
 
-
 	// pf candidate (electrons)
 	std::set<GsfTrackRef> pfElectrons_sources;
 	for(const auto& pf : *pf_electrons) {
@@ -501,7 +474,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			gsf2ged.insert(std::pair<reco::GsfTrackRef, reco::GsfElectronRef>(trk, ele));
 		}
 	}
-
 
 	//match seed to GSF
 	std::map<size_t, std::vector<GsfTrackRef> > seed2gsf;
@@ -540,7 +512,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			electrons_from_B.insert(genp);
 		}
 	}
-
 
 	//Match GEN to GSF
 	std::map<reco::GenParticleRef, size_t> gen2seed;
@@ -600,13 +571,9 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		for(size_t i=0; i<preids_ecal->size(); i++) {
 			if(matched.find(i) == matched.end()) {
 				//be extra safe and check hit matching, anyhow we have a LOT of tracks
-			        if ( ele_seeds->empty() ) { continue; }
 				RefToBase<TrajectorySeed> key(ele_seeds, i);
 				auto match = reco2sim.find(key);
 		
-				if(!disable_association_ && match != reco2sim.end() && std::abs(match->val.front().first->pdgId()) == 11)
-					other_electrons.push_back(i);
-				
 				//check matching
 				if(disable_association_ || match == reco2sim.end() || std::abs(match->val.front().first->pdgId()) != 11) { 
 					other_tracks.push_back(i);
@@ -614,9 +581,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 			}
 		}
 	}
-	npassed_[0] += electrons_from_B.size();
-	npassed_[1] += other_electrons.size();
-	npassed_[2] += other_tracks.size();
 	/*cout << "Found " << electrons_from_B.size() << " gen electrons, " 
 			 << gen2seed.size() << " matched electron seeds, "
 			 << other_electrons.size() << " non-gen electrons, " 
@@ -1140,7 +1104,6 @@ std::pair<float,float> TrackerElectronsFeatures::printPfBlock( const reco::GenPa
     }
   }
 
-  if ( ele != 0 ) { 
     const reco::GsfElectronRef ref = *ele;
     float dr = deltaR(*ref,*gen);
     std::cout << "    ELE:"

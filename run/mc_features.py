@@ -184,6 +184,8 @@ if options.MVANtuplizer == True : # Use the Egamma-default MVANtuplizer code
 
 else : # Use custom Ntuplizer code
 
+   process.ntuplizer_seq = cms.Sequence()
+
    # Track association by hits
    process.load('SimTracker/TrackAssociation/trackingParticleRecoTrackAsssociation_cfi')
    process.quickTrackAssociatorByHits = cms.EDProducer(
@@ -242,7 +244,7 @@ else : # Use custom Ntuplizer code
    if options.fakesMultiplier : process.features.fakesMultiplier = options.fakesMultiplier
    process.features.disableAssociation = options.disableAssociation
    process.features.checkFromB = options.checkFromB
-
+   process.ntuplizer_seq *= process.features
 
 ################################################################################
 # Path and EndPath definitions, TFileService, OutputModule
@@ -254,9 +256,8 @@ process.recosim_step = cms.Path(process.recosim)
 if options.MVANtuplizer == True : 
    process.reconstruction_step *= cms.Sequence(process.ntuplizer)
 else :
-   process.reconstruction_step *= cms.Sequence(process.ntuplizer_seq)
+   process.reconstruction_step *= process.ntuplizer_seq
    process.reconstruction_step *= cms.Sequence(process.simple)
-   process.reconstruction_step *= cms.Sequence(process.features)
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 
 process.schedule = cms.Schedule(
@@ -273,9 +274,6 @@ process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outn
 if options.edout:
    process.AODSIMoutput = cms.OutputModule(
       "PoolOutputModule",
-      outputCommands = process.AODSIMEventContent.outputCommands,
-      #outputCommands = process.AODEventContent.outputCommands,
-      #outputCommands = cms.untracked.vstring('keep *',)
       compressionAlgorithm = cms.untracked.string('LZMA'),
       compressionLevel = cms.untracked.int32(4),
       eventAutoFlushCompressedSize = cms.untracked.int32(31457280),
@@ -315,19 +313,13 @@ if options.edout:
 ################################################################################
 # Expert settings ...
 
-#process.Timing = cms.Service(
-#   "Timing",
-#   summaryOnly = cms.untracked.bool(False),
-#   useJobReport = cms.untracked.bool(True)
-#   )
-
 # PAT stuff
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
    
 # Do not add changes to your config after this point (unless you know what you are doing)
 from FWCore.ParameterSet.Utilities import convertToUnscheduled
-#process=convertToUnscheduled(process)
+process=convertToUnscheduled(process)
 
 # Have logErrorHarvester wait for the same EDProducers to finish as those providing data for the OutputModule
 from FWCore.Modules.logErrorHarvester_cff import customiseLogErrorHarvesterUsingOutputCommands
