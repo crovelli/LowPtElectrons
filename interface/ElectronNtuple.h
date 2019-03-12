@@ -11,6 +11,8 @@
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "DataFormats/Math/interface/Point3D.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "DataFormats/ParticleFlowReco/interface/GsfPFRecTrackFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/GsfPFRecTrack.h"
 #include <vector>
 class TTree;
 /*namespace reco {
@@ -60,11 +62,15 @@ public:
 	void fill_evt(const edm::EventID &id);
 	void fill_gen(const reco::GenParticleRef genp);
 	void fill_gsf_trk(const reco::GsfTrackRef trk, const reco::BeamSpot &spot);
-	void fill_preid(const reco::PreId &preid, const reco::BeamSpot &spot, const int num_gsf);
+	void fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf);
+	void fill_preid(const reco::PreId &preid_ecal, const reco::PreId &preid_hcal, 
+									const reco::BeamSpot &spot, const double rho, const int num_gsf,
+									noZS::EcalClusterLazyTools& ecalTools, bool pass_preid);
 	void fill_ele(const reco::GsfElectronRef ele, float mvaid_v1=-2, float mvaid_v2=-2, 
-								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.});
+								float ele_conv_vtx_fit_prob = -1., const std::vector<float>& iso_rings={0., 0., 0., 0.},
+								const double rho=0);
 	void fill_supercluster(const reco::GsfElectronRef ele);
-	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot);
+	void fill_ktf_trk(const reco::TrackRef trk, const reco::BeamSpot &spot, bool pass_preid);
 	void fill_GSF_ECAL_cluster_info(
 		const reco::PFClusterRef cluster,
 		const reco::PFTrajectoryPoint &gsf,
@@ -76,6 +82,9 @@ public:
 		//noZS::EcalClusterLazyTools& tools //Something similar for HCAL?
 		);
 
+	void print_val(int i=0) {
+		std::cout<< "  Fill ntuple: " << i << " " << preid_ktf_ecal_cluster_e_ << std::endl;
+	}
 
 	//TODO: refactor to avoid repetitions
 	//TODO: refactor to avoid repetitions
@@ -128,7 +137,10 @@ private:
 	float gen_phi_ = -1;
 	float gen_e_ = -1;
 	float gen_p_ = -1;
-	int   gen_charge_ = 0;
+	int   gen_charge_ = -1;
+	int   gen_pdgid_ = 0;
+	int   gen_mom_pdgid_ = 0;
+	int   gen_gran_pdgid_ = 0;
 
 	// KF tracks: kine
 	float trk_pt_ = -1.;
@@ -149,24 +161,40 @@ private:
 	float trk_dxy_err_ = -1;
 	float trk_dz_ = -1;
 	float trk_dz_err_ = -1;
+	bool trk_pass_default_preid_ = false;
 
 	// PreId: ECAL/track matching
-	float preid_e_over_p_ = -1.;
-	float preid_trk_ecal_Deta_ = -1.;
-	float preid_trk_ecal_Dphi_ = -1.;
-	// PreId: GSF track parameters
-	bool  preid_gsf_success_ = false;
-	float preid_gsf_dpt_ = -1.;
-	float preid_trk_gsf_chiratio_ = -1.;
-	float preid_gsf_chi2red_ = -1.;
+	float preid_trk_pt_  = -1.;
+	float preid_trk_eta_ = -1.;
+	float preid_trk_phi_ = -1.;
+  float preid_trk_p_   = -1.;
+  float preid_trk_nhits_ = -1.;
+  float preid_trk_high_quality_ = -1.;
+  float preid_trk_chi2red_ = -1.;
+  float preid_rho_ = -1.;
+  float preid_ktf_ecal_cluster_e_ = -1.;
+  float preid_ktf_ecal_cluster_deta_ = -1.;
+  float preid_ktf_ecal_cluster_dphi_ = -1.;
+  float preid_ktf_ecal_cluster_e3x3_ = -1.;
+  float preid_ktf_ecal_cluster_e5x5_ = -1.;
+  float preid_ktf_ecal_cluster_covEtaEta_ = -1.;
+  float preid_ktf_ecal_cluster_covEtaPhi_ = -1.;
+  float preid_ktf_ecal_cluster_covPhiPhi_ = -1.;
+  float preid_ktf_ecal_cluster_r9_ = -1.;
+  float preid_ktf_ecal_cluster_circularity_ = -1.;
+  float preid_ktf_hcal_cluster_e_ = -1.;
+  float preid_ktf_hcal_cluster_deta_ = -1.;
+  float preid_ktf_hcal_cluster_dphi_ = -1.;
+  float preid_gsf_dpt_ = -1.;
+  float preid_trk_gsf_chiratio_ = -1.;
+  float preid_gsf_chi2red_ = -1.;
+  float preid_trk_dxy_sig_ = -1.; // must be last (not used by unbiased model)
+
 	// PreId: MVA output
-	float preid_bdtout_ = -1.;
-	// PreId: # of seeded GSF Tracks
-	int   preid_numGSF_ = 0;
-	//step-wise standard selection
-  bool preid_trk_ecal_match_ = false;
-	bool preid_trkfilter_pass_ = false;
-	bool preid_mva_pass_ = false;
+	float preid_bdtout1_ = -1.;
+	float preid_bdtout2_ = -1.;
+	bool preid_mva1_pass_ = false;
+	bool preid_mva2_pass_ = false;
 	
 	// GSF tracks: kine
 	float gsf_pt_ = -1.;
@@ -189,6 +217,8 @@ private:
 	int gsf_ntangents_ = 0;
  	float gsf_hit_dpt_[NHITS_MAX] = {0};
  	float gsf_hit_dpt_unc_[NHITS_MAX] = {0};
+	std::vector<float> gsf_extapolated_eta_;
+	std::vector<float> gsf_extapolated_phi_;
 
 
 	//PFGSFTrack internal steps flags
@@ -236,13 +266,37 @@ private:
 	float ele_eta_ = -1.;
 	float ele_phi_ = -1.;
 	float ele_p_ = -1.;
-	float ele_mvaIdV1_ = -2.;
 	float ele_mvaIdV2_ = -2.;
+	float ele_lowPtMva_ = -999.;
 	float ele_conv_vtx_fit_prob_ = -1.;
 	float ele_iso01_ = 0.;
 	float ele_iso02_ = 0.;
 	float ele_iso03_ = 0.;
 	float ele_iso04_ = 0.;
+
+	float eid_trk_p_ = -666;
+  float eid_trk_nhits_ = -666;
+  float eid_trk_chi2red_ = -666;
+  float eid_gsf_nhits_ = -666;
+  float eid_gsf_chi2red_ = -666;
+  float eid_sc_E_ = -666;
+  float eid_sc_eta_ = -666;
+  float eid_sc_etaWidth_ = -666;
+  float eid_sc_phiWidth_ = -666;
+  float eid_match_seed_dEta_ = -666;
+  float eid_match_eclu_EoverP_ = -666;
+  float eid_match_SC_EoverP_ = -666;
+  float eid_match_SC_dEta_ = -666;
+  float eid_match_SC_dPhi_ = -666;
+  float eid_shape_full5x5_sigmaIetaIeta_ = -666;
+  float eid_shape_full5x5_sigmaIphiIphi_ = -666;
+  float eid_shape_full5x5_HoverE_ = -666;
+  float eid_shape_full5x5_r9_ = -666;
+  float eid_shape_full5x5_circularity_ = -666;
+  float eid_rho_ = -666;
+  float eid_brem_frac_ = -666;
+  float eid_ele_pt_ = -666;
+
 
 	// Bottom up approach	
 	float gsf_ecal_cluster_e_ = -1;
@@ -407,6 +461,8 @@ private:
   int p4kind_ = -1;
 
   // SuperClusters //////////
+	std::vector<float> sc_cluster_eta_;
+	std::vector<float> sc_cluster_phi_;
 
   float sc_etaWidth_ = -1.;
   float sc_phiWidth_ = -1.;

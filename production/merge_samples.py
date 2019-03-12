@@ -7,6 +7,7 @@ parser = ArgumentParser()
 parser.add_argument('jobid')
 parser.add_argument('--se', default='/eos/cms/store/cmst3/user/mverzett/')
 parser.add_argument('--group', default=120, type=int)
+parser.add_argument('--condor', action='store_true')
 args = parser.parse_args()
 
 import ROOT as R
@@ -58,13 +59,16 @@ def chunks(l, n):
 
 from glob import glob
 from pdb import set_trace
-indirs = glob('%s/*/crab_%s_*' % (args.se, args.jobid))
+indirs = glob('%s/%s_*' % (args.se, args.jobid)) \
+   if args.condor else \
+   glob('%s/*/crab_%s_*' % (args.se, args.jobid))
 
 for sample in indirs:
-   ins = glob('%s/*/*/*.root' % sample)
+   ins = glob('%s/*.root' % sample) \
+      if args.condor else glob('%s/*/*/*.root' % sample) 
    print 'sample: ', sample
    print 'found', len(ins), 'input files'
-   base_name = sample.split('_%s_' % args.jobid)[1]
+   base_name = sample.split('%s_' % args.jobid)[1]
    ins_chuncks = [i for i in chunks(ins, args.group)]
    for idx, chunk in enumerate(ins_chuncks):
       hadd(

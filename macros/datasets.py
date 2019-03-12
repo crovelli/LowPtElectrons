@@ -1,8 +1,11 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
 #tag = '2018Sep20'
-tag = '2018Nov01'
-posix = '2018Nov01'
+#tag = '2019Feb05'
+#posix = '2019Feb05'
+
+tag = '2019Feb22'
+posix = '2019Feb22'
 target_dataset = 'all'
 
 import socket
@@ -13,6 +16,7 @@ elif "hep.ph.ic.ac.uk" in socket.gethostname() : path = '/vols/cms/bainbrid/BPar
 print socket.gethostname()
 
 import os
+from pdb import set_trace
 all_sets = glob(path+'/*_%s_*.root' % posix)
 sets = set([os.path.basename(i).split('_')[0].split('Assoc')[0] for i in all_sets])
 sets = sorted(list(sets), key=lambda x: -len(x))
@@ -23,12 +27,15 @@ for inf in all_sets:
       if os.path.basename(inf).startswith(name):
          input_files[name].append(inf)
          break
-input_files['test'] = input_files['BToKee'][:1]
+input_files['test'] = input_files['BToJPsieeK'][:1]
+input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
+input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
    #'BToKstee' : r'B $\to$ K* ee',
    'BToJPsieeK' : r'B $\to$ K J/$\Psi$(ee)',
+   'BToJPsieeK_0' : r'B $\to$ K J/$\Psi$(ee)',
    #'BToKstJPsiee' : r'B $\to$ K* J/$\Psi$(ee)',
 }
 
@@ -77,7 +84,8 @@ def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), excl
       columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
    try:
       ret = infiles[0]['features/tree'].arrays(columns)
-   except:
+   except KeyError as ex:
+      print 'Exception! ', ex
       set_trace()
       raise RuntimeError('Failed to open %s properly' % infiles[0])
    for infile in infiles[1:]:
@@ -142,10 +150,12 @@ class HistWeighter(object):
 
 import pandas as pd
 import numpy as np
-def pre_process_data(dataset, features, for_seeding=False):  
+def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):  
    mods = get_models_dir()
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err', 'trk_charge'])-{'trk_dxy_sig'})
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err', 'trk_charge', 'evt'])-{'trk_dxy_sig', 'trk_dxy_sig_inverted'})
    data_dict = get_data_sync(dataset, features)
+   if 'is_e_not_matched' not in data_dict:
+      data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
    multi_dim = {}
    for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:
       if feat in features:
@@ -160,24 +170,43 @@ def pre_process_data(dataset, features, for_seeding=False):
    ##   data = pd.concat([data, flattened], axis=1)
 
    #remove non-matched electrons
-   multi_dim = {i : j[np.invert(data.is_e_not_matched)] for i, j in multi_dim.iteritems()}
-   data = data[np.invert(data.is_e_not_matched)] 
+   if not keep_nonmatch:
+      multi_dim = {i : j[np.invert(data.is_e_not_matched)] for i, j in multi_dim.iteritems()}
+      data = data[np.invert(data.is_e_not_matched)] 
+   else:
+      #make the right fraction as is_e_not_matched are fully kept and normal tracks have a 160 prescale
+      notmatched = data[data.is_e_not_matched]
+      data = data[np.invert(data.is_e_not_matched)]
+      mask = np.random.uniform(size=notmatched.shape[0]) < 1./160
+      notmatched = notmatched[mask]
+      data = pd.concat((data, notmatched))
    # training pre-selection
    mask = training_selection(data)
    multi_dim = {i : j[mask] for i, j in multi_dim.iteritems()}   
    data = data[mask]
-   data['trk_dxy_sig'] = data.trk_dxy_err/data.trk_dxy
+   sip = data.trk_dxy/data.trk_dxy_err
+   sip[np.isinf(sip)] = 0
+   data['trk_dxy_sig'] = sip
+   inv_sip = data.trk_dxy_err/data.trk_dxy
+   inv_sip[np.isinf(inv_sip)] = 0
+   data['trk_dxy_sig_inverted'] = inv_sip
    data['training_out'] = -1
-   data['log_trkpt'] = np.log10(data.trk_pt)
+   log_trkpt = np.log10(data.trk_pt)
+   log_trkpt[np.isnan(log_trkpt)] = -9999
+   data['log_trkpt'] = log_trkpt
    
    #apply pt-eta reweighting
    ## from hep_ml.reweight import GBReweighter
    ## from sklearn.externals import joblib
    ## reweighter = joblib.load('%s/%s_reweighting.pkl' % (mods, dataset))
    ## weights = reweighter.predict_weights(data[['trk_pt', 'trk_eta']])
+   kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, dataset)
+   if not os.path.isfile(kmeans_model):
+      print 'I could not find the appropriate model, using the general instead'
+      kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, 'all')
    weights = kmeans_weighter(
       data[['log_trkpt', 'trk_eta']],
-      '%s/kmeans_%s_weighter.plk' % (mods, dataset)
+      kmeans_model
       )    
    data['weight'] = weights*np.invert(data.is_e) + data.is_e
 
@@ -199,11 +228,16 @@ def pre_process_data(dataset, features, for_seeding=False):
 
    #add baseline seeding (for seeding only)
    if for_seeding:
-      data['baseline'] = (
-         data.preid_trk_ecal_match | 
-         (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
-         )
-   
+      if 'preid_trk_ecal_match' in data.columns:
+         data['baseline'] = (
+            data.preid_trk_ecal_match | 
+            (np.invert(data.preid_trk_ecal_match) & data.preid_trkfilter_pass & data.preid_mva_pass)
+            )
+      elif 'trk_pass_default_preid' in data.columns:
+         data['baseline'] = data.trk_pass_default_preid
+      else:
+         data['baseline'] = False
+
    from features import labeling
    #convert bools to integers
    for c in data.columns:
@@ -214,3 +248,9 @@ def pre_process_data(dataset, features, for_seeding=False):
       return data
    else:
       return data, multi_dim
+
+
+def train_test_split(data, div, thr):
+   mask = data.evt % div
+   mask = mask < thr
+   return data[mask], data[np.invert(mask)]

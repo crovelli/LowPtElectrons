@@ -48,12 +48,12 @@ floatedmValueMap_lowPtGsfElectronSeedValueMaps_unbiased_RECO
 recoGsfTracks_lowPtGsfEleGsfTracks__RECO
 recoSuperClusters_lowPtGsfElectronSuperClusters__RECO
 ```
-## CMSSW_10_2_X development (SLC6)
+## CMSSW_10_2_12 (recommended release)
 
 ```
 export SCRAM_ARCH=slc6_amd64_gcc700
-cmsrel CMSSW_10_2_X_2019-02-27-2300
-cd CMSSW_10_2_X_2019-02-27-2300/src
+cmsrel CMSSW_10_2_12
+cd CMSSW_10_2_12/src
 cmsenv
 git cms-init
 ```
@@ -65,42 +65,7 @@ cd $CMSSW_BASE/src
 scram b -j8 # repeat if necesssary
 ```
 
-Optional: earlier IBs would require the following:
-```
-git cms-merge-topic bainbrid:LowPtElectronsFull_102X_VeryLoose
-git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
-```
-
-Optional: checkout and run simple ntuplizer.
-```
-git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons 
-cd $CMSSW_BASE/src
-scram b -j8
-cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
-voms-proxy-init --voms cms
-. test_10X.sh
-```
-
-## CMSSW_10_2_10 development (not recently tested, use at your own risk)
-
-```
-export SCRAM_ARCH=slc6_amd64_gcc700
-cmsrel CMSSW_10_2_10
-cd CMSSW_10_2_10/src
-cmsenv
-git cms-init
-```
-
-Check out and build.
-```
-cd $CMSSW_BASE/src
-git cms-merge-topic bainbrid:LowPtElectronsFull_102X
-git cms-merge-topic bainbrid:LowPtElectronsFull_102X_VeryLoose
-scram b -j8 # repeat if necesssary
-```
-
-Add models from cms-data.
+Optional: check out the BDT models:
 ```
 git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
 ```
@@ -116,7 +81,7 @@ voms-proxy-init --voms cms
 . test_10X.sh
 ```
 
-## CMSSW_10_6_X development (SLC7)
+## CMSSW_10_6_X (SLC7, development cycle)
 
 ```
 ssh -X username@lxplus7.cern.ch

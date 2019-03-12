@@ -11,6 +11,8 @@
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include <sstream>
 #include <cmath>
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
 
 using namespace reco;
 using namespace edm;
@@ -31,6 +33,9 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gen_e", &gen_e_, "gen_e/f");
 	tree->Branch("gen_p", &gen_p_, "gen_p/f");
 	tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
+	tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
+	tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
+	tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
 
 	tree->Branch("trk_pt",				 	&trk_pt_				   , "trk_pt/f");
 	tree->Branch("trk_eta",		 	  &trk_eta_		       , "trk_eta/f");
@@ -48,21 +53,38 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("trk_inp",  			&trk_inp_  	    	 , "trk_inp/f");
 	tree->Branch("trk_outp",	  		&trk_outp_	  	   , "trk_outp/f");
 	tree->Branch("trk_chi2red",    &trk_chi2red_      , "trk_chi2red/f"); 
+	tree->Branch("trk_pass_default_preid", &trk_pass_default_preid_, "trk_pass_default_preid/O"); 
 
-	tree->Branch("preid_bdtout",				 	&preid_bdtout_		  	, "preid_bdtout/f");
-	tree->Branch("preid_trk_ecal_Deta",	&preid_trk_ecal_Deta_ , "preid_trk_ecal_Deta/f");
-	tree->Branch("preid_trk_ecal_Dphi",	&preid_trk_ecal_Dphi_ , "preid_trk_ecal_Dphi/f");
-	tree->Branch("preid_e_over_p",			 	&preid_e_over_p_			, "preid_e_over_p/f");
-	//stage 2, with GSF
-	tree->Branch("preid_gsf_success"			, &preid_gsf_success_     , "preid_gsf_success/O");
-	tree->Branch("preid_gsf_dpt"					, &preid_gsf_dpt_		  		, "preid_gsf_dpt/f");					
-	tree->Branch("preid_trk_gsf_chiratio", &preid_trk_gsf_chiratio_, "preid_trk_gsf_chiratio/f");
-	tree->Branch("preid_gsf_chi2red"     , &preid_gsf_chi2red_     , "preid_gsf_chi2red/f");     
-	tree->Branch("preid_numGSF", &preid_numGSF_, "preid_gsf_chi2red/i");
-	//step-wise standard selection
-	tree->Branch("preid_trk_ecal_match", &preid_trk_ecal_match_, "preid_trk_ecal_match/O");
-	tree->Branch("preid_trkfilter_pass", &preid_trkfilter_pass_, "preid_trkfilter_pass/O");
-	tree->Branch("preid_mva_pass", &preid_mva_pass_, "preid_mva_pass/O");
+	tree->Branch("preid_trk_pt", &preid_trk_pt_  , "preid_trk_pt/f");
+	tree->Branch("preid_trk_eta", &preid_trk_eta_ , "preid_trk_eta/f");
+	tree->Branch("preid_trk_phi", &preid_trk_phi_ , "preid_trk_phi/f");
+  tree->Branch("preid_trk_p", &preid_trk_p_   , "preid_trk_p/f");
+  tree->Branch("preid_trk_nhits", &preid_trk_nhits_ , "preid_trk_nhits/f");
+  tree->Branch("preid_trk_high_quality", &preid_trk_high_quality_ , "preid_trk_high_quality/f");
+  tree->Branch("preid_trk_chi2red", &preid_trk_chi2red_ , "preid_trk_chi2red/f");
+  tree->Branch("preid_rho", &preid_rho_ , "preid_rho/f");
+  tree->Branch("preid_ktf_ecal_cluster_e", &preid_ktf_ecal_cluster_e_ , "preid_ktf_ecal_cluster_e/f");
+  tree->Branch("preid_ktf_ecal_cluster_deta", &preid_ktf_ecal_cluster_deta_ , "preid_ktf_ecal_cluster_deta/f");
+  tree->Branch("preid_ktf_ecal_cluster_dphi", &preid_ktf_ecal_cluster_dphi_ , "preid_ktf_ecal_cluster_dphi/f");
+  tree->Branch("preid_ktf_ecal_cluster_e3x3", &preid_ktf_ecal_cluster_e3x3_ , "preid_ktf_ecal_cluster_e3x3/f");
+  tree->Branch("preid_ktf_ecal_cluster_e5x5", &preid_ktf_ecal_cluster_e5x5_ , "preid_ktf_ecal_cluster_e5x5/f");
+  tree->Branch("preid_ktf_ecal_cluster_covEtaEta", &preid_ktf_ecal_cluster_covEtaEta_ , "preid_ktf_ecal_cluster_covEtaEta/f");
+  tree->Branch("preid_ktf_ecal_cluster_covEtaPhi", &preid_ktf_ecal_cluster_covEtaPhi_ , "preid_ktf_ecal_cluster_covEtaPhi/f");
+  tree->Branch("preid_ktf_ecal_cluster_covPhiPhi", &preid_ktf_ecal_cluster_covPhiPhi_ , "preid_ktf_ecal_cluster_covPhiPhi/f");
+  tree->Branch("preid_ktf_ecal_cluster_r9", &preid_ktf_ecal_cluster_r9_ , "preid_ktf_ecal_cluster_r9/f");
+  tree->Branch("preid_ktf_ecal_cluster_circularity", &preid_ktf_ecal_cluster_circularity_ , "preid_ktf_ecal_cluster_circularity/f");
+  tree->Branch("preid_ktf_hcal_cluster_e", &preid_ktf_hcal_cluster_e_ , "preid_ktf_hcal_cluster_e/f");
+  tree->Branch("preid_ktf_hcal_cluster_deta", &preid_ktf_hcal_cluster_deta_ , "preid_ktf_hcal_cluster_deta/f");
+  tree->Branch("preid_ktf_hcal_cluster_dphi", &preid_ktf_hcal_cluster_dphi_ , "preid_ktf_hcal_cluster_dphi/f");
+  tree->Branch("preid_gsf_dpt", &preid_gsf_dpt_ , "preid_gsf_dpt/f");
+  tree->Branch("preid_trk_gsf_chiratio", &preid_trk_gsf_chiratio_ , "preid_trk_gsf_chiratio/f");
+  tree->Branch("preid_gsf_chi2red", &preid_gsf_chi2red_ , "preid_gsf_chi2red/f");
+  tree->Branch("preid_trk_dxy_sig", &preid_trk_dxy_sig_ , "preid_trk_dxy_sig/f"); // must be last (not used by unbiased model)
+
+	tree->Branch("preid_bdtout1",				 	&preid_bdtout1_		  	, "preid_bdtout1/f");
+	tree->Branch("preid_bdtout2",				 	&preid_bdtout2_		  	, "preid_bdtout2/f");
+	tree->Branch("preid_mva1_pass", &preid_mva1_pass_, "preid_mva1_pass/O");
+	tree->Branch("preid_mva2_pass", &preid_mva2_pass_, "preid_mva2_pass/O");
 	
 	tree->Branch("gsf_pt",				 	&gsf_pt_				   , "gsf_pt/f");
 	tree->Branch("gsf_eta",		 	  &gsf_eta_		       , "gsf_eta/f");
@@ -82,6 +104,8 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/i");
 	tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
 	tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
+	tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
+	tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
 
 	//PFGSFTrack internal steps flags
 	tree->Branch("pfgsf_gsf_has_ktf", &pfgsf_gsf_has_ktf_, "pfgsf_gsf_has_ktf/O");
@@ -128,13 +152,37 @@ void ElectronNtuple::link_tree(TTree *tree) {
 	tree->Branch("ele_p",				 	&ele_p_				   , "ele_p/f");
 	tree->Branch("ele_eta",		 	  &ele_eta_		       , "ele_eta/f");
 	tree->Branch("ele_phi",		 	  &ele_phi_     		 , "ele_phi/f");
-	tree->Branch("ele_mvaIdV1",		 	  &ele_mvaIdV1_     		 , "ele_mvaIdV1/f");
 	tree->Branch("ele_mvaIdV2",		 	  &ele_mvaIdV2_     		 , "ele_mvaIdV2/f");
+	tree->Branch("ele_lowPtMva",		 	&ele_lowPtMva_     		 , "ele_lowPtMva/f");
 	tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
 	tree->Branch("ele_iso01", &ele_iso01_, "ele_iso01/f");
 	tree->Branch("ele_iso02", &ele_iso02_, "ele_iso02/f");
 	tree->Branch("ele_iso03", &ele_iso03_, "ele_iso03/f");
 	tree->Branch("ele_iso04", &ele_iso04_, "ele_iso04/f");
+
+	tree->Branch("eid_trk_p", &eid_trk_p_, "eid_trk_p/f");
+  tree->Branch("eid_trk_nhits", &eid_trk_nhits_, "eid_trk_nhits/f");
+  tree->Branch("eid_trk_chi2red", &eid_trk_chi2red_, "eid_trk_chi2red/f");
+  tree->Branch("eid_gsf_nhits", &eid_gsf_nhits_, "eid_gsf_nhits/f");
+  tree->Branch("eid_gsf_chi2red", &eid_gsf_chi2red_, "eid_gsf_chi2red/f");
+  tree->Branch("eid_sc_E", &eid_sc_E_, "eid_sc_E/f");
+  tree->Branch("eid_sc_eta", &eid_sc_eta_, "eid_sc_eta/f");
+  tree->Branch("eid_sc_etaWidth", &eid_sc_etaWidth_, "eid_sc_etaWidth/f");
+  tree->Branch("eid_sc_phiWidth", &eid_sc_phiWidth_, "eid_sc_phiWidth/f");
+  tree->Branch("eid_match_seed_dEta", &eid_match_seed_dEta_, "eid_match_seed_dEta/f");
+  tree->Branch("eid_match_eclu_EoverP", &eid_match_eclu_EoverP_, "eid_match_eclu_EoverP/f");
+  tree->Branch("eid_match_SC_EoverP", &eid_match_SC_EoverP_, "eid_match_SC_EoverP/f");
+  tree->Branch("eid_match_SC_dEta", &eid_match_SC_dEta_, "eid_match_SC_dEta/f");
+  tree->Branch("eid_match_SC_dPhi", &eid_match_SC_dPhi_, "eid_match_SC_dPhi/f");
+  tree->Branch("eid_shape_full5x5_sigmaIetaIeta", &eid_shape_full5x5_sigmaIetaIeta_, "eid_shape_full5x5_sigmaIetaIeta/f");
+  tree->Branch("eid_shape_full5x5_sigmaIphiIphi", &eid_shape_full5x5_sigmaIphiIphi_, "eid_shape_full5x5_sigmaIphiIphi/f");
+  tree->Branch("eid_shape_full5x5_HoverE", &eid_shape_full5x5_HoverE_, "eid_shape_full5x5_HoverE/f");
+  tree->Branch("eid_shape_full5x5_r9", &eid_shape_full5x5_r9_, "eid_shape_full5x5_r9/f");
+  tree->Branch("eid_shape_full5x5_circularity", &eid_shape_full5x5_circularity_, "eid_shape_full5x5_circularity/f");
+  tree->Branch("eid_rho", &eid_rho_, "eid_rho/f");
+  tree->Branch("eid_brem_frac", &eid_brem_frac_, "eid_brem_frac/f");
+  tree->Branch("eid_ele_pt", &eid_ele_pt_, "eid_ele_pt/f");
+
 
 	//Bottom up approach
 	tree->Branch("gsf_ecal_cluster_e", &gsf_ecal_cluster_e_, "gsf_ecal_cluster_e/f");
@@ -293,7 +341,9 @@ void ElectronNtuple::link_tree(TTree *tree) {
   tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
   tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
   
-  // SuperClusters //////////
+  // SuperClusters //////////	
+	tree->Branch("sc_cluster_eta", &sc_cluster_eta_);
+	tree->Branch("sc_cluster_phi", &sc_cluster_phi_);
 
   tree->Branch("sc_etaWidth",&sc_etaWidth_); 
   tree->Branch("sc_phiWidth",&sc_phiWidth_); 
@@ -324,6 +374,9 @@ void ElectronNtuple::fill_gen(const GenParticleRef genp) {
 	gen_e_ = genp->energy();
 	gen_p_ = genp->p();
 	gen_charge_ = genp->charge();
+	gen_pdgid_ = 0;
+	gen_mom_pdgid_ = 0;
+	gen_gran_pdgid_ = 0;
 }
 
 void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &spot) {
@@ -357,43 +410,80 @@ void ElectronNtuple::fill_gsf_trk(const GsfTrackRef trk, const reco::BeamSpot &s
   }
 }
 
-void ElectronNtuple::fill_preid( const PreId &preid, const reco::BeamSpot &spot, const int num_gsf) {
+void ElectronNtuple::fill_pfgsf_trk(const reco::GsfPFRecTrackRef pfgsf) {
+	const reco::PFTrajectoryPoint& point1 = pfgsf->extrapolatedPoint(reco::PFTrajectoryPoint::LayerType::ECALShowerMax);
+	if(point1.isValid()) {
+			gsf_extapolated_eta_.push_back(point1.positionREP().eta());
+			gsf_extapolated_phi_.push_back(point1.positionREP().phi());		
+	}
 
-  // Extract KF track parameters
-  fill_ktf_trk( preid.trackRef(), spot );
-
-  // ECAL/track matching parameters
-  preid_e_over_p_ = preid.eopMatch();
-  preid_trk_ecal_Deta_ = preid.geomMatching()[0];
-  preid_trk_ecal_Dphi_ = preid.geomMatching()[1];
-
-  // GSF tracks
-  preid_gsf_success_ = false; //@@ ??
-  // (p_out-p_in)/p_in from GSF track
-  preid_gsf_dpt_ = preid.dpt();
-  // Ratio of chi2 from GSF and KF tracks
-  preid_trk_gsf_chiratio_ = preid.chi2Ratio();
-  // Estimate of reduced chi2 for GSF track (assumes GSF and KF track have same d.o.f.)
-  preid_gsf_chi2red_ = preid.gsfChi2();
-	
-  // MVA output
-  preid_bdtout_ = preid.mva();
-
-	//How many GSF it will seed
-	preid_numGSF_ = num_gsf;
-
-	//step-wise standard selection
-  preid_trk_ecal_match_ = preid.ecalMatching();
-	preid_trkfilter_pass_ = preid.trackFiltered();
-	preid_mva_pass_ = preid.mvaSelected();
+	for(auto& brem : pfgsf->PFRecBrem()) {
+		const reco::PFTrajectoryPoint& brem_point = brem.extrapolatedPoint(reco::PFTrajectoryPoint::LayerType::ECALShowerMax);
+		if(brem_point.isValid()) {
+			gsf_extapolated_eta_.push_back(brem_point.positionREP().eta());
+			gsf_extapolated_phi_.push_back(brem_point.positionREP().phi());		
+		}
+	}
 }
 
-void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, float mvaid_v2, float ele_conv_vtx_fit_prob, const std::vector<float>& iso_rings) {
+void ElectronNtuple::fill_preid( const reco::PreId &preid_ecal, const reco::PreId &preid_hcal, 
+																 const reco::BeamSpot &spot, const double rho, const int num_gsf,
+																 noZS::EcalClusterLazyTools& ecalTools, bool pass_preid) {
+
+  // Extract KF track parameters
+  fill_ktf_trk( preid_ecal.trackRef(), spot, pass_preid);
+	
+	lowptgsfeleseed::Features preid_features;
+	preid_features.set(preid_ecal, preid_hcal,
+										 rho, spot, ecalTools);
+	std::vector<float> feature_vector = preid_features.get();
+	// Fill preId on
+	size_t idx=0;
+	preid_trk_pt_  = feature_vector.at(idx++);
+	preid_trk_eta_ = feature_vector.at(idx++);
+	preid_trk_phi_ = feature_vector.at(idx++);
+  preid_trk_p_   = feature_vector.at(idx++);
+  preid_trk_nhits_ = feature_vector.at(idx++);
+  preid_trk_high_quality_ = feature_vector.at(idx++);
+  preid_trk_chi2red_ = feature_vector.at(idx++);
+  preid_rho_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_e_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_deta_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_dphi_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_e3x3_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_e5x5_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_covEtaEta_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_covEtaPhi_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_covPhiPhi_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_r9_ = feature_vector.at(idx++);
+  preid_ktf_ecal_cluster_circularity_ = feature_vector.at(idx++);
+  preid_ktf_hcal_cluster_e_ = feature_vector.at(idx++);
+  preid_ktf_hcal_cluster_deta_ = feature_vector.at(idx++);
+  preid_ktf_hcal_cluster_dphi_ = feature_vector.at(idx++);
+  preid_gsf_dpt_ = feature_vector.at(idx++);
+  preid_trk_gsf_chiratio_ = feature_vector.at(idx++);
+  preid_gsf_chi2red_ = feature_vector.at(idx++);
+  preid_trk_dxy_sig_ = feature_vector.at(idx++); // must be last (not used by unbiased model)
+	
+  // MVA output
+  preid_bdtout1_ = preid_ecal.mva(0);
+  preid_bdtout2_ = preid_ecal.mva(1);
+
+	//step-wise standard selection
+	preid_mva1_pass_ = preid_ecal.mvaSelected(0);
+	preid_mva2_pass_ = preid_ecal.mvaSelected(1);
+}
+
+void ElectronNtuple::fill_ele(
+	const reco::GsfElectronRef ele, float mvaid_v1, 
+	float mvaid_v2, float ele_conv_vtx_fit_prob, 
+	const std::vector<float>& iso_rings, const double rho) {
+
 	ele_p_			 = ele->p();
 	ele_pt_			 = ele->pt();
 	ele_eta_		 = ele->eta();
 	ele_phi_     = ele->phi();
-	ele_mvaIdV1_ = mvaid_v1;
+	ele_lowPtMva_ = mvaid_v1;
 	ele_mvaIdV2_ = mvaid_v2;
 	ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob;
 	ele_iso01_ = iso_rings.at(0);
@@ -401,6 +491,34 @@ void ElectronNtuple::fill_ele(const reco::GsfElectronRef ele, float mvaid_v1, fl
 	ele_iso03_ = iso_rings.at(2);
 	ele_iso04_ = iso_rings.at(3);
 	fill_supercluster(ele);
+
+	lowptgsfeleid::Features feats;
+	feats.set(ele, rho);
+	auto feat_v = feats.get();
+	size_t idx=0;
+
+	eid_rho_ = feat_v[idx++];
+	eid_ele_pt_ = feat_v[idx++];
+	eid_sc_eta_ = feat_v[idx++];
+	eid_shape_full5x5_sigmaIetaIeta_ = feat_v[idx++];
+	eid_shape_full5x5_sigmaIphiIphi_ = feat_v[idx++];
+	eid_shape_full5x5_circularity_ = feat_v[idx++];
+	eid_shape_full5x5_r9_ = feat_v[idx++];
+	eid_sc_etaWidth_ = feat_v[idx++];
+	eid_sc_phiWidth_ = feat_v[idx++];
+	eid_shape_full5x5_HoverE_ = feat_v[idx++];
+	eid_trk_nhits_ = feat_v[idx++];
+	eid_trk_chi2red_ = feat_v[idx++];
+	eid_gsf_chi2red_ = feat_v[idx++];
+	eid_brem_frac_ = feat_v[idx++];
+	eid_gsf_nhits_ = feat_v[idx++];
+	eid_match_SC_EoverP_ = feat_v[idx++];
+	eid_match_eclu_EoverP_ = feat_v[idx++];
+	eid_match_SC_dEta_ = feat_v[idx++];
+	eid_match_SC_dPhi_ = feat_v[idx++];
+	eid_match_seed_dEta_ = feat_v[idx++];
+	eid_sc_E_ = feat_v[idx++];
+	eid_trk_p_ = feat_v[idx++];
 }
 
 void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
@@ -524,6 +642,13 @@ void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
   
   if ( ele->superCluster().isNull() ) { return; }
   const SuperClusterRef& sc = ele->superCluster();
+	if(sc->clusters().size() == 0) std::cout << "NO CLUSTERS???" << std::endl;
+	//std::cout << "clustersSize: " << sc->clustersSize() << " clusters.size(): " << sc->clusters().size() << std::endl; 
+	for(auto& cluster : sc->clusters()) {
+		//std::cout << "(" << (cluster)->eta() << ", " << (cluster)->phi() << ")" << std::endl;
+		sc_cluster_eta_.push_back((cluster)->eta());
+		sc_cluster_phi_.push_back((cluster)->phi());
+	}
 
   sc_etaWidth_ = sc->etaWidth();
   sc_phiWidth_ = sc->phiWidth();
@@ -552,7 +677,7 @@ void ElectronNtuple::fill_supercluster(const reco::GsfElectronRef ele) {
 
 }
 
-void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spot ) {
+void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spot, bool pass_preid) {
   if ( trk.isNonnull() ) {
     // kine
     trk_pt_ = trk->pt();
@@ -573,6 +698,7 @@ void ElectronNtuple::fill_ktf_trk( const TrackRef trk, const reco::BeamSpot &spo
     trk_dxy_err_ = trk->dxyError();
     trk_dz_ = trk->dz(spot.position());
     trk_dz_err_ = trk->dzError();
+		trk_pass_default_preid_ = pass_preid;
   } else {
     //@@ Shouldn't happen, but we take dummy values ...?
   }

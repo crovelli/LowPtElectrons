@@ -24,6 +24,13 @@ parser.add_argument(
    help='recover lost best iteration due to bug'
 )
 
+parser.add_argument(
+   '--SW94X', action='store_true'
+)
+parser.add_argument(
+   '--usenomatch', action='store_true'
+)
+
 args = parser.parse_args()
 
 import matplotlib.pyplot as plt
@@ -33,7 +40,7 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, pre_process_data, get_models_dir, target_dataset
+from datasets import tag, pre_process_data, get_models_dir, target_dataset, train_test_split
 import os
 
 dataset = 'test' if args.test else target_dataset
@@ -52,20 +59,29 @@ if not os.path.isdir(plots):
 from features import *
 features, additional = get_features(args.what)
 
-fields = features+labeling+additional
+fields = features+labeling
+if args.SW94X and 'seeding' in args.what:
+   fields += seed_94X_additional
+else:
+   fields += additional
+
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
-data = pre_process_data(dataset, fields, 'seeding' in args.what)
+data = pre_process_data(
+   dataset, fields,
+   for_seeding=('seeding' in args.what),
+   keep_nonmatch=args.usenomatch
+   )
+
 if args.noweight:
    data.weight = 1
 
-from sklearn.model_selection import train_test_split
-train, test = train_test_split(data, test_size=0.2, random_state=42)
+train, test = train_test_split(data, 10, 8)
 test.to_hdf(
    '%s/nn_bo_%s_testdata.hdf' % (opti_dir, args.what),
    'data'
    ) 
 
-train, validation = train_test_split(train, test_size=0.2, random_state=42)
+train, validation = train_test_split(train, 10, 6)
 train.to_hdf(
    '%s/nn_bo_%s_traindata.hdf' % (opti_dir, args.what),
    'data'

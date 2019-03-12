@@ -85,15 +85,18 @@ if not os.path.isdir(mods):
 
 
 from features import *
-features = id_features+new_features+seed_features+improved_seed_features
+features = cmssw_mva_id+cmssw_displaced_improvedfullseeding+['trk_dxy_sig', 'trk_dxy_sig_inverted']+seed_additional+['sc_Nclus', 'ele_eta', 'gsf_eta']
 features = list(set(features))
 additional = id_additional
 
 multi_dim_branches = ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']
 data, multi_dim = pre_process_data(
    target_dataset,
-   features+labeling+additional+multi_dim_branches
+   features+labeling+additional+multi_dim_branches,
+   for_seeding=True,
 )
+data['eid_sc_Nclus'] = data['sc_Nclus']
+features+= ['eid_sc_Nclus']
 print 'making plots'
 
 for feat in multi_dim_branches:
@@ -135,12 +138,27 @@ for feat in multi_dim_branches:
    except : pass
    plt.clf()
 
+electrons_selected = data[(
+      (data.eid_ele_pt > 0) & (data.gsf_pt > 1) & (np.abs(data.gsf_eta) < 1.5) & 
+      (data.preid_bdtout1 > 1.20)
+      )]
+datas = {
+   'full_elecs' : {
+      'trk' : electrons_selected[np.invert(electrons_selected.is_e)],
+      'ele' : electrons_selected[electrons_selected.is_e],
+      },
+   'data' : {
+      'trk' : data[np.invert(data.is_e)],
+      'ele' : data[data.is_e],
+      }
+   }
 
-      
 for to_plot in features:
+   print ' --> plotting', to_plot
    plt.clf()
-   electrons = data[data.is_e]
-   tracks = data[np.invert(data.is_e) & np.invert(data.is_e_not_matched)]
+   df_to_use = 'full_elecs' if to_plot.startswith('eid_') else 'data'
+   electrons = datas[df_to_use]['ele']
+   tracks = datas[df_to_use]['trk']
    plt.hist(
       electrons[to_plot], bins=50, 
       weights=electrons.weight,
