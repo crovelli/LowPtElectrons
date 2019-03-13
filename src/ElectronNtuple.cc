@@ -14,6 +14,8 @@
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
 
+//#define EMATRIX // uncomment and apply energy_matrix patch
+
 using namespace reco;
 using namespace edm;
 void ElectronNtuple::link_tree(TTree *tree) {
@@ -753,6 +755,7 @@ void ElectronNtuple::fill_GSF_ECAL_cluster_info(
 	gsf_ecal_cluster_covEtaPhi_ = covs[1];
 	gsf_ecal_cluster_covPhiPhi_ = covs[2];
 
+#ifdef EMATRIX
 	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
 	DetId seedid = cluster->hitsAndFractions().front().first;
 	auto energies = tools.fullMatrixEnergy(
@@ -764,6 +767,7 @@ void ElectronNtuple::fill_GSF_ECAL_cluster_info(
 			gsf_ecal_cluster_ematrix_[i][j] = energies.at(i).at(j);
 		}
 	}
+#endif
 }
 
 void ElectronNtuple::fill_GSF_HCAL_cluster_info(
@@ -797,6 +801,7 @@ void ElectronNtuple::fill_KTF_ECAL_cluster_info(
 	float e1x5 = tools.e1x5(*cluster);
 	ktf_ecal_cluster_circularity_ = (ktf_ecal_cluster_e5x5_ > 0) ? 1 - e1x5/ktf_ecal_cluster_e5x5_ : -0.1;
 
+#ifdef EMATRIX
 	int cluster_window = (ECAL_CLUSTER_SIZE-1)/2;
 	DetId seedid = cluster->hitsAndFractions().front().first;
 	auto energies = tools.fullMatrixEnergy(
@@ -808,6 +813,7 @@ void ElectronNtuple::fill_KTF_ECAL_cluster_info(
 			ktf_ecal_cluster_ematrix_[i][j] = energies.at(i).at(j);
 		}
 	}
+#endif
 }
 
 void ElectronNtuple::fill_KTF_HCAL_cluster_info(

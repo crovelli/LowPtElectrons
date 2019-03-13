@@ -1,0 +1,93 @@
+From 31ce901393089364f371aacdcf63de5bff39f5da Mon Sep 17 00:00:00 2001
+From: mauro verzetti <mverzett@cern.ch>
+Date: Wed, 19 Dec 2018 11:06:37 +0100
+Subject: [PATCH] patch EcalClusterLazyTools to add more informations
+
+---
+ .../interface/EcalClusterLazyTools.h          | 25 +++++++++++++++++++
+ .../interface/EcalClusterTools.h              | 19 +++++++++++++-
+ 2 files changed, 43 insertions(+), 1 deletion(-)
+
+diff --git a/RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h b/RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h
+index ec7302d6521..e2eb7761c41 100644
+--- a/RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h
++++ b/RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h
+@@ -198,6 +198,10 @@ class EcalClusterLazyToolsT : public EcalClusterLazyToolsBase {
+         // get the energy deposited in a matrix centered in the maximum energy crystal = (0,0)
+         // the size is specified by ixMin, ixMax, iyMin, iyMax in unit of crystals
+         float matrixEnergy( const reco::BasicCluster &cluster, DetId id, int ixMin, int ixMax, int iyMin, int iyMax );
++        // get the single energy deposits in a matrix centered in the maximum energy crystal = (0,0)
++        // the size is specified by ixMin, ixMax, iyMin, iyMax in unit of crystals
++        std::vector<std::vector<float> > fullMatrixEnergy( const reco::BasicCluster &cluster, DetId id, int ixMin, int ixMax, int iyMin, int iyMax );
++
+   
+ }; // class EcalClusterLazyToolsT
+ 
+@@ -396,6 +400,27 @@ float EcalClusterLazyToolsT<EcalClusterToolsImpl>::matrixEnergy( const reco::Bas
+   return EcalClusterToolsImpl::matrixEnergy( cluster, getEcalRecHitCollection(cluster), topology_, id, ixMin, ixMax, iyMin, iyMax );
+ }
+ 
++template<class EcalClusterToolsImpl>
++std::vector<std::vector<float> > EcalClusterLazyToolsT<EcalClusterToolsImpl>::fullMatrixEnergy(
++	const reco::BasicCluster &cluster, DetId id, int ixMin, int ixMax, int iyMin, int iyMax ) {
++	std::vector<DetId> detIds = EcalClusterToolsImpl::fullMatrixDetId(topology_, id, ixMin, ixMax, iyMin, iyMax );
++	std::vector<std::vector<float> > ret;
++	size_t row_size = abs(ixMax - ixMin)+1; //damned <= leads to +1
++	for ( int i = ixMin; i <= ixMax; ++i ) {
++		ret.emplace_back(iyMax-iyMin+1);
++		size_t ix = (i-ixMin); //we need them positive!
++		for ( int j = iyMin; j <= iyMax; ++j ) {
++			size_t iy = (j-iyMin);
++			int position = ix*row_size+iy;
++			DetId id = detIds.at(position);
++			if(id == DetId(0)) ret[ix][iy] = 0;
++			else ret[ix][iy] = this->matrixEnergy(cluster,id,0,0,0,0); //get energy for single crystal
++		}
++	}
++	return ret;
++}
++
++
+ namespace noZS {
+     typedef EcalClusterLazyToolsT<noZS::EcalClusterTools> EcalClusterLazyTools;
+ }
+diff --git a/RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h b/RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h
+index da0916ba86e..5ea9466cca9 100644
+--- a/RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h
++++ b/RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h
+@@ -174,6 +174,8 @@ class EcalClusterToolsT {
+                 // get the detId's of a matrix centered in the maximum energy crystal = (0,0)
+                 // the size is specified by ixMin, ixMax, iyMin, iyMax in unit of crystals
+                 static std::vector<DetId> matrixDetId( const CaloTopology* topology, DetId id, int ixMin, int ixMax, int iyMin, int iyMax );
++                // same as above, but returns dummy detIds when you run outside the boundaries of the detector
++                static std::vector<DetId> fullMatrixDetId( const CaloTopology* topology, DetId id, int ixMin, int ixMax, int iyMin, int iyMax );
+ 
+                 // get the energy deposited in a matrix centered in the maximum energy crystal = (0,0)
+                 // the size is specified by ixMin, ixMax, iyMin, iyMax in unit of crystals
+@@ -385,7 +387,22 @@ std::vector<DetId> EcalClusterToolsT<noZS>::matrixDetId( const CaloTopology* top
+         for ( int j = iyMin; j <= iyMax; ++j ) {
+             cursor.home();
+             cursor.offsetBy( i, j );
+-            if ( *cursor != DetId(0) ) v.push_back( *cursor );
++						if ( *cursor != DetId(0) ) v.push_back( *cursor );
++        }
++    }
++    return v;
++}
++
++template<bool noZS>
++std::vector<DetId> EcalClusterToolsT<noZS>::fullMatrixDetId( const CaloTopology* topology, DetId id, int ixMin, int ixMax, int iyMin, int iyMax )
++{
++    CaloNavigator<DetId> cursor = CaloNavigator<DetId>( id, topology->getSubdetectorTopology( id ) );
++    std::vector<DetId> v;
++    for ( int i = ixMin; i <= ixMax; ++i ) {
++        for ( int j = iyMin; j <= iyMax; ++j ) {
++            cursor.home();
++            cursor.offsetBy( i, j );
++            v.push_back( *cursor );
+         }
+     }
+     return v;
+-- 
+2.17.0
+

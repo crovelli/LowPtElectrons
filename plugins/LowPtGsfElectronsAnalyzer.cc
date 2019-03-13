@@ -228,7 +228,7 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
 	 !mvaIds[iter]->empty() &&
 	 electrons.isValid() ) {
       reco::GsfElectronRef ele(electrons,0);
-      std::cout << "\"" << mvaIdTags_[iter].instance() << "\"";
+      std::cout << "\"" << mvaIdTags_[iter].instance() << "\" ";
       if ( ele.isNonnull() ) { std::cout << "(example value: " << float( (*mvaIds[iter])[ele] ) << ")"; }
     }
     std::cout << std::endl;
@@ -241,34 +241,34 @@ void LowPtGsfElectronsAnalyzer::analyze( const edm::Event& iEvent,
 	 !mvaSeeds[iter]->empty() &&
 	 gsf_tracks.isValid() ) {
       reco::GsfTrackRef gsf(gsf_tracks,0);
-      std::cout << "\"" << mvaSeedTags_[iter].instance() << "\"";
+      std::cout << "\"" << mvaSeedTags_[iter].instance() << "\" ";
       if ( gsf.isNonnull() ) { std::cout << "(example value: " << float( (*mvaSeeds[iter])[gsf] ) << ")"; }
     }
     std::cout << std::endl;
   }
-  //
-  std::cout << "  all mvaSeeds:       " << std::endl;
-  if ( !mvaSeeds.empty() &&
-       mvaSeeds[0].isValid() && 
-       !mvaSeeds[0]->empty() &&
-       gsf_tracks.isValid() ) {
-    for ( unsigned int iter = 0; iter < gsf_tracks->size(); ++iter ) {
-      reco::GsfTrackRef gsf(gsf_tracks,iter);
-      if ( gsf.isNonnull() ) { 
-	std::cout << std::setprecision(2) 
-		  << std::setw(8)
-		  << " pt: " << gsf->pt()
-		  << std::setw(8)
-		  << " eta: " << gsf->eta()
-		  << std::setw(8)
-		  << " phi: " << gsf->phi()
-		  << std::setw(8)
-	  	  << " mva: " << float( (*mvaSeeds[0])[gsf] ) 
-		  << std::endl; 
-      }
-    }
-    std::cout << std::endl;
-  }
+
+//  std::cout << "  all mvaSeeds:       " << std::endl;
+//  if ( !mvaSeeds.empty() &&
+//       mvaSeeds[0].isValid() &&
+//       !mvaSeeds[0]->empty() &&
+//       gsf_tracks.isValid() ) {
+//    for ( unsigned int iter = 0; iter < gsf_tracks->size(); ++iter ) {
+//      reco::GsfTrackRef gsf(gsf_tracks,iter);
+//      if ( gsf.isNonnull() ) {
+//	std::cout << std::setprecision(2)
+//		  << std::setw(8)
+//		  << " pt: " << gsf->pt()
+//		  << std::setw(8)
+//		  << " eta: " << gsf->eta()
+//		  << std::setw(8)
+//		  << " phi: " << gsf->phi()
+//		  << std::setw(8)
+//	  	  << " mva: " << float( (*mvaSeeds[0])[gsf] )
+//		  << std::endl;
+//      }
+//    }
+//    std::cout << std::endl;
+//  }
 
 }
 

@@ -8,7 +8,8 @@ import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('python')
 options.setDefault('maxEvents',1)
-options.setDefault('inputFiles',['root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_4_0_pre3/RelValZEE_13/GEN-SIM-DIGI-RAW/PU25ns_103X_upgrade2018_realistic_v8-v1/20000/03156BB2-7F39-5B4E-B636-AB7C58CFF19D.root'])
+options.setDefault('inputFiles',['root://cms-xrd-global.cern.ch//store/mc/RunIIAutumn18DR/BuToKJpsi_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/GEN-SIM-RAW/PUPoissonAve20_102X_upgrade2018_realistic_v15_ext1-v1/00000/4B41AC51-4DDC-B643-AD5B-69EB797A22AC.root'])
+
 #options.register(
 #    'eras','',
 #    VarParsing.multiplicity.list,
