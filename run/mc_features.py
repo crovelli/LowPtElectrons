@@ -238,7 +238,6 @@ else : # Use custom Ntuplizer code
    # process.lowPtGsfElectronSuperClusters.MaxDeltaR2 = 9999.
 
    # Custom Ntuplizer code 
-   process.load('LowPtElectrons.LowPtElectrons.LowPtGsfElectronsAnalyzer_cfi')
    process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
    process.features.hitAssociation = options.hitAssociation
    if options.fakesMultiplier : process.features.fakesMultiplier = options.fakesMultiplier
@@ -257,7 +256,6 @@ if options.MVANtuplizer == True :
    process.reconstruction_step *= cms.Sequence(process.ntuplizer)
 else :
    process.reconstruction_step *= process.ntuplizer_seq
-   process.reconstruction_step *= process.simple
 process.eventinterpretaion_step = cms.Path(process.EIsequence)
 
 process.schedule = cms.Schedule(
