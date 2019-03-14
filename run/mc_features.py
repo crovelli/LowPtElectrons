@@ -265,11 +265,6 @@ process.schedule = cms.Schedule(
    process.eventinterpretaion_step
    )
 
-# Run only the Ntuplizer code?
-#process.load('LowPtElectrons.LowPtElectrons.TrackerElectronsFeatures_cfi')
-#process.path = cms.Path(process.features)
-#process.schedule = cms.Schedule(process.path)
-
 # Write ntuple to root file called "options.outname"
 process.TFileService=cms.Service('TFileService',fileName=cms.string(options.outname))
 

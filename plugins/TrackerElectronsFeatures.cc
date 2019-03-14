@@ -150,7 +150,7 @@ private:
 	const edm::EDGetTokenT< reco::PFRecTrackCollection > pf_ktf_tracks_;
 	const edm::EDGetTokenT< vector<reco::GsfPFRecTrack> > pf_gsf_tracks_;
 	const edm::EDGetTokenT< vector<reco::PFBlock> > pfblocks_;
-	const edm::EDGetTokenT< reco::PFCandidateCollection > pf_electrons_;
+        const edm::EDGetTokenT< reco::PFCandidateCollection > pf_electrons_;
 	const edm::EDGetTokenT< vector<reco::GsfElectronCore> > ged_electron_cores_;
 	const edm::EDGetTokenT< vector<reco::GsfElectron> > ged_electrons_;
 	const edm::EDGetTokenT< reco::PFClusterCollection > ecal_clusters_;
@@ -337,16 +337,6 @@ TrackerElectronsFeatures::analyze(const Event& iEvent, const EventSetup& iSetup)
 		reco2sim = associator->associateRecoToSim(ele_seeds, tracking_particles);
 	}
 
-	// std::cout << "[TrackerElectronsFeatures::analyze]" << std::endl
-	// 					<< "  ele_seeds->size(): " << ele_seeds->size() << std::endl
-	// 					<< "  preids_ecal->size(): " << preids_ecal->size() << std::endl
-	// 					<< "  preids_hcal->size(): " << preids_hcal->size() << std::endl
-	// 					<< "  trk_candidates->size(): " << trk_candidates->size() << std::endl
-	// 					<< "  gsf_tracks->size(): " << gsf_tracks->size() << std::endl
-	// 					<< "  pf_gsf_tracks->size(): " << pf_gsf_tracks->size() << std::endl
-	// 					<< "  ged_electron_cores->size(): " << ged_electron_cores->size() << std::endl
-	// 					<< "  ged_electrons->size(): " << ged_electrons->size() << std::endl
-	// 					<< std::endl;
 
 	//assert(gsf_tracks->size() == preids_ecal->size()); //this is bound to fail, but better check
 
@@ -1114,7 +1104,7 @@ std::pair<float,float> TrackerElectronsFeatures::printPfBlock( const reco::GenPa
     }
   }
 
-  if ( ele > 0 ) { 
+  if ( ele > 0 ) {
     const reco::GsfElectronRef ref = *ele;
     float dr = deltaR(*ref,*gen);
     std::cout << "    ELE:"
