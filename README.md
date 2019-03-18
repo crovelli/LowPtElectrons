@@ -70,10 +70,9 @@ Optional: check out the BDT models:
 git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
 ```
 
-Optional: checkout and run simple ntuplizer.
+Optional: checkout and run simple analyzer.
 ```
-git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
+git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
@@ -105,10 +104,9 @@ git cms-merge-topic bainbrid:LowPtElectronsFull_105X_Autumn18
 git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
 ```
 
-Optional: checkout and run simple ntuplizer.
+Optional: checkout and run simple analyzer.
 ```
-git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
+git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
@@ -139,10 +137,10 @@ Add models from cms-data.
 git clone git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
 ```
 
-Optional: checkout and run simple ntuplizer.
+Optional: checkout and run simple analyzer.
 ```
 git remote add bainbrid git@github.com:bainbrid/cmssw.git
-git clone git@github.com:bainbrid/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
+git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons
 cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
