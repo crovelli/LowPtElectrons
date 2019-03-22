@@ -77,7 +77,7 @@ cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
 voms-proxy-init --voms cms
-. test_10X.sh
+cmsRun LowPtGsfElectronsAnalyzer_cfg.py
 ```
 
 ## CMSSW_10_6_X (SLC7, development cycle)
@@ -111,7 +111,7 @@ cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
 voms-proxy-init --voms cms
-. test_10X.sh
+cmsRun LowPtGsfElectronsAnalyzer_cfg.py
 ```
 
 ## CMSSW_10_5_0_pre2 (closed release cycle)
@@ -145,5 +145,5 @@ cd $CMSSW_BASE/src
 scram b -j8
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
 voms-proxy-init --voms cms
-. test_10X.sh
+cmsRun LowPtGsfElectronsAnalyzer_cfg.py
 ```
