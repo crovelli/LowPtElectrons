@@ -48,12 +48,12 @@ floatedmValueMap_lowPtGsfElectronSeedValueMaps_unbiased_RECO
 recoGsfTracks_lowPtGsfEleGsfTracks__RECO
 recoSuperClusters_lowPtGsfElectronSuperClusters__RECO
 ```
-## CMSSW_10_2_12 (recommended release)
+## CMSSW_10_2_13 (recommended release)
 
 ```
 export SCRAM_ARCH=slc6_amd64_gcc700
-cmsrel CMSSW_10_2_12
-cd CMSSW_10_2_12/src
+cmsrel CMSSW_10_2_13
+cd CMSSW_10_2_13/src
 cmsenv
 git cms-init
 ```
