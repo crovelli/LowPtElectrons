@@ -1,6 +1,6 @@
 # Low pT electrons
 
-## Recipe to produce RECO data tier with low pT electrons
+## Recipe to add low pT electrons to RECO data tier
 
 Details can be found [here](LowPtElectrons.md). 
 
