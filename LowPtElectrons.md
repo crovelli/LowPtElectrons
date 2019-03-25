@@ -1,6 +1,6 @@
-# LowPtElectrons (10X branches)
+# Recipes to produce RECO data tier with low pT electrons
 
-## Producing RECO files with low pT electrons
+## Overview 
 
 The new reconstruction needs to produce GsfTracks from scratch and so the RAW data tier is needed as input. 
 
