@@ -1,4 +1,4 @@
-# Recipes to produce RECO data tier with low pT electrons
+# Recipes to add low pT electrons to RECO data tier
 
 ## Overview 
 
