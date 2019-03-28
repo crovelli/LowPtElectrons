@@ -67,9 +67,11 @@ private:
   const edm::EDGetTokenT< std::vector<pat::PackedGenParticle> > packedGenParticles_;
   const edm::EDGetTokenT< std::vector<reco::GsfTrack> > gsfTracks_;
   const edm::EDGetTokenT< std::vector<pat::Electron> > electrons_;
+  const edm::EDGetTokenT< edm::ValueMap<float> > mvaSeedUnbiased_;
+  const edm::EDGetTokenT< edm::ValueMap<float> > mvaSeedPtbiased_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDLowPt_;
-  const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDv2_;
-  const edm::EDGetTokenT< edm::ValueMap<float> > convVtxFitProb_;
+  //const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDv2_;
+  //const edm::EDGetTokenT< edm::ValueMap<float> > convVtxFitProb_;
   
 };
 
@@ -86,9 +88,11 @@ IDFeatures::IDFeatures( const edm::ParameterSet& cfg ) :
   packedGenParticles_(consumes< std::vector<pat::PackedGenParticle> >(cfg.getParameter<edm::InputTag>("packedGenParticles"))),
   gsfTracks_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))),
   electrons_(consumes< std::vector<pat::Electron> >(cfg.getParameter<edm::InputTag>("electrons"))),
-  mvaIDLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDLowPt"))),
-  mvaIDv2_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))),
-  convVtxFitProb_(consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb")))
+  mvaSeedUnbiased_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVASeedUnbiased"))),
+  mvaSeedPtbiased_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVASeedPtbiased"))),
+  mvaIDLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDLowPt")))//,
+  //mvaIDv2_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))),
+  //convVtxFitProb_(consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb")))
   {
     tree_ = fs_->make<TTree>("tree","tree");
     ntuple_.link_tree(tree_);
@@ -124,15 +128,21 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   edm::Handle< std::vector<pat::Electron> > electrons;
   event.getByToken(electrons_, electrons);
 
+  edm::Handle< edm::ValueMap<float> > mvaSeedUnbiased;
+  event.getByToken(mvaSeedUnbiased_, mvaSeedUnbiased);
+
+  edm::Handle< edm::ValueMap<float> > mvaSeedPtbiased;
+  event.getByToken(mvaSeedPtbiased_, mvaSeedPtbiased);
+
   edm::Handle< edm::ValueMap<float> > mvaIDLowPt;
-  //event.getByToken(mvaIDLowPt_, mvaIDLowPt);
+  event.getByToken(mvaIDLowPt_, mvaIDLowPt);
   
-  edm::Handle< edm::ValueMap<float> > mvaIDv2;
+  //edm::Handle< edm::ValueMap<float> > mvaIDv2;
   //event.getByToken(mvaIDv2_, mvaIDv2);
 
-  edm::Handle< edm::ValueMap<float> > convVtxFitProb;
+  //edm::Handle< edm::ValueMap<float> > convVtxFitProb;
   //event.getByToken(convVtxFitProb_, convVtxFitProb);
-  
+
   // Find GEN electrons from B decays
   std::set<pat::PackedGenParticleRef> electrons_from_B;
   electronsFromB( prunedGenParticles, packedGenParticles, electrons_from_B );
@@ -162,29 +172,39 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
     const auto& matched_gsf = gen2gsf.find(gen);
     if ( matched_gsf != gen2gsf.end() ) { 
 
-      ntuple_.fill_gsf_trk(matched_gsf->second, *beamspot);
+      ntuple_.fill_gsf(matched_gsf->second, *beamspot);
+
+      // Store Seed BDT discrimator values
+      float unbiased = (*mvaSeedUnbiased)[matched_gsf->second];
+      float ptbiased = (*mvaSeedPtbiased)[matched_gsf->second];
+      ntuple_.fill_seed( unbiased, ptbiased );
 
       // Check if GsfTrack is matched to an electron 
       const auto& matched_ele = gsf2ele.find(matched_gsf->second);
       if ( matched_ele != gsf2ele.end() ) {
 
-	//@@ dirty hack as existing IDs are not embeded in pat::Electron
+	//@@ dirty hack as ID is not in Event nor embedded in pat::Electron
 	float id_lowpt = -999.;
-	float id_v2 = -999.;
-	float conv_vtx_fit_prob = -999.;
 	if ( mvaIDLowPt.isValid() && mvaIDLowPt->size() == electrons->size() ) {
 	  id_lowpt = mvaIDLowPt->get( matched_ele->second.key() );
 	}
-	if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
-	  id_v2 = mvaIDv2->get( matched_ele->second.key() );
-	}
-	if ( convVtxFitProb.isValid() && convVtxFitProb->size() == electrons->size() ) {
-	  conv_vtx_fit_prob = convVtxFitProb->get( matched_ele->second.key() );
-	}	
+
+	//@@ dirty hack as ID is not in Event nor embedded in pat::Electron
+	float id_v2 = -999.;
+	//if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
+	//  id_v2 = mvaIDv2->get( matched_ele->second.key() );
+	//}
+
+	//@@ dirty hack as is not in Event nor embedded in pat::Electron
+	float conv_vtx_fit_prob = -999.;
+	//if ( convVtxFitProb.isValid() && convVtxFitProb->size() == electrons->size() ) {
+	//  conv_vtx_fit_prob = convVtxFitProb->get( matched_ele->second.key() );
+	//}
+
 	ntuple_.fill_ele( matched_ele->second, id_lowpt, id_v2, conv_vtx_fit_prob, *rho );
 
-//	//@@ Add SuperCluster vars?
-//	//ntuple_.fill_supercluster(matched_ele->second);
+	//@@ Add SuperCluster vars?
+	//ntuple_.fill_supercluster(matched_ele->second);
 
       }
     }
@@ -202,7 +222,9 @@ void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticl
 				 std::set<pat::PackedGenParticleRef>& electrons_from_B ) {
 
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2015#Examples
-  
+  // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/packedGenParticles_cfi.py
+  // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/prunedGenParticles_cfi.py
+
   electrons_from_B.clear();
   
   // Iterate through ("status 1") packed candidates

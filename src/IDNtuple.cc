@@ -4,6 +4,8 @@
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
 #include "TTree.h"
 
+/////////////////////////////////////////////////////////////////////////////////
+//
 void IDNtuple::link_tree( TTree *tree ) {
 
   tree->Branch("run",  &run_ , "run/i");
@@ -26,14 +28,22 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
   tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
 
+  tree->Branch("seed_bdt_unbiased", &seed_bdt_unbiased_, "seed_bdt_unbiased/f");
+  tree->Branch("seed_bdt_ptbiased", &seed_bdt_ptbiased_, "seed_bdt_ptbiased/f");
+
   tree->Branch("gsf_pt", &gsf_pt_, "gsf_pt/f");
   tree->Branch("gsf_eta", &gsf_eta_, "gsf_eta/f");
   tree->Branch("gsf_phi", &gsf_phi_, "gsf_phi/f");
   tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
   tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
-  tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
-  tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
-  tree->Branch("gsf_dpt", &gsf_dpt_, "gsf_dpt/f");
+  //tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
+  //tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
+  //tree->Branch("gsf_dpt", &gsf_dpt_, "gsf_dpt/f");
+
+  tree->Branch("mode_pt", &mode_pt_, "mode_pt/f");
+  tree->Branch("mode_eta", &mode_eta_, "mode_eta/f");
+  tree->Branch("mode_phi", &mode_phi_, "mode_phi/f");
+  tree->Branch("mode_p", &mode_p_, "mode_p/f");
 
   tree->Branch("gsf_nhits",&gsf_nhits_, "gsf_nhits/I");
   tree->Branch("gsf_missing_inner_hits", &gsf_missing_inner_hits_, "gsf_missing_inner_hits/I");
@@ -44,9 +54,9 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gsf_dz",  &gsf_dz_, "gsf_dz/f");
   tree->Branch("gsf_dz_err",&gsf_dz_err_, "gsf_dz_err/f");
 
-  tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/i");
-  tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
-  tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
+  //tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/i");
+  //tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
+  //tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
   //tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
   //tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
   
@@ -91,7 +101,7 @@ void IDNtuple::link_tree( TTree *tree ) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// 
+//
 void IDNtuple::fill_evt( const edm::EventID& id ) {
   run_  = id.run();
   lumi_ = id.luminosityBlock();
@@ -99,7 +109,7 @@ void IDNtuple::fill_evt( const edm::EventID& id ) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// 
+//
 void IDNtuple::fill_gen( const reco::GenParticleRef genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
@@ -113,7 +123,7 @@ void IDNtuple::fill_gen( const reco::GenParticleRef genp ) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// 
+//
 void IDNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
@@ -127,15 +137,20 @@ void IDNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// 
-void IDNtuple::fill_gsf_trk( const reco::GsfTrackRef gsf, const reco::BeamSpot& spot ) {
+//
+void IDNtuple::fill_seed( double seed_bdt_unbiased, double seed_bdt_ptbiased ) {
+  seed_bdt_unbiased_ = seed_bdt_unbiased;
+  seed_bdt_ptbiased_ = seed_bdt_ptbiased;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+void IDNtuple::fill_gsf( const reco::GsfTrackRef gsf, const reco::BeamSpot& spot ) {
 
   if ( gsf.isNull() ) {
     //@@ Shouldn't happen, but do we just take dummy values...? 
   } else {
 
-    std::cout << "!!!!!!! ADD MODE VARS FOR GSF TRACKS !!!!!!!" << std::endl; //@@
-    
     // Kinematics
     gsf_pt_ = gsf->pt();
     gsf_eta_ = gsf->eta();
@@ -145,6 +160,12 @@ void IDNtuple::fill_gsf_trk( const reco::GsfTrackRef gsf, const reco::BeamSpot& 
     //gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
     //gsf_outp_ = sqrt(gsf->outerMomentum().mag2());
     //gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
+
+    // Kinematics (MODE)
+    mode_pt_ = gsf->ptMode();
+    mode_eta_ = gsf->etaMode();
+    mode_phi_ = gsf->phiMode();
+    mode_p_ = gsf->pMode();
 
     // Quality
     gsf_nhits_ = gsf->found();
@@ -171,7 +192,7 @@ void IDNtuple::fill_gsf_trk( const reco::GsfTrackRef gsf, const reco::BeamSpot& 
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// 
+//
 void IDNtuple::fill_ele( const pat::ElectronRef ele,
 			 float id_lowpt,
 			 float id_v2,
