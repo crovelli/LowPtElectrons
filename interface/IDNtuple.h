@@ -13,8 +13,8 @@
 class TTree;
 
 constexpr size_t NHITS_MAX = 30;
-constexpr float NEG_INT = -999;
-constexpr float NEG_FLOAT = -999.;
+constexpr float NEG_INT = -10;
+constexpr float NEG_FLOAT = -10.;
 
 // Small class to provide fillers and hide tree I/O
 class IDNtuple {

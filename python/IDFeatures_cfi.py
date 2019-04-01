@@ -4,6 +4,7 @@ features = cms.EDAnalyzer(
     "IDFeatures",
     checkFromB = cms.bool(True),
     drMax = cms.double(0.02),
+    fakesMultiplier = cms.double(6.),
     rho = cms.InputTag('fixedGridRhoFastjetAll'),
     beamspot = cms.InputTag("offlineBeamSpot"),
     prunedGenParticles = cms.InputTag("prunedGenParticles"),

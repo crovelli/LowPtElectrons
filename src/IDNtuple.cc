@@ -28,8 +28,13 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
   tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
 
-  tree->Branch("seed_bdt_unbiased", &seed_bdt_unbiased_, "seed_bdt_unbiased/f");
-  tree->Branch("seed_bdt_ptbiased", &seed_bdt_ptbiased_, "seed_bdt_ptbiased/f");
+  //tree->Branch("seed_bdt_unbiased", &seed_bdt_unbiased_, "seed_bdt_unbiased/f");
+  //tree->Branch("seed_bdt_ptbiased", &seed_bdt_ptbiased_, "seed_bdt_ptbiased/f");
+  tree->Branch("preid_bdtout1", &seed_bdt_unbiased_, "preid_bdtout1/f");
+  tree->Branch("preid_bdtout2", &seed_bdt_ptbiased_, "preid_bdtout2/f");
+
+  tree->Branch("trk_pt", &gsf_pt_, "trk_pt/f");
+  tree->Branch("trk_eta", &gsf_eta_, "trk_eta/f");
 
   tree->Branch("gsf_pt", &gsf_pt_, "gsf_pt/f");
   tree->Branch("gsf_eta", &gsf_eta_, "gsf_eta/f");
@@ -279,13 +284,17 @@ namespace eleid {
   void Features::set( const pat::ElectronRef& ele, double rho ) {
 
     // KF tracks
-    reco::TrackRef trk = ele->track();
-    if ( ele->track().isNonnull() ) {
+
+    // https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/interface/Electron.h#L81-L84
+    // https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/src/Electron.cc#L299-L306
+    //@@ not what we want! 
+    reco::TrackRef trk = ele->closestCtfTrackRef(); 
+    if ( trk.isNonnull() ) {
       trk_p_ = float(trk->p());
       trk_nhits_ = float(trk->found());
       trk_chi2red_ = float(trk->normalizedChi2());
     }
-    
+
     // GSF tracks
     if ( ele->core().isNonnull() ) {
       reco::GsfTrackRef gsf = ele->core()->gsfTrack();
