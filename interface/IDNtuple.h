@@ -35,6 +35,9 @@ class IDNtuple {
   void is_e( bool t = true ) { is_e_ = t; }
   void is_e_not_matched( bool t = true ) { is_e_not_matched_ = t; }
   void is_other( bool t = true ) { is_other_ = t; }
+  
+  void has_pfgsf( bool f = false ) { has_pfgsf_ = f; }
+  void has_pfele( bool f = false ) { has_pfele_ = f; }
 
   void fill_evt( const edm::EventID& id );
 
@@ -65,6 +68,10 @@ class IDNtuple {
   bool is_e_ = false;
   bool is_e_not_matched_ = false;
   bool is_other_ = false;
+
+  // CMS PF reco
+  bool has_pfgsf_ = false;
+  bool has_pfele_ = false;
   
   // GEN electrons
   float gen_pt_ = NEG_FLOAT;

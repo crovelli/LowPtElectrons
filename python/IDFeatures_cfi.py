@@ -11,9 +11,11 @@ features = cms.EDAnalyzer(
     packedGenParticles = cms.InputTag("packedGenParticles"),
     gsfTracks = cms.InputTag("lowPtGsfEleGsfTracks"),
     electrons = cms.InputTag("slimmedLowPtElectrons"),
+    pfGsfTracks = cms.InputTag("reducedEgamma:reducedGsfTracks"),
+    pfElectrons = cms.InputTag("slimmedElectrons"),
     MVASeedUnbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:unbiased"),
     MVASeedPtbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:ptbiased"),
     MVAIDLowPt = cms.InputTag('lowPtGsfElectronID'),
-    #MVAIDV2 = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17IsoV2Values'),
+    MVAIDV2 = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17IsoV2Values'),
     #convVtxFitProb = cms.InputTag('electronMVAVariableHelper:convVtxFitProb'),
     )

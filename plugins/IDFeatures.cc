@@ -54,7 +54,10 @@ private:
   void matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
 		      const edm::Handle< std::vector<pat::Electron> >& electrons,
 		      std::map<reco::GsfTrackRef, pat::ElectronRef>& gsf2ele );
-  
+
+  reco::GsfTrackRef matchGsfToGsf( const reco::GsfTrackRef gsfTrack,
+				   const edm::Handle< std::vector<reco::GsfTrack> >& pfGsfTracks );
+    
 private:
   
   edm::Service<TFileService> fs_;
@@ -68,11 +71,13 @@ private:
   const edm::EDGetTokenT< std::vector<reco::GenParticle> > prunedGenParticles_;
   const edm::EDGetTokenT< std::vector<pat::PackedGenParticle> > packedGenParticles_;
   const edm::EDGetTokenT< std::vector<reco::GsfTrack> > gsfTracks_;
+  const edm::EDGetTokenT< std::vector<reco::GsfTrack> > pfGsfTracks_;
   const edm::EDGetTokenT< std::vector<pat::Electron> > electrons_;
+  const edm::EDGetTokenT< std::vector<pat::Electron> > pfElectrons_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaSeedUnbiased_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaSeedPtbiased_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDLowPt_;
-  //const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDv2_;
+  const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDv2_;
   //const edm::EDGetTokenT< edm::ValueMap<float> > convVtxFitProb_;
   
 };
@@ -90,11 +95,13 @@ IDFeatures::IDFeatures( const edm::ParameterSet& cfg ) :
   prunedGenParticles_(consumes< std::vector<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
   packedGenParticles_(consumes< std::vector<pat::PackedGenParticle> >(cfg.getParameter<edm::InputTag>("packedGenParticles"))),
   gsfTracks_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))),
+  pfGsfTracks_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("pfGsfTracks"))),
   electrons_(consumes< std::vector<pat::Electron> >(cfg.getParameter<edm::InputTag>("electrons"))),
+  pfElectrons_(consumes< std::vector<pat::Electron> >(cfg.getParameter<edm::InputTag>("pfElectrons"))),
   mvaSeedUnbiased_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVASeedUnbiased"))),
   mvaSeedPtbiased_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVASeedPtbiased"))),
-  mvaIDLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDLowPt")))//,
-  //mvaIDv2_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))),
+  mvaIDLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDLowPt"))),
+  mvaIDv2_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2")))//,
   //convVtxFitProb_(consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb")))
   {
     tree_ = fs_->make<TTree>("tree","tree");
@@ -131,6 +138,12 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   edm::Handle< std::vector<pat::Electron> > electrons;
   event.getByToken(electrons_, electrons);
 
+  edm::Handle< std::vector<reco::GsfTrack> > pfGsfTracks;
+  event.getByToken(pfGsfTracks_, pfGsfTracks);
+
+  edm::Handle< std::vector<pat::Electron> > pfElectrons;
+  event.getByToken(pfElectrons_, pfElectrons);
+
   edm::Handle< edm::ValueMap<float> > mvaSeedUnbiased;
   event.getByToken(mvaSeedUnbiased_, mvaSeedUnbiased);
 
@@ -140,8 +153,8 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   edm::Handle< edm::ValueMap<float> > mvaIDLowPt;
   event.getByToken(mvaIDLowPt_, mvaIDLowPt);
   
-  //edm::Handle< edm::ValueMap<float> > mvaIDv2;
-  //event.getByToken(mvaIDv2_, mvaIDv2);
+  edm::Handle< edm::ValueMap<float> > mvaIDv2;
+  event.getByToken(mvaIDv2_, mvaIDv2);
 
   //edm::Handle< edm::ValueMap<float> > convVtxFitProb;
   //event.getByToken(convVtxFitProb_, convVtxFitProb);
@@ -150,16 +163,28 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   std::set<pat::PackedGenParticleRef> electrons_from_B;
   electronsFromB( prunedGenParticles, packedGenParticles, electrons_from_B );
 
-  // Match GEN electrons to GsfTracks
+  // Match GEN electrons to low pT GsfTracks
   std::map<pat::PackedGenParticleRef, reco::GsfTrackRef> gen2gsf;
   std::vector<reco::GsfTrackRef> other_gsf;
   matchGenToGsf( electrons_from_B, gsfTracks, gen2gsf, other_gsf );
+
+  // Match GEN electrons to EGamma GsfTracks
+  std::map<pat::PackedGenParticleRef, reco::GsfTrackRef> gen2pfgsf;
+  std::vector<reco::GsfTrackRef> other_pfgsf;
+  matchGenToGsf( electrons_from_B, pfGsfTracks, gen2pfgsf, other_pfgsf );
   
-  // Match GsfTracks to electrons
+  // Match GsfTracks to low pT electrons
   std::map<reco::GsfTrackRef, pat::ElectronRef> gsf2ele;
   matchGsfToEle( gsfTracks, electrons, gsf2ele );
 
+  // Match GsfTracks to EGamma PF electrons
+  std::map<reco::GsfTrackRef, pat::ElectronRef> gsf2pfele;
+  matchGsfToEle( pfGsfTracks, pfElectrons, gsf2pfele );
+  
+  //////////
   // Fill ntuple with signal electrons
+  //////////
+
   for ( auto gen : electrons_from_B ) {
 
     // Init and set truth label
@@ -195,10 +220,10 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 
 	//@@ dirty hack as ID is not in Event nor embedded in pat::Electron
 	float id_v2 = -999.;
-	//if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
-	//  id_v2 = mvaIDv2->get( matched_ele->second.key() );
-	//}
-
+	if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
+	  id_v2 = mvaIDv2->get( matched_ele->second.key() );
+	}
+	
 	//@@ dirty hack as is not in Event nor embedded in pat::Electron
 	float conv_vtx_fit_prob = -999.;
 	//if ( convVtxFitProb.isValid() && convVtxFitProb->size() == electrons->size() ) {
@@ -210,15 +235,42 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 	//@@ Add SuperCluster vars?
 	//ntuple_.fill_supercluster(matched_ele->second);
 
-      }
-    }
+      } // Find GsfTrack
+
+    } // Find GenParticle
+
+    // Check if GEN electron is matched to a PF GsfTrack
+    const auto& matched_pfgsf = gen2pfgsf.find(gen);
+    if ( matched_pfgsf != gen2pfgsf.end() ) { 
+
+      // Record presence of CMS EGamma GsfTrack
+      ntuple_.has_pfgsf(true);
+
+      // Check if GsfTrack is matched to an electron 
+      const auto& matched_pfele = gsf2pfele.find(matched_pfgsf->second);
+      if ( matched_pfele != gsf2pfele.end() ) {
+
+	ntuple_.has_pfele(true);
+
+	//@@ dirty hack as ID is not in Event nor embedded in pat::Electron
+	//float id_v2 = -999.;
+	//if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
+	//id_v2 = mvaIDv2->get( matched_ele->second.key() );
+	//}
+	
+      } // Find GsfTrack
+
+    } // Find GenParticle
 
     // Fill tree
     tree_->Fill();
 
   } // Fill ntuple with signal electrons
 
-  // Fill ntuple with background electrons (prescaled by 'fakesMultiplier' configurable)
+  //////////
+  // Fill ntuple with background pT electrons (prescaled by 'fakesMultiplier' configurable)
+  //////////
+
   std::vector<int> indices;
   unsigned int nfakes = 0;
   while ( indices.size() < other_gsf.size() && // stop when all tracks considered
@@ -259,9 +311,9 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
       
       //@@ dirty hack as ID is not in Event nor embedded in pat::Electron
       float id_v2 = -999.;
-      //if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
-      //  id_v2 = mvaIDv2->get( matched_ele->second.key() );
-      //}
+      if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
+        id_v2 = mvaIDv2->get( matched_ele->second.key() );
+      }
       
       //@@ dirty hack as is not in Event nor embedded in pat::Electron
       float conv_vtx_fit_prob = -999.;
@@ -273,14 +325,28 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
       
       //@@ Add SuperCluster vars?
       //ntuple_.fill_supercluster(matched_ele->second);
-      
-    }
+
+    } // Find GsfTrack
+
+    // Find closest EGamma GsfTrack 
+    reco::GsfTrackRef matched_pfgsf = matchGsfToGsf( other, pfGsfTracks );
+    if ( matched_pfgsf.isNonnull() ) {
+
+      ntuple_.has_pfgsf(true);
+
+      // Check if GsfTrack is matched to a PF electron 
+      const auto& matched_pfele = gsf2pfele.find(matched_pfgsf);
+      if ( matched_pfele != gsf2pfele.end() ) {
+	ntuple_.has_pfele(true);
+      }
+
+    } // Find GsfTrack
 
     // Fill tree
     tree_->Fill();
 
-  } // Fill ntuple with background electrons
-
+  } // Fill ntuple with background low pT electrons
+  
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -436,14 +502,84 @@ void IDFeatures::matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >
     pat::ElectronRef ele(electrons, idx);
     reco::GsfTrackRef gsf = ele->gsfTrack();
     if ( gsf2ele.find(gsf) != gsf2ele.end() ) {
-      std::cout << "THIS SHOULD NEVER HAPPEN! Multiple electrons matched to the same GSFTrack?!" << std::endl;
+      std::cout << "THIS SHOULD NEVER HAPPEN! Multiple low pT electrons matched to the same GSFTrack?!"
+		<< std::endl;
     } else {
       gsf2ele.insert( std::pair<reco::GsfTrackRef, pat::ElectronRef>(gsf, ele) );
     }
   }
 }
-  
+
+////////////////////////////////////////////////////////////////////////////////
+// 
+reco::GsfTrackRef IDFeatures::matchGsfToGsf( const reco::GsfTrackRef gsfTrack,
+					     const edm::Handle< std::vector<reco::GsfTrack> >& pfGsfTracks ) {
+  size_t best_idx = -1;
+  double min_dr2 = dr_max_*dr_max_;
+  for ( size_t idx = 0; idx < pfGsfTracks->size(); ++idx ) {
+    reco::GsfTrackRef pfgsf(pfGsfTracks,idx);
+    double dr2 = reco::deltaR2(pfgsf->etaMode(), //@@ use mode value for eta ?!
+			       pfgsf->phiMode(), //@@ use mode value for phi ?!
+			       gsfTrack->etaMode(),  //@@ use mode value for eta ?!
+			       gsfTrack->phiMode() ); //@@ use mode value for phi ?!
+    if ( dr2 < min_dr2 ) {
+      min_dr2 = dr2;
+      best_idx = idx;
+    }
+  }
+  if ( min_dr2 < dr_max_*dr_max_ ) {
+    return reco::GsfTrackRef(pfGsfTracks,best_idx);
+  } else {
+    return reco::GsfTrackRef(pfGsfTracks.id()); // null Ref
+  }  
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(IDFeatures);
+
+
+
+
+
+
+
+
+  //////////
+  // Fill ntuple with background PF electrons (prescaled by 'fakesMultiplier' configurable)
+  //////////
+
+//  indices.clear(); // reset
+//  nfakes = 0; // reset
+//  while ( indices.size() < other_pfgsf.size() && // stop when all tracks considered
+//	  ( nfakes < fakes_multiplier_ || fakes_multiplier_ < 0 ) ) { // stop when fakesMultiplier is satisfied
+//    int index = int( gRandom->Rndm() * other_pfgsf.size() ); // pick a track at random
+//    if ( std::find( indices.begin(),
+//		    indices.end(),
+//		    index ) != indices.end() ) { continue; } // consider each track only once
+//    indices.push_back(index); // record tracks used
+//    nfakes++;
+//    reco::GsfTrackRef other = other_pfgsf.at(index);
+//
+//    ntuple_.has_pfgsf(true);
+//
+//    // Check if GsfTrack is matched to a PF electron 
+//    const auto& matched_pfele = gsf2pfele.find(other);
+//    if ( matched_pfele != gsf2pfele.end() ) {
+//
+//      ntuple_.has_pfele(true);
+//
+//      //@@ dirty hack as ID is not in Event nor embedded in pat::Electron
+//      float id_v2 = -999.;
+//      //if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
+//      //  id_v2 = mvaIDv2->get( matched_ele->second.key() );
+//      //}
+//      
+//    } // Find GsfTrack
+//    
+//    // Fill tree
+//    tree_->Fill();
+//    
+//  } // Fill ntuple with background PF electrons
+

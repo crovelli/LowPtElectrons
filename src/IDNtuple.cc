@@ -17,6 +17,9 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("is_e", &is_e_, "is_e/O");
   tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
   tree->Branch("is_other", &is_other_, "is_other/O");
+
+  tree->Branch("has_pfgsf", &has_pfgsf_, "has_pfgsf/O");
+  tree->Branch("has_pfele", &has_pfele_, "has_pfele/O");
   
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
