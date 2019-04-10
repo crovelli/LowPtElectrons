@@ -314,12 +314,21 @@ def get_features(ftype):
       additional = seed_additional
    elif ftype == 'cmssw_mva_id':
       features = cmssw_mva_id
-      additional = id_additional
+      additional = id_additional + ['has_pfele','has_pfgsf','preid_bdtout1','preid_bdtout2']
+   elif ftype == 'cmssw_mva_id_extended':
+      features = cmssw_mva_id + ['preid_bdtout1']
+      additional = id_additional + ['has_pfele','has_pfgsf','preid_bdtout1','preid_bdtout2']
    elif ftype == 'cmssw_displaced_improvedfullseeding_fixSIP':
       features = cmssw_displaced_improvedfullseeding_fixSIP
       additional = seed_additional
    elif ftype == 'cmssw_displaced_improvedfullseeding_fixInvSIP':
       features = cmssw_displaced_improvedfullseeding_fixInvSIP
+      additional = seed_additional
+   elif ftype == 'basic_plots_default':
+      features = cmssw_mva_id \
+          + cmssw_displaced_improvedfullseeding \
+          + ['trk_dxy_sig', 'trk_dxy_sig_inverted'] \
+          + ['sc_Nclus', 'ele_eta', 'gsf_eta']
       additional = seed_additional
    else:
       raise ValueError('%s is not among the possible feature collection' % ftype)
