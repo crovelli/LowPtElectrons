@@ -1,7 +1,12 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/Common/interface/Handle.h"
+#include "DataFormats/Common/interface/Ptr.h"
+#include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/Candidate/interface/CandidateFwd.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
@@ -22,6 +27,9 @@
 #include <set>
 #include <vector>
 
+namespace reco { typedef edm::Ptr<GsfElectron> GsfElectronPtr; }
+namespace reco { typedef edm::Ptr<GenParticle> GenParticlePtr; }
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 class IDFeatures : public edm::EDAnalyzer {
@@ -36,27 +44,27 @@ public:
   
 private:
   
-  void electronsFromB( const edm::Handle< std::vector<reco::GenParticle> >& prunedGenParticles,
-		       const edm::Handle< std::vector<pat::PackedGenParticle> >& packedGenParticles,
-		       std::set<pat::PackedGenParticleRef>& electrons_from_B );
-  
-  void electronsFromB( const edm::Handle< std::vector<reco::GenParticle> >& genParticles, 
-		       std::set<reco::GenParticleRef>& electrons_from_B );
+  void electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& prunedGenParticles,
+		       const edm::Handle< edm::View<reco::Candidate> >& packedGenParticles,
+		       std::set<reco::CandidatePtr>& electrons_from_B );
+
+  void electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& genParticles,
+		       std::set<reco::CandidatePtr>& electrons_from_B );
   
   bool isAncestor( const reco::Candidate* ancestor, 
 		   const reco::Candidate* particle );
 
-  void matchGenToGsf( const std::set<pat::PackedGenParticleRef>& electrons_from_B,
+  void matchGenToGsf( const std::set<reco::CandidatePtr>& electrons_from_B,
 		      const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
-		      std::map<pat::PackedGenParticleRef, reco::GsfTrackRef>& gen2gsf,
+		      std::map<reco::CandidatePtr, reco::GsfTrackRef>& gen2gsf,
 		      std::vector<reco::GsfTrackRef>& other_gsf );
 
   void matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
-		      const edm::Handle< std::vector<pat::Electron> >& electrons,
-		      std::map<reco::GsfTrackRef, pat::ElectronRef>& gsf2ele );
-
-  reco::GsfTrackRef matchGsfToGsf( const reco::GsfTrackRef gsfTrack,
-				   const edm::Handle< std::vector<reco::GsfTrack> >& pfGsfTracks );
+		      const edm::Handle< edm::View<reco::GsfElectron> >& electrons,
+		      std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele );
+  
+  reco::GsfTrackRef matchGsfToEgammaGsf( const reco::GsfTrackRef gsfTrack,
+					 const edm::Handle< std::vector<reco::GsfTrack> >& egammaGsfTracks );
     
 private:
   
@@ -66,18 +74,29 @@ private:
   bool check_from_B_;
   double dr_max_; // DeltaR matching
   double fakes_multiplier_;
+  int isAOD_;
+  bool hasGEN_;
+
+  // Available in AOD and MINIAOD
   const edm::EDGetTokenT<double> rho_;
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;
-  const edm::EDGetTokenT< std::vector<reco::GenParticle> > prunedGenParticles_;
-  const edm::EDGetTokenT< std::vector<pat::PackedGenParticle> > packedGenParticles_;
   const edm::EDGetTokenT< std::vector<reco::GsfTrack> > gsfTracks_;
-  const edm::EDGetTokenT< std::vector<reco::GsfTrack> > pfGsfTracks_;
-  const edm::EDGetTokenT< std::vector<pat::Electron> > electrons_;
-  const edm::EDGetTokenT< std::vector<pat::Electron> > pfElectrons_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaSeedUnbiased_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaSeedPtbiased_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDLowPt_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaIDv2_;
+  // Available in AOD only
+  const edm::EDGetTokenT< std::vector<reco::GsfTrack> > egammaGsfTracks_;
+  const edm::EDGetTokenT< edm::View<reco::GsfElectron> > electrons_;
+  const edm::EDGetTokenT< edm::View<reco::GsfElectron> > egammaElectrons_;
+  const edm::EDGetTokenT< edm::View<reco::GenParticle> > genParticles_;
+  // Available in MINIAOD only
+  const edm::EDGetTokenT< std::vector<reco::GsfTrack> > egammaGsfTracksMAOD_;
+  const edm::EDGetTokenT< edm::View<reco::GsfElectron> > electronsMAOD_;
+  const edm::EDGetTokenT< edm::View<reco::GsfElectron> > egammaElectronsMAOD_;
+  const edm::EDGetTokenT< edm::View<reco::GenParticle> > prunedGenParticles_;
+  const edm::EDGetTokenT< edm::View<reco::Candidate> > packedGenParticles_;
+
   //const edm::EDGetTokenT< edm::ValueMap<float> > convVtxFitProb_;
   
 };
@@ -90,19 +109,29 @@ IDFeatures::IDFeatures( const edm::ParameterSet& cfg ) :
   check_from_B_(cfg.getParameter<bool>("checkFromB")),
   dr_max_(cfg.getParameter<double>("drMax")),
   fakes_multiplier_(cfg.getParameter<double>("fakesMultiplier")),
+  isAOD_(-1),
+  hasGEN_(true),
+  // Available in AOD and MINIAOD
   rho_(consumes<double>(cfg.getParameter<edm::InputTag>("rho"))),
   beamspot_(consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))),
-  prunedGenParticles_(consumes< std::vector<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
-  packedGenParticles_(consumes< std::vector<pat::PackedGenParticle> >(cfg.getParameter<edm::InputTag>("packedGenParticles"))),
   gsfTracks_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracks"))),
-  pfGsfTracks_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("pfGsfTracks"))),
-  electrons_(consumes< std::vector<pat::Electron> >(cfg.getParameter<edm::InputTag>("electrons"))),
-  pfElectrons_(consumes< std::vector<pat::Electron> >(cfg.getParameter<edm::InputTag>("pfElectrons"))),
   mvaSeedUnbiased_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVASeedUnbiased"))),
   mvaSeedPtbiased_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVASeedPtbiased"))),
   mvaIDLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDLowPt"))),
-  mvaIDv2_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2")))//,
+  mvaIDv2_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("MVAIDV2"))),
+  // Available in AOD only
+  egammaGsfTracks_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("egammaGsfTracks"))),
+  electrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("electrons"))),
+  egammaElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("egammaElectrons"))),
+  genParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
+  // Available in MINIAOD only
+  egammaGsfTracksMAOD_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("egammaGsfTracks_mAOD"))),
+  electronsMAOD_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("electrons_mAOD"))),
+  egammaElectronsMAOD_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("egammaElectrons_mAOD"))),
+  prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
+  packedGenParticles_(consumes< edm::View<reco::Candidate> >(cfg.getParameter<edm::InputTag>("packedGenParticles")))
   //convVtxFitProb_(consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb")))
+  // Available in MINIAOD only
   {
     tree_ = fs_->make<TTree>("tree","tree");
     ntuple_.link_tree(tree_);
@@ -120,29 +149,70 @@ void IDFeatures::beginRun( const edm::Run& run,
 void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup ) {
 
   // Event collections 
+  edm::Handle< edm::View<reco::GsfElectron> > electrons;
+  if ( isAOD_ == -1 ) {
+    event.getByToken(electrons_, electrons);
+    if ( electrons.isValid() ) {
+      isAOD_ = 1;
+      std::cout << "File contains AOD data tier!" << std::endl;
+    } else {
+      event.getByToken(electronsMAOD_,electrons);
+      if ( electrons.isValid() ) { 
+	isAOD_ = 0;
+	std::cout << "File contains MINIAOD data tier!" << std::endl;
+      } else {
+	throw cms::Exception(" Collection not found: ") 
+	  << " failed to find a standard AOD or miniAOD particle collection " 
+	  << std::endl;
+      }
+    }
+  } else if ( isAOD_ == 1 ) {
+    event.getByToken(electrons_, electrons);
+  } else if ( isAOD_ == 0 ) {
+    event.getByToken(electronsMAOD_,electrons);
+  } else {
+    throw cms::Exception(" Invalid value for isAOD: ") 
+      << isAOD_ 
+      << std::endl;
+  }
+
+  edm::Handle< std::vector<reco::GsfTrack> > gsfTracks;
+  event.getByToken(gsfTracks_, gsfTracks);
+
+  edm::Handle< std::vector<reco::GsfTrack> > egammaGsfTracks;
+  if      ( isAOD_ == 1 ) { event.getByToken(egammaGsfTracks_, egammaGsfTracks); }
+  else if ( isAOD_ == 0 ) { event.getByToken(egammaGsfTracksMAOD_, egammaGsfTracks); }
+
+  edm::Handle< edm::View<reco::GsfElectron> > egammaElectrons;
+  if      ( isAOD_ == 1 ) { event.getByToken(egammaElectrons_, egammaElectrons); }
+  else if ( isAOD_ == 0 ) { event.getByToken(egammaElectronsMAOD_, egammaElectrons); }
+
+  //edm::Handle< edm::View<reco::GenParticle> > genParticles;
+  edm::Handle< edm::View<reco::GenParticle> > genParticles;
+  if ( hasGEN_ ) {
+    if ( isAOD_ == 1 ) { 
+      event.getByToken(genParticles_, genParticles); 
+      if ( !(genParticles.isValid()) ) { 
+	hasGEN_ = false;
+	std::cout << "No GEN info found in AOD data tier!" << std::endl;
+      }
+    } else if ( isAOD_ == 0 ) { 
+      event.getByToken(prunedGenParticles_, genParticles); 
+      if ( !(genParticles.isValid()) ) { 
+	hasGEN_ = false;
+	std::cout << "No GEN info found in MINIAOD data tier!" << std::endl;
+      }
+    }
+  }
+    
+  edm::Handle< edm::View<reco::Candidate> > packedGenParticles;
+  if ( hasGEN_ && isAOD_ == 0 ) { event.getByToken(packedGenParticles_, packedGenParticles); }
+
   edm::Handle<double> rho;
   event.getByToken(rho_, rho);
   
   edm::Handle<reco::BeamSpot> beamspot;
   event.getByToken(beamspot_, beamspot);
-
-  edm::Handle< std::vector<reco::GenParticle> > prunedGenParticles;
-  event.getByToken(prunedGenParticles_, prunedGenParticles);
-  
-  edm::Handle< std::vector<pat::PackedGenParticle> > packedGenParticles;
-  event.getByToken(packedGenParticles_, packedGenParticles);
-  
-  edm::Handle< std::vector<reco::GsfTrack> > gsfTracks;
-  event.getByToken(gsfTracks_, gsfTracks);
-
-  edm::Handle< std::vector<pat::Electron> > electrons;
-  event.getByToken(electrons_, electrons);
-
-  edm::Handle< std::vector<reco::GsfTrack> > pfGsfTracks;
-  event.getByToken(pfGsfTracks_, pfGsfTracks);
-
-  edm::Handle< std::vector<pat::Electron> > pfElectrons;
-  event.getByToken(pfElectrons_, pfElectrons);
 
   edm::Handle< edm::ValueMap<float> > mvaSeedUnbiased;
   event.getByToken(mvaSeedUnbiased_, mvaSeedUnbiased);
@@ -160,26 +230,29 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   //event.getByToken(convVtxFitProb_, convVtxFitProb);
 
   // Find GEN electrons from B decays
-  std::set<pat::PackedGenParticleRef> electrons_from_B;
-  electronsFromB( prunedGenParticles, packedGenParticles, electrons_from_B );
+  std::set<reco::CandidatePtr> electrons_from_B;
+  if ( hasGEN_ ) {
+    if      ( isAOD_ == 1 ) { electronsFromB( genParticles, electrons_from_B ); }
+    else if ( isAOD_ == 0 ) { electronsFromB( genParticles, packedGenParticles, electrons_from_B ); }
+  }
 
   // Match GEN electrons to low pT GsfTracks
-  std::map<pat::PackedGenParticleRef, reco::GsfTrackRef> gen2gsf;
+  std::map<reco::CandidatePtr, reco::GsfTrackRef> gen2gsf;
   std::vector<reco::GsfTrackRef> other_gsf;
   matchGenToGsf( electrons_from_B, gsfTracks, gen2gsf, other_gsf );
 
   // Match GEN electrons to EGamma GsfTracks
-  std::map<pat::PackedGenParticleRef, reco::GsfTrackRef> gen2pfgsf;
-  std::vector<reco::GsfTrackRef> other_pfgsf;
-  matchGenToGsf( electrons_from_B, pfGsfTracks, gen2pfgsf, other_pfgsf );
+  std::map<reco::CandidatePtr, reco::GsfTrackRef> gen2egammagsf;
+  std::vector<reco::GsfTrackRef> other_egammagsf;
+  matchGenToGsf( electrons_from_B, egammaGsfTracks, gen2egammagsf, other_egammagsf );
   
   // Match GsfTracks to low pT electrons
-  std::map<reco::GsfTrackRef, pat::ElectronRef> gsf2ele;
+  std::map<reco::GsfTrackRef, reco::GsfElectronPtr> gsf2ele;
   matchGsfToEle( gsfTracks, electrons, gsf2ele );
 
   // Match GsfTracks to EGamma PF electrons
-  std::map<reco::GsfTrackRef, pat::ElectronRef> gsf2pfele;
-  matchGsfToEle( pfGsfTracks, pfElectrons, gsf2pfele );
+  std::map<reco::GsfTrackRef, reco::GsfElectronPtr> gsf2egammaele;
+  matchGsfToEle( egammaGsfTracks, egammaElectrons, gsf2egammaele );
   
   //////////
   // Fill ntuple with signal electrons
@@ -239,18 +312,18 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 
     } // Find GenParticle
 
-    // Check if GEN electron is matched to a PF GsfTrack
-    const auto& matched_pfgsf = gen2pfgsf.find(gen);
-    if ( matched_pfgsf != gen2pfgsf.end() ) { 
+    // Check if GEN electron is matched to a EGamma GsfTrack
+    const auto& matched_egammagsf = gen2egammagsf.find(gen);
+    if ( matched_egammagsf != gen2egammagsf.end() ) { 
 
-      // Record presence of CMS EGamma GsfTrack
-      ntuple_.has_pfgsf(true);
+      // Record presence of EGAMMA EGamma GsfTrack
+      ntuple_.has_egamma_gsf(true);
 
       // Check if GsfTrack is matched to an electron 
-      const auto& matched_pfele = gsf2pfele.find(matched_pfgsf->second);
-      if ( matched_pfele != gsf2pfele.end() ) {
+      const auto& matched_egammaele = gsf2egammaele.find(matched_egammagsf->second);
+      if ( matched_egammaele != gsf2egammaele.end() ) {
 
-	ntuple_.has_pfele(true);
+	ntuple_.has_egamma_ele(true);
 
 	//@@ dirty hack as ID is not in Event nor embedded in pat::Electron
 	//float id_v2 = -999.;
@@ -329,15 +402,15 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
     } // Find GsfTrack
 
     // Find closest EGamma GsfTrack 
-    reco::GsfTrackRef matched_pfgsf = matchGsfToGsf( other, pfGsfTracks );
-    if ( matched_pfgsf.isNonnull() ) {
+    reco::GsfTrackRef matched_egammagsf = matchGsfToEgammaGsf( other, egammaGsfTracks );
+    if ( matched_egammagsf.isNonnull() ) {
 
-      ntuple_.has_pfgsf(true);
+      ntuple_.has_egamma_gsf(true);
 
-      // Check if GsfTrack is matched to a PF electron 
-      const auto& matched_pfele = gsf2pfele.find(matched_pfgsf);
-      if ( matched_pfele != gsf2pfele.end() ) {
-	ntuple_.has_pfele(true);
+      // Check if GsfTrack is matched to a EGAMMA electron 
+      const auto& matched_egammaele = gsf2egammaele.find(matched_egammagsf);
+      if ( matched_egammaele != gsf2egammaele.end() ) {
+	ntuple_.has_egamma_ele(true);
       }
 
     } // Find GsfTrack
@@ -351,9 +424,9 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Assumes pruned and packed GenParticles from MINIAOD
-void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticle> >& prunedGenParticles,
-				 const edm::Handle< std::vector<pat::PackedGenParticle> >& packedGenParticles,
-				 std::set<pat::PackedGenParticleRef>& electrons_from_B ) {
+void IDFeatures::electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& prunedGenParticles,
+				 const edm::Handle< edm::View<reco::Candidate> >& packedGenParticles,
+				 std::set<reco::CandidatePtr>& electrons_from_B ) {
 
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2015#Examples
   // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/packedGenParticles_cfi.py
@@ -363,7 +436,7 @@ void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticl
   
   // Iterate through ("status 1") packed candidates
   for ( size_t ipa = 0; ipa < packedGenParticles->size(); ipa++ ) {
-    pat::PackedGenParticleRef packed(packedGenParticles, ipa);
+    reco::CandidatePtr packed(packedGenParticles, ipa);
     
     // Find GEN electrons
     bool is_ele = std::abs(packed->pdgId()) == 11; // && packed->isLastCopy() 
@@ -374,7 +447,7 @@ void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticl
     // Does GEN ele come from B decay?
     bool comes_from_B = false;
     for ( size_t ipr = 0; ipr < prunedGenParticles->size(); ipr++ ) {
-      reco::GenParticleRef pruned(prunedGenParticles, ipr);
+      reco::GenParticlePtr pruned(prunedGenParticles, ipr);
       comes_from_B = 
 	std::abs(pruned->pdgId()) > 510 &&
 	std::abs(pruned->pdgId()) < 546 &&
@@ -383,11 +456,11 @@ void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticl
 
       // Is coming from a B
       if ( is_ele && ( comes_from_B || !check_from_B_ ) ) {
-	electrons_from_B.insert(packed);
+	//electrons_from_B.insert(packed);
       }
-
+      
     }
-
+    
     //std::cout << "is_ele: " << is_ele << " comes_from_B: " << comes_from_B << std::endl;
     
   } // packedGenParticles loop
@@ -396,15 +469,15 @@ void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticl
 
 ////////////////////////////////////////////////////////////////////////////////
 // Assumes GenParticles from RECO/AOD
-void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticle> >& genParticles,
-				 std::set<reco::GenParticleRef>& electrons_from_B ) {
+void IDFeatures::electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& genParticles,
+				 std::set<reco::CandidatePtr>& electrons_from_B ) {
   
   electrons_from_B.clear();
   for ( size_t idx = 0; idx < genParticles->size(); idx++ ) {
-    reco::GenParticleRef genp(genParticles, idx);
+    reco::CandidatePtr genp(genParticles, idx);
     
     // Last copy of GEN electron 
-    bool is_ele = genp->isLastCopy() && std::abs(genp->pdgId()) == 11;
+    bool is_ele = std::abs(genp->pdgId()) == 11; // && genp->isLastCopy();
     
     // Does GEN ele comes from B decay?
     bool comes_from_B = 
@@ -450,9 +523,9 @@ bool IDFeatures::isAncestor( const reco::Candidate* ancestor,
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-void IDFeatures::matchGenToGsf( const std::set<pat::PackedGenParticleRef>& electrons_from_B,
+void IDFeatures::matchGenToGsf( const std::set<reco::CandidatePtr>& electrons_from_B,
 				const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
-				std::map<pat::PackedGenParticleRef, reco::GsfTrackRef>& gen2gsf,
+				std::map<reco::CandidatePtr, reco::GsfTrackRef>& gen2gsf,
 				std::vector<reco::GsfTrackRef>& other_gsf ) {
   
   gen2gsf.clear();
@@ -476,7 +549,7 @@ void IDFeatures::matchGenToGsf( const std::set<pat::PackedGenParticleRef>& elect
     }
     if ( min_dr2 < dr_max_*dr_max_ ) {
       reco::GsfTrackRef gsf(gsfTracks,best_idx);
-      gen2gsf.insert( std::pair<pat::PackedGenParticleRef, reco::GsfTrackRef>( gen, gsf ) );
+      gen2gsf.insert( std::pair<reco::CandidatePtr, reco::GsfTrackRef>( gen, gsf ) );
       matched.insert(gsf);
     }
   }
@@ -495,31 +568,31 @@ void IDFeatures::matchGenToGsf( const std::set<pat::PackedGenParticleRef>& elect
 ////////////////////////////////////////////////////////////////////////////////
 // 
 void IDFeatures::matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
-				const edm::Handle< std::vector<pat::Electron> >& electrons,
-				std::map<reco::GsfTrackRef, pat::ElectronRef>& gsf2ele ) {
+				const edm::Handle< edm::View<reco::GsfElectron> >& electrons,
+				std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele ) {
   gsf2ele.clear();
   for ( size_t idx = 0; idx < electrons->size(); ++idx ) {
-    pat::ElectronRef ele(electrons, idx);
+    reco::GsfElectronPtr ele(electrons, idx);
     reco::GsfTrackRef gsf = ele->gsfTrack();
     if ( gsf2ele.find(gsf) != gsf2ele.end() ) {
       std::cout << "THIS SHOULD NEVER HAPPEN! Multiple low pT electrons matched to the same GSFTrack?!"
 		<< std::endl;
     } else {
-      gsf2ele.insert( std::pair<reco::GsfTrackRef, pat::ElectronRef>(gsf, ele) );
+      gsf2ele.insert( std::pair<reco::GsfTrackRef, reco::GsfElectronPtr>(gsf, ele) );
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-reco::GsfTrackRef IDFeatures::matchGsfToGsf( const reco::GsfTrackRef gsfTrack,
-					     const edm::Handle< std::vector<reco::GsfTrack> >& pfGsfTracks ) {
+reco::GsfTrackRef IDFeatures::matchGsfToEgammaGsf( const reco::GsfTrackRef gsfTrack,
+						   const edm::Handle< std::vector<reco::GsfTrack> >& egammaGsfTracks ) {
   size_t best_idx = -1;
   double min_dr2 = dr_max_*dr_max_;
-  for ( size_t idx = 0; idx < pfGsfTracks->size(); ++idx ) {
-    reco::GsfTrackRef pfgsf(pfGsfTracks,idx);
-    double dr2 = reco::deltaR2(pfgsf->etaMode(), //@@ use mode value for eta ?!
-			       pfgsf->phiMode(), //@@ use mode value for phi ?!
+  for ( size_t idx = 0; idx < egammaGsfTracks->size(); ++idx ) {
+    reco::GsfTrackRef egammagsf(egammaGsfTracks,idx);
+    double dr2 = reco::deltaR2(egammagsf->etaMode(), //@@ use mode value for eta ?!
+			       egammagsf->phiMode(), //@@ use mode value for phi ?!
 			       gsfTrack->etaMode(),  //@@ use mode value for eta ?!
 			       gsfTrack->phiMode() ); //@@ use mode value for phi ?!
     if ( dr2 < min_dr2 ) {
@@ -528,9 +601,9 @@ reco::GsfTrackRef IDFeatures::matchGsfToGsf( const reco::GsfTrackRef gsfTrack,
     }
   }
   if ( min_dr2 < dr_max_*dr_max_ ) {
-    return reco::GsfTrackRef(pfGsfTracks,best_idx);
+    return reco::GsfTrackRef(egammaGsfTracks,best_idx);
   } else {
-    return reco::GsfTrackRef(pfGsfTracks.id()); // null Ref
+    return reco::GsfTrackRef(egammaGsfTracks.id()); // null Ref
   }  
 }
 
@@ -538,48 +611,3 @@ reco::GsfTrackRef IDFeatures::matchGsfToGsf( const reco::GsfTrackRef gsfTrack,
 //
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(IDFeatures);
-
-
-
-
-
-
-
-
-  //////////
-  // Fill ntuple with background PF electrons (prescaled by 'fakesMultiplier' configurable)
-  //////////
-
-//  indices.clear(); // reset
-//  nfakes = 0; // reset
-//  while ( indices.size() < other_pfgsf.size() && // stop when all tracks considered
-//	  ( nfakes < fakes_multiplier_ || fakes_multiplier_ < 0 ) ) { // stop when fakesMultiplier is satisfied
-//    int index = int( gRandom->Rndm() * other_pfgsf.size() ); // pick a track at random
-//    if ( std::find( indices.begin(),
-//		    indices.end(),
-//		    index ) != indices.end() ) { continue; } // consider each track only once
-//    indices.push_back(index); // record tracks used
-//    nfakes++;
-//    reco::GsfTrackRef other = other_pfgsf.at(index);
-//
-//    ntuple_.has_pfgsf(true);
-//
-//    // Check if GsfTrack is matched to a PF electron 
-//    const auto& matched_pfele = gsf2pfele.find(other);
-//    if ( matched_pfele != gsf2pfele.end() ) {
-//
-//      ntuple_.has_pfele(true);
-//
-//      //@@ dirty hack as ID is not in Event nor embedded in pat::Electron
-//      float id_v2 = -999.;
-//      //if ( mvaIDv2.isValid() && mvaIDv2->size() == electrons->size() ) {
-//      //  id_v2 = mvaIDv2->get( matched_ele->second.key() );
-//      //}
-//      
-//    } // Find GsfTrack
-//    
-//    // Fill tree
-//    tree_->Fill();
-//    
-//  } // Fill ntuple with background PF electrons
-

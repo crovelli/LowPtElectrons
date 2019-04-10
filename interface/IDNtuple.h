@@ -2,6 +2,8 @@
 #define LowPtElectrons_LowPtElectrons_IDNtuple
 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
@@ -10,7 +12,10 @@
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "FWCore/Framework/interface/Event.h"
 #include <vector>
+
 class TTree;
+
+namespace reco { typedef edm::Ptr<GsfElectron> GsfElectronPtr; }
 
 constexpr size_t NHITS_MAX = 30;
 constexpr float NEG_INT = -10;
@@ -36,19 +41,26 @@ class IDNtuple {
   void is_e_not_matched( bool t = true ) { is_e_not_matched_ = t; }
   void is_other( bool t = true ) { is_other_ = t; }
   
-  void has_pfgsf( bool f = false ) { has_pfgsf_ = f; }
-  void has_pfele( bool f = false ) { has_pfele_ = f; }
+  void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
+  void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
 
   void fill_evt( const edm::EventID& id );
 
   void fill_gen( const pat::PackedGenParticleRef );
   void fill_gen( const reco::GenParticleRef ); //@@ AOD
+  void fill_gen( const reco::CandidatePtr );
 
   void fill_seed( double seed_bdt_unbiased,
 		  double seed_bdt_ptbiased );
 
   void fill_gsf( const reco::GsfTrackRef trk,
 		 const reco::BeamSpot& spot );
+
+  void fill_ele( const reco::GsfElectronPtr ele,
+		 float id_lowpt,
+		 float id_v2,
+		 float ele_conv_vtx_fit_prob,
+		 const double rho );
 
   void fill_ele( const pat::ElectronRef ele,
 		 float id_lowpt,
@@ -70,8 +82,8 @@ class IDNtuple {
   bool is_other_ = false;
 
   // CMS PF reco
-  bool has_pfgsf_ = false;
-  bool has_pfele_ = false;
+  bool has_egamma_gsf_ = false;
+  bool has_egamma_ele_ = false;
   
   // GEN electrons
   float gen_pt_ = NEG_FLOAT;
@@ -204,6 +216,7 @@ namespace eleid {
   public:
     std::vector<float> get();
     void set( const pat::ElectronRef& ele, double rho );
+    void set( const reco::GsfElectronPtr& ele, double rho );
   };
 
 }
