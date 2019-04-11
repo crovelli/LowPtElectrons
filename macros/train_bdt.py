@@ -72,6 +72,9 @@ parser.add_argument(
 parser.add_argument(
    '--usenomatch', action='store_true'
 )
+parser.add_argument(
+   '--load_model', action='store_true'
+)
 
 args = parser.parse_args()
 
@@ -123,7 +126,7 @@ else:
 
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
 
-if not dataset.endswith('.hdf'):
+if not args.load_model :# dataset.endswith('.hdf'):
    data = pre_process_data(
       dataset, fields, 
       for_seeding=('seeding' in args.what),
@@ -152,9 +155,9 @@ if not dataset.endswith('.hdf'):
       'data'
       ) 
 else:   
-   train = pd.read_hdf(dataset, 'train')
-   test  = pd.read_hdf(dataset, 'validation') #mis-used name in this script
-   validation = pd.read_hdf(dataset, 'test')
+   train = pd.read_hdf('%s/bdt_%s_traindata.hdf' % (mods, args.what), 'data')
+   test = pd.read_hdf('%s/bdt_%s_valdata.hdf' % (mods, args.what), 'data')
+   validation = pd.read_hdf('%s/bdt_%s_testdata.hdf' % (mods, args.what), 'data')
    if args.selection:
       train = train.query(args.selection)
       test  = test.query(args.selection)
@@ -175,37 +178,49 @@ import xgboost as xgb
 #
 # Train BDTs
 #
-print 'training'
-clf = xgb.XGBClassifier(
-   #basic stuff
-   max_depth=args.depth, learning_rate=args.lrate, n_estimators=args.ntrees,
-   objective='binary:logitraw',
-   #many different ways of regularization
-   gamma=args.gamma, min_child_weight=args.min_child_weight, max_delta_step=0, 
-   colsample_bytree=args.colsample_bytree, colsample_bylevel=1, subsample=args.subsample,
-   reg_alpha=args.reg_alpha, reg_lambda=args.reg_lambda, 
-   #running settings and weight balancing
-   silent=False, nthread=args.nthreads, scale_pos_weight=1, 
-)
 
-early_stop_kwargs = {
-   'eval_set' : [(test[features].as_matrix(), test.is_e.as_matrix().astype(int))],
-   #'sample_weight_eval_set' : [test.weight.as_matrix()], #undefined in this version
-   'eval_metric' : 'auc',
-   'early_stopping_rounds' : 10
-} if not args.no_early_stop else {}
+clf = None
+if not args.load_model :
 
-clf.fit(
-   train[features].as_matrix(), 
-   train.is_e.as_matrix().astype(int), 
-   sample_weight=train.weight.as_matrix(),
-   **early_stop_kwargs
-)
+   print 'Training'
+   print 'Input features:\n',features
 
-full_model = '%s/%s_%s_%s_BDT.pkl' % (mods, dataset, args.jobtag, args.what)
-joblib.dump(clf, full_model, compress=True)
+   clf = xgb.XGBClassifier(
+      #basic stuff
+      max_depth=args.depth, learning_rate=args.lrate, n_estimators=args.ntrees,
+      objective='binary:logitraw',
+      #many different ways of regularization
+      gamma=args.gamma, min_child_weight=args.min_child_weight, max_delta_step=0, 
+      colsample_bytree=args.colsample_bytree, colsample_bylevel=1, subsample=args.subsample,
+      reg_alpha=args.reg_alpha, reg_lambda=args.reg_lambda, 
+      #running settings and weight balancing
+      silent=False, nthread=args.nthreads, scale_pos_weight=1, 
+   )
+   
+   early_stop_kwargs = {
+      'eval_set' : [(test[features].as_matrix(), test.is_e.as_matrix().astype(int))],
+      #'sample_weight_eval_set' : [test.weight.as_matrix()], #undefined in this version
+      'eval_metric' : 'auc',
+      'early_stopping_rounds' : 10
+   } if not args.no_early_stop else {}
 
-print 'Training done!'
+   clf.fit(
+      train[features].as_matrix(), 
+      train.is_e.as_matrix().astype(int), 
+      sample_weight=train.weight.as_matrix(),
+      **early_stop_kwargs
+   )
+
+   full_model = '%s/%s_%s_%s_BDT.pkl' % (mods, dataset, args.jobtag, args.what)
+   joblib.dump(clf, full_model, compress=True)
+
+   print 'Training done!'
+
+else :
+   
+   full_model = '%s/%s_%s_%s_BDT.pkl' % (mods, dataset, args.jobtag, args.what)
+   clf = joblib.load(full_model)
+   print 'Loaded pre-existing model!'
 
 #
 # plot performance
@@ -230,12 +245,12 @@ with open('%s/%s_%s_%s_BDT.json' % (mods, dataset, args.jobtag, args.what), 'w')
 
 # make plots
 plt.figure(figsize=[8, 8])
-plt.title('%s training' % args.what)
+plt.title('%s training' % args.what.replace("_"," "))
 plt.plot(
    np.arange(0,1,0.01),
    np.arange(0,1,0.01),
    'k--')
-plt.plot(*rocs['validation'], label='Retraining (AUC: %.2f)'  % args_dict['validation_AUC'])
+plt.plot(*rocs['validation'], label='Retraining (AUC: %.3f)'  % args_dict['validation_AUC'])
 if args.what in ['seeding', 'fullseeding']:
    eff = float((validation.baseline & validation.is_e).sum())/validation.is_e.sum()
    mistag = float((validation.baseline & np.invert(validation.is_e)).sum())/np.invert(validation.is_e).sum()

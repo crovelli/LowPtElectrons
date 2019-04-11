@@ -8,6 +8,10 @@ tag = '2019Feb22'
 posix = '2019Feb22'
 target_dataset = 'all'
 
+#tag = '2019Apr02'
+#posix = '2019Feb22'
+#target_dataset = 'test'
+
 import socket
 path = ""
 if "cern.ch" in socket.gethostname() : path = '/eos/cms/store/cmst3/group/bpark/electron_training'
@@ -30,6 +34,22 @@ for inf in all_sets:
 input_files['test'] = input_files['BToJPsieeK'][:1]
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
+
+#base='/afs/cern.ch/user/b/bainbrid/eos/electrons/lowpteleid/CRAB_UserFiles/crab_lowpteleid/190401_224052/'
+#'\store/user/bainbrid/lowpteleid/BuToKJpsi_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/crab_lowpteleid/190410_170825/0000/'
+#input_files['test'] = [ 
+   #'/afs/cern.ch/user/b/bainbrid/work/public/5-full-chain/20-retrain-id/CMSSW_10_2_13/src/2-ntuples-from-crab/output.root'
+   #base+'output_1.root',
+   #base+'output_2.root',
+   #base+'output_3.root',
+   #base+'output_4.root',
+   #base+'output_5.root',
+   #base+'output_6.root',
+   #base+'output_7.root',
+   #base+'output_8.root',
+   #base+'output_9.root',
+   #base+'output_10.root',
+#   ][:]
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
@@ -77,9 +97,10 @@ def get_models_dir():
 def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
    if dataset not in input_files:
       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
-   print 'getting files: '
+   print 'getting files from "%s": ' % dataset
    print ' \n'.join(input_files[dataset])
    infiles = [uproot.open(i) for i in input_files[dataset]]
+   print 'available branches:\n',infiles[0]['features/tree'].keys()
    if columns == 'all':
       columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
    try:
@@ -152,7 +173,7 @@ import pandas as pd
 import numpy as np
 def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):  
    mods = get_models_dir()
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_dxy', 'trk_dxy_err', 'trk_charge', 'evt'])-{'trk_dxy_sig', 'trk_dxy_sig_inverted'})
+   features = list(set(features+['trk_pt', 'trk_eta', 'gsf_charge', 'gsf_pt', 'gsf_eta', 'evt'])) #@@ gsf_charge -> trk_charge
    data_dict = get_data_sync(dataset, features)
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
@@ -184,12 +205,13 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
    mask = training_selection(data)
    multi_dim = {i : j[mask] for i, j in multi_dim.iteritems()}   
    data = data[mask]
-   sip = data.trk_dxy/data.trk_dxy_err
-   sip[np.isinf(sip)] = 0
-   data['trk_dxy_sig'] = sip
-   inv_sip = data.trk_dxy_err/data.trk_dxy
-   inv_sip[np.isinf(inv_sip)] = 0
-   data['trk_dxy_sig_inverted'] = inv_sip
+   if 'trk_dxy' in data_dict and 'trk_dxy_err' in data_dict:
+      sip = data.trk_dxy/data.trk_dxy_err
+      sip[np.isinf(sip)] = 0
+      data['trk_dxy_sig'] = sip
+      inv_sip = data.trk_dxy_err/data.trk_dxy
+      inv_sip[np.isinf(inv_sip)] = 0
+      data['trk_dxy_sig_inverted'] = inv_sip
    data['training_out'] = -1
    log_trkpt = np.log10(data.trk_pt)
    log_trkpt[np.isnan(log_trkpt)] = -9999
@@ -203,7 +225,7 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
    kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, dataset)
    if not os.path.isfile(kmeans_model):
       print 'I could not find the appropriate model, using the general instead'
-      kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, 'all')
+      kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, tag)
    weights = kmeans_weighter(
       data[['log_trkpt', 'trk_eta']],
       kmeans_model

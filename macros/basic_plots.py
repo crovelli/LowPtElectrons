@@ -16,9 +16,24 @@ rc('text', usetex=True)
 from baseline import baseline
 import cosmetics
 
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument(
+   '--what', default='basic_plots_default', type=str
+)
+parser.add_argument(
+   '--test', action='store_true'
+)
+parser.add_argument(
+   '--multi_dim', action='store_true'
+)
+args = parser.parse_args()
+
 debug = False
 print 'Getting the data'
 from datasets import dataset_names, tag, get_data_sync, kmeans_weighter, training_selection, pre_process_data, target_dataset
+
+dataset = 'test' if args.test else target_dataset
 
 plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
 if not os.path.isdir(plots):
@@ -83,21 +98,33 @@ if not os.path.isdir(mods):
 ##   except : pass
 ##   plt.clf()
 
-
 from features import *
-features = cmssw_mva_id+cmssw_displaced_improvedfullseeding+['trk_dxy_sig', 'trk_dxy_sig_inverted']+seed_additional+['sc_Nclus', 'ele_eta', 'gsf_eta']
-features = list(set(features))
-additional = id_additional
+features, additional = get_features(args.what)
 
-multi_dim_branches = ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']
-data, multi_dim = pre_process_data(
-   target_dataset,
-   features+labeling+additional+multi_dim_branches,
-   for_seeding=True,
-)
-data['eid_sc_Nclus'] = data['sc_Nclus']
-features+= ['eid_sc_Nclus']
-print 'making plots'
+# additional features, used somewhere in logic below
+features += ['gsf_pt', 'gsf_eta', 'preid_bdtout1']
+
+multi_dim_branches = []
+data = None
+multi_dim = None
+if args.multi_dim :
+   multi_dim_branches = ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']
+   data, multi_dim = pre_process_data(
+      dataset,
+      features+labeling+additional+multi_dim_branches,
+      for_seeding = ('seeding' in args.what)
+      )
+else :
+   data = pre_process_data(
+      dataset,
+      features+labeling+additional,
+      for_seeding = ('seeding' in args.what)
+      )
+
+#@@data['eid_sc_Nclus'] = data['sc_Nclus']
+#@@features+= ['eid_sc_Nclus']
+
+print 'making plots in dir: ',plots
 
 for feat in multi_dim_branches:
    vals = {}
@@ -138,14 +165,20 @@ for feat in multi_dim_branches:
    except : pass
    plt.clf()
 
-electrons_selected = data[(
-      (data.eid_ele_pt > 0) & (data.gsf_pt > 1) & (np.abs(data.gsf_eta) < 1.5) & 
-      (data.preid_bdtout1 > 1.20)
-      )]
+mask_gsf = ( (data.gsf_pt > 0.5) & (np.abs(data.gsf_eta) < 2.5) )
+mask_ele = ( mask_gsf & (data.eid_ele_pt > 0) )
+mask_ele_L = ( mask_ele_V & (data.preid_bdtout1 > 1.20) )
+mask_ele_T = ( mask_ele_M & (data.preid_bdtout1 > 3.05) )
+data_gsf = data[mask_gsf_V]
+data_ele = data[mask_ele_V]
+data_ele_L = data[mask_ele_L]
+data_ele_T = data[mask_ele_T]
+
 datas = {
    'full_elecs' : {
-      'trk' : electrons_selected[np.invert(electrons_selected.is_e)],
-      'ele' : electrons_selected[electrons_selected.is_e],
+      'trk' : data_ele[np.invert(data_ele.is_e)],
+      'ele' : data_ele_L[data_ele_L.is_e],
+      'ele_T' : data_ele_T[data_ele_T.is_e],
       },
    'data' : {
       'trk' : data[np.invert(data.is_e)],
@@ -153,26 +186,41 @@ datas = {
       }
    }
 
+from collections import OrderedDict as odict
+dct = odict([
+   ('ele','Electrons'),
+   ('trk','Tracks'),
+   ('ele_T','Electrons (T WP)'),
+   ])
+
 for to_plot in features:
    print ' --> plotting', to_plot
    plt.clf()
-   df_to_use = 'full_elecs' if to_plot.startswith('eid_') else 'data'
-   electrons = datas[df_to_use]['ele']
-   tracks = datas[df_to_use]['trk']
-   plt.hist(
-      electrons[to_plot], bins=50, 
-      weights=electrons.weight,
-      range=cosmetics.ranges.get(to_plot, None),
-      histtype='step', normed=True,
-      label = 'Electrons',
-      )
-   plt.hist(
-      tracks[to_plot], bins=50, 
-      weights=tracks.weight,
-      range=cosmetics.ranges.get(to_plot, None),
-      histtype='step', normed=True,
-      label = 'Tracks',
-      )
+   if to_plot.startswith('eid_') :
+      for idx,name in dct.items() :
+         plt.hist(
+            datas['full_elecs'][idx][to_plot], bins=50,
+            weights=datas['full_elecs'][idx].weight,
+            range=cosmetics.ranges.get(to_plot, None),
+            histtype='step', normed=True,
+            label = name,
+            )
+   else :
+      plt.hist(
+         datas['data']['ele'][to_plot], bins=50,
+         weights=datas['data']['ele'].weight,
+         range=cosmetics.ranges.get(to_plot, None),
+         histtype='step', normed=True,
+         label = 'Electrons',
+         )
+      plt.hist(
+         datas['data']['trk'][to_plot], bins=50,
+         weights=datas['data']['trk'].weight,
+         range=cosmetics.ranges.get(to_plot, None),
+         histtype='step', normed=True,
+         label = 'Tracks',
+         )
+
    plt.xlabel(cosmetics.beauty.get(to_plot, to_plot.replace('_', ' ')))
    plt.ylabel('Fraction')
    plt.legend(loc='best')
