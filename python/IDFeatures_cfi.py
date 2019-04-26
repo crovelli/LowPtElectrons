@@ -4,7 +4,7 @@ features = cms.EDAnalyzer(
     "IDFeatures",
     checkFromB = cms.bool(True),
     drMax = cms.double(0.02),
-    fakesMultiplier = cms.double(6.),
+    fakesMultiplier = cms.double(0.5),
     # AOD and MINIAOD
     rho = cms.InputTag('fixedGridRhoFastjetAll'),
     beamspot = cms.InputTag("offlineBeamSpot"),

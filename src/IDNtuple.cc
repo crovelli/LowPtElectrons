@@ -20,6 +20,7 @@ void IDNtuple::link_tree( TTree *tree ) {
 
   tree->Branch("has_egamma_gsf", &has_egamma_gsf_, "has_egamma_gsf/O");
   tree->Branch("has_egamma_ele", &has_egamma_ele_, "has_egamma_ele/O");
+  tree->Branch("is_egamma", &is_egamma_, "is_egamma/O");
   
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
