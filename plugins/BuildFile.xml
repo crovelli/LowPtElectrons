@@ -3,6 +3,7 @@
 <use name="DataFormats/CaloRecHit"/>
 <use name="DataFormats/Common"/>
 <use name="DataFormats/EgammaCandidates"/>
+<use name="DataFormats/EgammaReco"/>
 <use name="DataFormats/GsfTrackReco"/>
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/HLTReco"/>
@@ -10,6 +11,7 @@
 <use name="DataFormats/ParticleFlowCandidate"/>
 <use name="DataFormats/ParticleFlowReco"/>
 <use name="DataFormats/PatCandidates"/>
+<use name="DataFormats/TrajectorySeed"/>
 <use name="DataFormats/TrackCandidate"/>
 <use name="DataFormats/TrackReco"/>
 <use name="FastSimulation/BaseParticlePropagator"/>
