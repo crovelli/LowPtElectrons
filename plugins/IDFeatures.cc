@@ -66,15 +66,16 @@ private:
   reco::GsfTrackRef matchGsfToEgammaGsf( const reco::GsfTrackRef gsfTrack,
 					 const edm::Handle< std::vector<reco::GsfTrack> >& egammaGsfTracks );
 
-	void fillOtherGSF( const edm::EventID& id,
-										 const std::vector<reco::GsfTrackRef>& other_gsf, 
-										 const std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele,
-										 const edm::Handle< edm::ValueMap<float> >& mvaIDLowPt,
-										 const edm::Handle< edm::ValueMap<float> >& mvaIDv2,
-										 const edm::Handle< edm::ValueMap<float> >& mvaSeedUnbiased,
-										 const edm::Handle< edm::ValueMap<float> >& mvaSeedPtbiased,
-										 const edm::Handle<reco::BeamSpot>& beamspot,
-										 float rho, bool is_egamma, size_t nelectrons, bool store_id );
+  void fillOtherGSF( const edm::EventID& id,
+		     const std::vector<reco::GsfTrackRef>& other_gsf, 
+		     const std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele,
+		     const edm::Handle< edm::ValueMap<float> >& mvaIDLowPt,
+		     const edm::Handle< edm::ValueMap<float> >& mvaIDv2,
+		     const edm::Handle< edm::ValueMap<float> >& mvaSeedUnbiased,
+		     const edm::Handle< edm::ValueMap<float> >& mvaSeedPtbiased,
+		     const edm::Handle<reco::BeamSpot>& beamspot,
+		     float rho, bool is_egamma, size_t nelectrons, bool store_id );
+
 private:
   
   edm::Service<TFileService> fs_;
@@ -140,7 +141,6 @@ IDFeatures::IDFeatures( const edm::ParameterSet& cfg ) :
   prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
   packedGenParticles_(consumes< edm::View<reco::Candidate> >(cfg.getParameter<edm::InputTag>("packedGenParticles")))
   //convVtxFitProb_(consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb")))
-  // Available in MINIAOD only
   {
     tree_ = fs_->make<TTree>("tree","tree");
     ntuple_.link_tree(tree_);
@@ -352,52 +352,68 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   //////////
   // Fill ntuple with background pT electrons (prescaled by 'fakesMultiplier' configurable)
   //////////
-	fillOtherGSF(event.id(), other_gsf, gsf2ele, mvaIDLowPt, mvaIDv2, mvaSeedUnbiased, mvaSeedPtbiased, beamspot, *rho, false, electrons->size(), true);
-	fillOtherGSF(event.id(), other_egammagsf, gsf2egammaele, mvaIDLowPt, mvaIDv2, mvaSeedUnbiased, mvaSeedPtbiased, beamspot, *rho, true, electrons->size(), false);
+  fillOtherGSF( event.id(), 
+		other_gsf, 
+		gsf2ele, 
+		mvaIDLowPt, 
+		mvaIDv2, 
+		mvaSeedUnbiased, 
+		mvaSeedPtbiased, 
+		beamspot, 
+		*rho, 
+		false, 
+		electrons->size(), 
+		true );
+
+  fillOtherGSF( event.id(), 
+		other_egammagsf, 
+		gsf2egammaele, 
+		mvaIDLowPt, 
+		mvaIDv2, 
+		mvaSeedUnbiased, 
+		mvaSeedPtbiased, 
+		beamspot, 
+		*rho, 
+		true, 
+		electrons->size(), 
+		false );
+
 }
 
 // Fill fake electrons (either PF or LowPt)
 void IDFeatures::fillOtherGSF( const edm::EventID& id,
-															 const std::vector<reco::GsfTrackRef>& other_gsf, 
-															 const std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele,
-															 const edm::Handle< edm::ValueMap<float> >& mvaIDLowPt,
-															 const edm::Handle< edm::ValueMap<float> >& mvaIDv2,
-															 const edm::Handle< edm::ValueMap<float> >& mvaSeedUnbiased,
-															 const edm::Handle< edm::ValueMap<float> >& mvaSeedPtbiased,
-															 const edm::Handle<reco::BeamSpot>& beamspot,
-															 float rho, bool is_egamma, size_t nelectrons, bool store_id ) {
+			       const std::vector<reco::GsfTrackRef>& other_gsf, 
+			       const std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele,
+			       const edm::Handle< edm::ValueMap<float> >& mvaIDLowPt,
+			       const edm::Handle< edm::ValueMap<float> >& mvaIDv2,
+			       const edm::Handle< edm::ValueMap<float> >& mvaSeedUnbiased,
+			       const edm::Handle< edm::ValueMap<float> >& mvaSeedPtbiased,
+			       const edm::Handle<reco::BeamSpot>& beamspot,
+			       float rho, bool is_egamma, size_t nelectrons, bool store_id ) {
+  
+  for ( const auto& other : other_gsf ) {
 
-  // std::set<int> indices;
-  // unsigned int nfakes = 0;
-  // while ( indices.size() < other_gsf.size() && // stop when all tracks considered
-	// 				( nfakes < fakes_multiplier_ || fakes_multiplier_ < 0 ) ) { // stop when fakesMultiplier is satisfied
-  //   int index = int( gRandom->Rndm() * other_gsf.size() ); // pick a track at random
-  //   if ( indices.find( index ) != indices.end() ) { continue; } // consider each track only once
-  //   indices.insert(index); // record tracks used
-  //   nfakes++;
-	for(const auto& other : other_gsf) {
-		if(gRandom->Rndm() > fakes_multiplier_) continue;
-    //reco::GsfTrackRef other = other_gsf.at(index);
+    if ( gRandom->Rndm() > fakes_multiplier_ ) { continue; }
 
     // Init and set truth label
     ntuple_.reset();
     ntuple_.is_e(false);
     ntuple_.is_other(true);
-		ntuple_.is_egamma(is_egamma);
-
+    ntuple_.is_egamma(is_egamma);
+		
     // Fill Rho, Event, and GEN branches
     ntuple_.set_rho(rho);
     ntuple_.fill_evt(id);
     
     ntuple_.fill_gsf(other, *beamspot);
-
+    
     // Store Seed BDT discrimator values
-		if(!is_egamma) {
-			float unbiased = (*mvaSeedUnbiased)[other];
-			float ptbiased = (*mvaSeedPtbiased)[other];
-			ntuple_.fill_seed( unbiased, ptbiased );
+    if ( !is_egamma ) {
+      float unbiased = (*mvaSeedUnbiased)[other];
+      float ptbiased = (*mvaSeedPtbiased)[other];
+      ntuple_.fill_seed( unbiased, ptbiased );
     }
-		
+    
     // Check if GsfTrack is matched to an electron 
     const auto& matched_ele = gsf2ele.find(other);
     if ( matched_ele != gsf2ele.end() ) {
@@ -405,7 +421,7 @@ void IDFeatures::fillOtherGSF( const edm::EventID& id,
       //@@ dirty hack as ID is not in Event nor embedded in pat::Electron
       float id_lowpt = -999.;
       if ( store_id && mvaIDLowPt.isValid() && mvaIDLowPt->size() == nelectrons ) {
-				id_lowpt = mvaIDLowPt->get( matched_ele->second.key() );
+	id_lowpt = mvaIDLowPt->get( matched_ele->second.key() );
       }
       
       //@@ dirty hack as ID is not in Event nor embedded in pat::Electron
@@ -424,16 +440,15 @@ void IDFeatures::fillOtherGSF( const edm::EventID& id,
       
       //@@ Add SuperCluster vars?
       //ntuple_.fill_supercluster(matched_ele->second);
-
+      
     } // Find electron
-
+    
     // Fill tree
     tree_->Fill();
-
+    
   } // Fill ntuple with background low pT electrons
-
+  
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Assumes pruned and packed GenParticles from MINIAOD

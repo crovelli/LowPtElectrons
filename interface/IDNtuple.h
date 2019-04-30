@@ -43,7 +43,7 @@ class IDNtuple {
   
   void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
   void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
-	void is_egamma( bool f = false ) { is_egamma_ = f; }
+  void is_egamma( bool f = false ) { is_egamma_ = f; }
 
   void fill_evt( const edm::EventID& id );
 
