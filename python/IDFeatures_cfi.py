@@ -5,6 +5,7 @@ features = cms.EDAnalyzer(
     checkFromB = cms.bool(True),
     drMax = cms.double(0.02),
     fakesMultiplier = cms.double(6.),
+    minTrackPt = cms.double(0.5),
     # AOD and MINIAOD
     rho = cms.InputTag('fixedGridRhoFastjetAll'),
     beamspot = cms.InputTag("offlineBeamSpot"),
@@ -14,6 +15,8 @@ features = cms.EDAnalyzer(
     MVAIDLowPt = cms.InputTag('lowPtGsfElectronID'),
     MVAIDV2 = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17IsoV2Values'),
     # AOD only
+    ctfTracks = cms.InputTag("generalTracks"),
+    eleSeeds = cms.InputTag("lowPtGsfElectronSeeds"),
     egammaGsfTracks = cms.InputTag("electronGsfTracks"),
     electrons = cms.InputTag("lowPtGsfElectrons"),
     egammaElectrons = cms.InputTag("gedGsfElectrons"),
