@@ -43,6 +43,7 @@ class IDNtuple {
   
   void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
   void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
+	void is_egamma( bool f = false ) { is_egamma_ = f; }
 
   void fill_evt( const edm::EventID& id );
 
@@ -84,6 +85,7 @@ class IDNtuple {
   // CMS PF reco
   bool has_egamma_gsf_ = false;
   bool has_egamma_ele_ = false;
+  bool is_egamma_ = false;
   
   // GEN electrons
   float gen_pt_ = NEG_FLOAT;
