@@ -4,13 +4,19 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
+#include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/PreId.h"
+#include "DataFormats/ParticleFlowReco/interface/PreIdFwd.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include <vector>
 
 class TTree;
@@ -18,7 +24,7 @@ class TTree;
 namespace reco { typedef edm::Ptr<GsfElectron> GsfElectronPtr; }
 
 constexpr size_t NHITS_MAX = 30;
-constexpr float NEG_INT = -10;
+constexpr int NEG_INT = -10;
 constexpr float NEG_FLOAT = -10.;
 
 // Small class to provide fillers and hide tree I/O
@@ -35,15 +41,21 @@ class IDNtuple {
   
   void link_tree( TTree* tree );
   
+  void set_weight( float w ) { weight_ = w; }
   void set_rho( float r ) { rho_ = r; }
 
   void is_e( bool t = true ) { is_e_ = t; }
   void is_e_not_matched( bool t = true ) { is_e_not_matched_ = t; }
   void is_other( bool t = true ) { is_other_ = t; }
+  void is_egamma( bool t = true ) { is_egamma_ = t; }
+
+  void has_trk( bool f = false ) { has_trk_ = f; }
+  void has_seed( bool f = false ) { has_seed_ = f; }
+  void has_gsf( bool f = false ) { has_gsf_ = f; }
+  void has_ele( bool f = false ) { has_ele_ = f; }
   
-  void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
-  void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
-  void is_egamma( bool f = false ) { is_egamma_ = f; }
+  //void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
+  //void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
 
   void fill_evt( const edm::EventID& id );
 
@@ -51,21 +63,24 @@ class IDNtuple {
   void fill_gen( const reco::GenParticleRef ); //@@ AOD
   void fill_gen( const reco::CandidatePtr );
 
-  void fill_seed( double seed_bdt_unbiased,
-		  double seed_bdt_ptbiased );
+  void fill_trk( const reco::TrackRef& trk,
+		 const reco::BeamSpot& spot );
+
+  void fill_seed( double seed_unbiased,
+		  double seed_ptbiased );
+  
+  void fill_preid( const reco::PreId& preid_ecal,
+		   const reco::PreId& preid_hcal,
+		   const reco::BeamSpot& spot, 
+		   const double rho, 
+		   noZS::EcalClusterLazyTools& ecalTools );
 
   void fill_gsf( const reco::GsfTrackRef trk,
 		 const reco::BeamSpot& spot );
 
   void fill_ele( const reco::GsfElectronPtr ele,
-		 float id_lowpt,
-		 float id_v2,
-		 float ele_conv_vtx_fit_prob,
-		 const double rho );
-
-  void fill_ele( const pat::ElectronRef ele,
-		 float id_lowpt,
-		 float id_v2,
+		 float mva_value,
+		 int mva_id,
 		 float ele_conv_vtx_fit_prob,
 		 const double rho );
   
@@ -75,18 +90,21 @@ class IDNtuple {
   unsigned int run_ = 0;
   unsigned int lumi_ = 0;
   unsigned long long evt_ = 0;
+  float weight_ = 1.;
   float rho_ = NEG_FLOAT;
 
   // Labels
   bool is_e_ = false;
   bool is_e_not_matched_ = false;
   bool is_other_ = false;
+  bool is_egamma_ = false;
 
   // CMS PF reco
-  bool has_egamma_gsf_ = false;
-  bool has_egamma_ele_ = false;
-  bool is_egamma_ = false;
-  
+  bool has_trk_ = false;
+  bool has_seed_ = false;
+  bool has_gsf_ = false;
+  bool has_ele_ = false;
+
   // GEN electrons
   float gen_pt_ = NEG_FLOAT;
   float gen_eta_ = NEG_FLOAT;
@@ -98,25 +116,51 @@ class IDNtuple {
   int gen_mom_pdgid_ = 0;
   int gen_gran_pdgid_ = 0;
 
+  // KF tracks: kine
+  float trk_pt_ = NEG_FLOAT;
+  float trk_eta_ = NEG_FLOAT;
+  float trk_phi_ = NEG_FLOAT;
+  float trk_p_ = NEG_INT;
+  int trk_charge_ = NEG_INT;
+  float trk_inp_ = NEG_FLOAT;
+  float trk_outp_ = NEG_FLOAT;
+  float trk_dpt_ = NEG_FLOAT;
+
+  // KF tracks: quality
+  int trk_nhits_ = NEG_INT;
+  int trk_missing_inner_hits_ = NEG_INT;
+  int trk_high_purity_ = NEG_INT;
+  float trk_chi2red_ = NEG_FLOAT;
+
+  // KF tracks: displ
+  float trk_dxy_ = NEG_FLOAT;
+  float trk_dxy_err_ = NEG_FLOAT;
+  float trk_dz_ = NEG_FLOAT;
+  float trk_dz_err_ = NEG_FLOAT;
+  
   // Seed BDT discriminator values
-  float seed_bdt_unbiased_ = NEG_FLOAT;
-  float seed_bdt_ptbiased_ = NEG_FLOAT;
+  float preid_unbiased_ = NEG_FLOAT;
+  float preid_ptbiased_ = NEG_FLOAT;
+
+  // Seed BDT discriminator values at GsfTrack level
+  float seed_unbiased_ = NEG_FLOAT;
+  float seed_ptbiased_ = NEG_FLOAT;
 
   // GSF tracks: kine
   float gsf_pt_ = NEG_FLOAT;
   float gsf_eta_ = NEG_FLOAT;
   float gsf_phi_ = NEG_FLOAT;
   float gsf_p_ = NEG_FLOAT;
-  int gsf_charge_ = 0;
+  int gsf_charge_ = NEG_INT;
   float gsf_inp_ = NEG_FLOAT;
   float gsf_outp_ = NEG_FLOAT;
   float gsf_dpt_ = NEG_FLOAT;
 
   // GSF tracks: kine (mode)
-  float mode_pt_ = NEG_FLOAT;
-  float mode_eta_ = NEG_FLOAT;
-  float mode_phi_ = NEG_FLOAT;
-  float mode_p_ = NEG_FLOAT;
+  float gsf_mode_pt_ = NEG_FLOAT;
+  float gsf_mode_eta_ = NEG_FLOAT;
+  float gsf_mode_phi_ = NEG_FLOAT;
+  float gsf_mode_p_ = NEG_FLOAT;
 
   // GSF tracks: quality
   int gsf_nhits_ = NEG_INT;
@@ -130,7 +174,7 @@ class IDNtuple {
   float gsf_dz_err_ = NEG_FLOAT;
 
   // GSF tracks: tangents
-  int gsf_ntangents_ = 0;
+  int gsf_ntangents_ = NEG_INT;
   float gsf_hit_dpt_[NHITS_MAX] = {NEG_FLOAT};
   float gsf_hit_dpt_unc_[NHITS_MAX] = {NEG_FLOAT};
   //std::vector<float> gsf_extapolated_eta_;
@@ -143,8 +187,8 @@ class IDNtuple {
   float ele_p_ = NEG_FLOAT;
 
   // Electrons: IDs
-  float ele_mvaIdV2_ = NEG_FLOAT;
-  float ele_lowPtMva_ = NEG_FLOAT;
+  float ele_mva_value_ = NEG_FLOAT;
+  int ele_mva_id_ = NEG_INT;
   float ele_conv_vtx_fit_prob_ = NEG_FLOAT;
 
   // Electrons: MVA variables

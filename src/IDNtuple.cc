@@ -2,25 +2,29 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtra.h"
 #include "LowPtElectrons/LowPtElectrons/interface/IDNtuple.h"
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
 #include "TTree.h"
 
 /////////////////////////////////////////////////////////////////////////////////
 //
 void IDNtuple::link_tree( TTree *tree ) {
 
-  tree->Branch("run",  &run_ , "run/i");
-  tree->Branch("lumi", &lumi_, "lumi/i");
-  tree->Branch("evt",  &evt_ , "evt/i");
+  tree->Branch("run",  &run_ , "run/I");
+  tree->Branch("lumi", &lumi_, "lumi/I");
+  tree->Branch("evt",  &evt_ , "evt/I");
   
+  tree->Branch("weight", &weight_, "weight/f");
   tree->Branch("rho", &rho_, "rho/f");
-  
+
   tree->Branch("is_e", &is_e_, "is_e/O");
   tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
   tree->Branch("is_other", &is_other_, "is_other/O");
-
-  tree->Branch("has_egamma_gsf", &has_egamma_gsf_, "has_egamma_gsf/O");
-  tree->Branch("has_egamma_ele", &has_egamma_ele_, "has_egamma_ele/O");
   tree->Branch("is_egamma", &is_egamma_, "is_egamma/O");
+
+  tree->Branch("has_trk", &has_trk_, "has_trk/O");
+  tree->Branch("has_seed", &has_seed_, "has_seed/O");
+  tree->Branch("has_gsf", &has_gsf_, "has_gsf/O");
+  tree->Branch("has_ele", &has_ele_, "has_ele/O");
   
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
@@ -32,27 +36,46 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
   tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
 
-  //tree->Branch("seed_bdt_unbiased", &seed_bdt_unbiased_, "seed_bdt_unbiased/f");
-  //tree->Branch("seed_bdt_ptbiased", &seed_bdt_ptbiased_, "seed_bdt_ptbiased/f");
-  tree->Branch("preid_bdtout1", &seed_bdt_unbiased_, "preid_bdtout1/f");
-  tree->Branch("preid_bdtout2", &seed_bdt_ptbiased_, "preid_bdtout2/f");
+  tree->Branch("trk_pt", &trk_pt_, "trk_pt/f");
+  tree->Branch("trk_eta", &trk_eta_, "trk_eta/f");
+  tree->Branch("trk_phi", &trk_phi_, "trk_phi/f");
+  tree->Branch("trk_p", &trk_p_, "trk_p/f");
+  tree->Branch("trk_charge", &trk_charge_, "trk_charge/I");
+  tree->Branch("trk_inp", &trk_inp_, "trk_inp/f");
+  tree->Branch("trk_outp", &trk_outp_, "trk_outp/f");
+  tree->Branch("trk_dpt", &trk_dpt_, "trk_dpt/f");
 
-  tree->Branch("trk_pt", &gsf_pt_, "trk_pt/f");
-  tree->Branch("trk_eta", &gsf_eta_, "trk_eta/f");
+  tree->Branch("trk_nhits", &trk_nhits_, "trk_nhits/I");
+  tree->Branch("trk_missing_inner_hits", &trk_missing_inner_hits_, "trk_missing_inner_hits/I"); 
+  tree->Branch("trk_high_purity", &trk_high_purity_, "trk_high_purity/I");
+  tree->Branch("trk_chi2red", &trk_chi2red_, "trk_chi2red/f");
+
+  tree->Branch("trk_dxy", &trk_dxy_, "trk_dxy/f");
+  tree->Branch("trk_dxy_err", &trk_dxy_err_, "trk_dxy_err/f");
+  tree->Branch("trk_dz", &trk_dz_, "trk_dz/f");
+  tree->Branch("trk_dz_err", &trk_dz_err_, "trk_dz_err/f");
+  
+//  tree->Branch("preid_unbiased", &preid_unbiased_, "preid_unbiased/f");
+//  tree->Branch("preid_ptbiased", &preid_ptbiased_, "preid_ptbiased/f");
+  tree->Branch("preid_bdtout1", &preid_unbiased_, "preid_bdtout1/f");
+  tree->Branch("preid_bdtout2", &preid_ptbiased_, "preid_bdtout2/f");
+
+  tree->Branch("gsf_bdtout1", &seed_unbiased_, "gsf_bdtout1/f");
+  tree->Branch("gsf_bdtout2", &seed_ptbiased_, "gsf_bdtout2/f");
 
   tree->Branch("gsf_pt", &gsf_pt_, "gsf_pt/f");
   tree->Branch("gsf_eta", &gsf_eta_, "gsf_eta/f");
   tree->Branch("gsf_phi", &gsf_phi_, "gsf_phi/f");
   tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
   tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
-  //tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
-  //tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
-  //tree->Branch("gsf_dpt", &gsf_dpt_, "gsf_dpt/f");
+  tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
+  tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
+  tree->Branch("gsf_dpt", &gsf_dpt_, "gsf_dpt/f");
 
-  tree->Branch("mode_pt", &mode_pt_, "mode_pt/f");
-  tree->Branch("mode_eta", &mode_eta_, "mode_eta/f");
-  tree->Branch("mode_phi", &mode_phi_, "mode_phi/f");
-  tree->Branch("mode_p", &mode_p_, "mode_p/f");
+  tree->Branch("gsf_mode_pt", &gsf_mode_pt_, "gsf_mode_pt/f");
+  tree->Branch("gsf_mode_eta", &gsf_mode_eta_, "gsf_mode_eta/f");
+  tree->Branch("gsf_mode_phi", &gsf_mode_phi_, "gsf_mode_phi/f");
+  tree->Branch("gsf_mode_p", &gsf_mode_p_, "gsf_mode_p/f");
 
   tree->Branch("gsf_nhits",&gsf_nhits_, "gsf_nhits/I");
   tree->Branch("gsf_missing_inner_hits", &gsf_missing_inner_hits_, "gsf_missing_inner_hits/I");
@@ -63,7 +86,7 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gsf_dz",  &gsf_dz_, "gsf_dz/f");
   tree->Branch("gsf_dz_err",&gsf_dz_err_, "gsf_dz_err/f");
 
-  //tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/i");
+  //tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/I");
   //tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
   //tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
   //tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
@@ -74,8 +97,8 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
   tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
 
-  tree->Branch("ele_mvaIdV2", &ele_mvaIdV2_, "ele_mvaIdV2/f");
-  tree->Branch("ele_lowPtMva", &ele_lowPtMva_, "ele_lowPtMva/f");
+  tree->Branch("ele_mva_value", &ele_mva_value_, "ele_mva_value/f");
+  tree->Branch("ele_mva_id", &ele_mva_id_, "ele_mva_id/I");
   tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
 
   tree->Branch("eid_rho", &eid_rho_, "eid_rho/f");
@@ -161,14 +184,101 @@ void IDNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_seed( double seed_bdt_unbiased, double seed_bdt_ptbiased ) {
-  seed_bdt_unbiased_ = seed_bdt_unbiased;
-  seed_bdt_ptbiased_ = seed_bdt_ptbiased;
+void IDNtuple::fill_trk( const reco::TrackRef& trk,
+			 const reco::BeamSpot& spot ) {
+  
+  if ( trk.isNonnull() ) {
+    // kine
+    trk_pt_ = trk->pt();
+    trk_eta_ = trk->eta();
+    trk_phi_ = trk->phi();
+    trk_p_ = trk->p();
+    trk_charge_ = trk->charge();
+    if ( trk->extra().isAvailable() && trk->extra().isNonnull() ) {
+      trk_inp_ = sqrt( trk->innerMomentum().mag2() );
+      trk_outp_ = sqrt( trk->outerMomentum().mag2() );
+      trk_dpt_ = ( trk_inp_ > 0. ) ? fabs( trk_outp_ - trk_inp_ ) / trk_inp_ : 0.; //@@ redundant?
+    } else {
+      //@@ if ( fullChain ) { std::cout << "ERROR! blah" << std::endl; }
+    }
+    // quality
+    trk_nhits_ = trk->found();
+    //trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(HitPattern::MISSING_INNER_HITS);
+    //trk_high_purity_ = trk->quality( TrackBase::qualityByName("highPurity") );
+    trk_chi2red_ = trk->normalizedChi2();
+    // displ
+    trk_dxy_ = trk->dxy(spot);
+    trk_dxy_err_ = trk->dxyError();
+    trk_dz_ = trk->dz(spot.position());
+    trk_dz_err_ = trk->dzError();
+  }
+  
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_gsf( const reco::GsfTrackRef gsf, const reco::BeamSpot& spot ) {
+void IDNtuple::fill_seed( double seed_unbiased, double seed_ptbiased ) {
+  seed_unbiased_ = seed_unbiased;
+  seed_ptbiased_ = seed_ptbiased;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+void IDNtuple::fill_preid( const reco::PreId& preid_ecal, 
+			   const reco::PreId& preid_hcal, 
+			   const reco::BeamSpot& spot, 
+			   const double rho, 
+                           noZS::EcalClusterLazyTools& ecal_tools ) {
+
+  // MVA output
+  preid_unbiased_ = preid_ecal.mva(0);
+  preid_ptbiased_ = preid_ecal.mva(1);
+  
+//  // MVA decision
+//  preid_unbiased_pass_ = preid_ecal.mvaSelected(0);
+//  preid_ptbiased_pass_ = preid_ecal.mvaSelected(1);
+
+  // Set seed variables
+  lowptgsfeleseed::Features features;
+  features.set( preid_ecal, preid_hcal, rho, spot, ecal_tools );
+  auto vfeatures = features.get();
+
+  //@@ HERE HERE HERE 
+
+//  //@@ ORDER IS IMPORTANT!
+//  size_t idx = 0;
+//  preid_trk_pt_ = vfeatures[idx++];
+//  preid_trk_eta_ = vfeatures[idx++];
+//  preid_trk_phi_ = vfeatures[idx++];
+//  preid_trk_p_ = vfeatures[idx++];
+//  preid_trk_nhits_ = vfeatures[idx++];
+//  preid_trk_high_quality_ = vfeatures[idx++];
+//  preid_trk_chi2red_ = vfeatures[idx++];
+//  preid_rho_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_e_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_deta_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_dphi_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_e3x3_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_e5x5_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_covEtaEta_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_covEtaPhi_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_covPhiPhi_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_r9_ = vfeatures[idx++];
+//  preid_ktf_ecal_cluster_circularity_ = vfeatures[idx++];
+//  preid_ktf_hcal_cluster_e_ = vfeatures[idx++];
+//  preid_ktf_hcal_cluster_deta_ = vfeatures[idx++];
+//  preid_ktf_hcal_cluster_dphi_ = vfeatures[idx++];
+//  preid_gsf_dpt_ = vfeatures[idx++];
+//  preid_trk_gsf_chiratio_ = vfeatures[idx++];
+//  preid_gsf_chi2red_ = vfeatures[idx++];
+//  preid_trk_dxy_sig_ = vfeatures[idx++]; // must be last (not used by unbiased model)
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+void IDNtuple::fill_gsf( const reco::GsfTrackRef gsf, 
+			 const reco::BeamSpot& spot ) {
 
   if ( gsf.isNull() ) {
     //@@ Shouldn't happen, but do we just take dummy values...? 
@@ -180,15 +290,19 @@ void IDNtuple::fill_gsf( const reco::GsfTrackRef gsf, const reco::BeamSpot& spot
     gsf_phi_ = gsf->phi();
     gsf_p_ = gsf->p();
     gsf_charge_ = gsf->charge();
-    //gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
-    //gsf_outp_ = sqrt(gsf->outerMomentum().mag2());
-    //gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
-
+    if ( gsf->extra().isAvailable() && gsf->extra().isNonnull() ) {
+      gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
+      gsf_outp_ = sqrt(gsf->outerMomentum().mag2());
+      gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
+    } else {
+      //@@ if ( fullChain ) { std::cout << "ERROR! blah" << std::endl; }
+    }
+    
     // Kinematics (MODE)
-    mode_pt_ = gsf->ptMode();
-    mode_eta_ = gsf->etaMode();
-    mode_phi_ = gsf->phiMode();
-    mode_p_ = gsf->pMode();
+    gsf_mode_pt_ = gsf->ptMode();
+    gsf_mode_eta_ = gsf->etaMode();
+    gsf_mode_phi_ = gsf->phiMode();
+    gsf_mode_p_ = gsf->pMode();
 
     // Quality
     gsf_nhits_ = gsf->found();
@@ -216,64 +330,12 @@ void IDNtuple::fill_gsf( const reco::GsfTrackRef gsf, const reco::BeamSpot& spot
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_ele( const pat::ElectronRef ele,
-			 float id_lowpt,
-			 float id_v2,
-			 float ele_conv_vtx_fit_prob,
-			 const double rho ) {
-
-  // Kinematics
-  ele_p_ = ele->p();
-  ele_pt_ = ele->pt();
-  ele_eta_ = ele->eta();
-  ele_phi_ = ele->phi();
-  
-  // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
-  if ( id_lowpt > -666. ) { ele_lowPtMva_ = id_lowpt; }
-  if ( id_v2 > -666. ) { ele_mvaIdV2_ = id_v2; }
-  if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
-
-  // Set Electron variables
-  eleid::Features features;
-  features.set(ele,rho);
-  auto vfeatures = features.get();
-
-  //@@ ORDER IS IMPORTANT!
-  size_t idx = 0;
-  eid_rho_ = vfeatures[idx++];
-  eid_ele_pt_ = vfeatures[idx++];
-  eid_sc_eta_ = vfeatures[idx++];
-  eid_shape_full5x5_sigmaIetaIeta_ = vfeatures[idx++];
-  eid_shape_full5x5_sigmaIphiIphi_ = vfeatures[idx++];
-  eid_shape_full5x5_circularity_ = vfeatures[idx++];
-  eid_shape_full5x5_r9_ = vfeatures[idx++];
-  eid_sc_etaWidth_ = vfeatures[idx++];
-  eid_sc_phiWidth_ = vfeatures[idx++];
-  eid_shape_full5x5_HoverE_ = vfeatures[idx++];
-  eid_trk_nhits_ = vfeatures[idx++];
-  eid_trk_chi2red_ = vfeatures[idx++];
-  eid_gsf_chi2red_ = vfeatures[idx++];
-  eid_brem_frac_ = vfeatures[idx++];
-  eid_gsf_nhits_ = vfeatures[idx++];
-  eid_match_SC_EoverP_ = vfeatures[idx++];
-  eid_match_eclu_EoverP_ = vfeatures[idx++];
-  eid_match_SC_dEta_ = vfeatures[idx++];
-  eid_match_SC_dPhi_ = vfeatures[idx++];
-  eid_match_seed_dEta_ = vfeatures[idx++];
-  eid_sc_E_ = vfeatures[idx++];
-  eid_trk_p_ = vfeatures[idx++];
-
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////
-//
 void IDNtuple::fill_ele( const reco::GsfElectronPtr ele,
-			 float id_lowpt,
-			 float id_v2,
+			 float mva_value,
+			 int mva_id,
 			 float ele_conv_vtx_fit_prob,
 			 const double rho ) {
-  
+
   // Kinematics
   ele_p_ = ele->p();
   ele_pt_ = ele->pt();
@@ -281,12 +343,12 @@ void IDNtuple::fill_ele( const reco::GsfElectronPtr ele,
   ele_phi_ = ele->phi();
   
   // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
-  if ( id_lowpt > -666. ) { ele_lowPtMva_ = id_lowpt; }
-  if ( id_v2 > -666. ) { ele_mvaIdV2_ = id_v2; }
+  if ( mva_value > -666. ) { ele_mva_value_ = mva_value; }
+  if ( mva_id > -666 ) { ele_mva_id_ = mva_id; }
   if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
 
   // Set Electron variables
-  eleid::Features features;
+  lowptgsfeleid::Features features;
   features.set(ele,rho);
   auto vfeatures = features.get();
 
@@ -315,162 +377,4 @@ void IDNtuple::fill_ele( const reco::GsfElectronPtr ele,
   eid_sc_E_ = vfeatures[idx++];
   eid_trk_p_ = vfeatures[idx++];
 
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-namespace eleid {
-
-  std::vector<float> Features::get() {
-    std::vector<float> output = { 
-      rho_,
-      ele_pt_,
-      sc_eta_,
-      shape_full5x5_sigmaIetaIeta_,
-      shape_full5x5_sigmaIphiIphi_,
-      shape_full5x5_circularity_,
-      shape_full5x5_r9_,
-      sc_etaWidth_,
-      sc_phiWidth_,
-      shape_full5x5_HoverE_,
-      trk_nhits_,
-      trk_chi2red_,
-      gsf_chi2red_,
-      brem_frac_,
-      gsf_nhits_,
-      match_SC_EoverP_,
-      match_eclu_EoverP_,
-      match_SC_dEta_,
-      match_SC_dPhi_,
-      match_seed_dEta_,
-      sc_E_,
-      trk_p_,
-    };
-    return output;
-  }
-
-  void Features::set( const pat::ElectronRef& ele, double rho ) {
-
-    // KF tracks
-
-    // https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/interface/Electron.h#L81-L84
-    // https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/src/Electron.cc#L299-L306
-    //@@ not what we want! 
-    reco::TrackRef trk = ele->closestCtfTrackRef(); 
-    if ( trk.isNonnull() ) {
-      trk_p_ = float(trk->p());
-      trk_nhits_ = float(trk->found());
-      trk_chi2red_ = float(trk->normalizedChi2());
-    }
-
-    // GSF tracks
-    if ( ele->core().isNonnull() ) {
-      reco::GsfTrackRef gsf = ele->core()->gsfTrack();
-      if ( gsf.isNonnull() ) {
-	gsf_nhits_ = gsf->found();
-	gsf_chi2red_ = gsf->normalizedChi2();
-      }
-    }
-    
-    // Super clusters
-    if ( ele->core().isNonnull() ) {
-      reco::SuperClusterRef sc = ele->core()->superCluster();
-      if ( sc.isNonnull() ) {
-	sc_E_ = sc->energy();
-	sc_eta_ = sc->eta();
-	sc_etaWidth_ = sc->etaWidth();
-	sc_phiWidth_ = sc->phiWidth();
-      }
-    }
-    
-    // Track-cluster matching
-    if ( ele.isNonnull() ) {
-      match_seed_dEta_ = ele->deltaEtaSeedClusterTrackAtCalo();
-      match_eclu_EoverP_ = (1./ele->ecalEnergy()) - (1./ele->p());
-      match_SC_EoverP_ = ele->eSuperClusterOverP();
-      match_SC_dEta_ = ele->deltaEtaSuperClusterTrackAtVtx();
-      match_SC_dPhi_ = ele->deltaPhiSuperClusterTrackAtVtx();
-    }      
-    
-    // Shower shape vars
-    if ( ele.isNonnull() ) {
-      shape_full5x5_sigmaIetaIeta_ = ele->full5x5_sigmaIetaIeta();
-      shape_full5x5_sigmaIphiIphi_ = ele->full5x5_sigmaIphiIphi();
-      shape_full5x5_HoverE_    = ele->full5x5_hcalOverEcal();
-      shape_full5x5_r9_ = ele->full5x5_r9();
-      shape_full5x5_circularity_   = 1. - ele->full5x5_e1x5() / ele->full5x5_e5x5();
-    }
-    
-    // Misc
-    rho_ = rho;
-    if ( ele.isNonnull() ) {
-      brem_frac_ = ele->fbrem();
-      ele_pt_ = ele->pt();
-    }
-    
-  }
-
-  void Features::set( const reco::GsfElectronPtr& ele, double rho ) {
-
-    // KF tracks
-
-    // https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/interface/Electron.h#L81-L84
-    // https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/src/Electron.cc#L299-L306
-    //@@ not what we want! 
-    reco::TrackRef trk = ele->closestCtfTrackRef(); 
-    if ( trk.isNonnull() ) {
-      trk_p_ = float(trk->p());
-      trk_nhits_ = float(trk->found());
-      trk_chi2red_ = float(trk->normalizedChi2());
-    }
-
-    // GSF tracks
-    if ( ele->core().isNonnull() ) {
-      reco::GsfTrackRef gsf = ele->core()->gsfTrack();
-      if ( gsf.isNonnull() ) {
-	gsf_nhits_ = gsf->found();
-	gsf_chi2red_ = gsf->normalizedChi2();
-      }
-    }
-    
-    // Super clusters
-    if ( ele->core().isNonnull() ) {
-      reco::SuperClusterRef sc = ele->core()->superCluster();
-      if ( sc.isNonnull() ) {
-	sc_E_ = sc->energy();
-	sc_eta_ = sc->eta();
-	sc_etaWidth_ = sc->etaWidth();
-	sc_phiWidth_ = sc->phiWidth();
-      }
-    }
-    
-    // Track-cluster matching
-    if ( ele.isNonnull() ) {
-      match_seed_dEta_ = ele->deltaEtaSeedClusterTrackAtCalo();
-      match_eclu_EoverP_ = (1./ele->ecalEnergy()) - (1./ele->p());
-      match_SC_EoverP_ = ele->eSuperClusterOverP();
-      match_SC_dEta_ = ele->deltaEtaSuperClusterTrackAtVtx();
-      match_SC_dPhi_ = ele->deltaPhiSuperClusterTrackAtVtx();
-    }      
-    
-    // Shower shape vars
-    if ( ele.isNonnull() ) {
-      shape_full5x5_sigmaIetaIeta_ = ele->full5x5_sigmaIetaIeta();
-      shape_full5x5_sigmaIphiIphi_ = ele->full5x5_sigmaIphiIphi();
-      shape_full5x5_HoverE_    = ele->full5x5_hcalOverEcal();
-      shape_full5x5_r9_ = ele->full5x5_r9();
-      shape_full5x5_circularity_   = 1. - ele->full5x5_e1x5() / ele->full5x5_e5x5();
-    }
-    
-    // Misc
-    rho_ = rho;
-    if ( ele.isNonnull() ) {
-      brem_frac_ = ele->fbrem();
-      ele_pt_ = ele->pt();
-    }
-    
-  }
-  
 }
