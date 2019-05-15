@@ -174,8 +174,8 @@ def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_
       raise ValueError('is_egamma arg should be of boolean type!')
    mods = get_models_dir()
    #@@
-   #features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_charge', 'evt']))
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'gsf_charge', 'evt', 'gsf_eta']))
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_charge', 'evt']))
+   #features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'gsf_charge', 'evt', 'gsf_eta']))
    data_dict = get_data_sync(dataset, features)
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
@@ -244,10 +244,10 @@ def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_
    #
    # pre-process data
    #   
-   if 'trk_charge' in data.columns: #@@
-      for feat in ['ktf_ecal_cluster_dphi', 'ktf_hcal_cluster_dphi', 'preid_trk_ecal_Dphi']:
-         if feat in data.columns:
-            data[feat] = data[feat]*data['trk_charge']
+#   if 'trk_charge' in data.columns: #@@
+#      for feat in ['ktf_ecal_cluster_dphi', 'ktf_hcal_cluster_dphi', 'preid_trk_ecal_Dphi']:
+#         if feat in data.columns:
+#            data[feat] = data[feat]*data['trk_charge']
 
 #      charge = data.trk_charge
 #      for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:

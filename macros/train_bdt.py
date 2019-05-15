@@ -125,7 +125,7 @@ else:
    fields += additional
 
 #@@
-if 'gsf_pt' not in fields : fields += ['gsf_pt']
+#if 'gsf_pt' not in fields : fields += ['gsf_pt']
 
 if not args.load_model :# dataset.endswith('.hdf'):
    data = pre_process_data(
