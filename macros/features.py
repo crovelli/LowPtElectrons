@@ -184,11 +184,11 @@ new_features = [
 
 seed_additional = ['trk_pass_default_preid', 'preid_bdtout1', 'preid_bdtout2']
 seed_94X_additional = ['preid_trk_ecal_match', 'preid_trkfilter_pass', 'preid_mva_pass']
-id_additional = ['ele_mvaIdV2', 'ele_lowPtMva', 'ele_pt']
-#id_additional = ['ele_mva_value', 'ele_mva_id', 'ele_pt'] #@@
+#id_additional = ['ele_mvaIdV2', 'ele_lowPtMva', 'ele_pt']
+id_additional = ['ele_mva_value', 'ele_mva_id', 'ele_pt'] #@@
 
-labeling = ['is_e', 'is_e_not_matched', 'is_other']
-#labeling = ['is_e', 'is_e_not_matched', 'is_other', 'is_egamma'] #@@
+#labeling = ['is_e', 'is_e_not_matched', 'is_other']
+labeling = ['is_e', 'is_e_not_matched', 'is_other', 'is_egamma'] #@@
 gen_features = [
    'gen_pt',
    'gen_eta',

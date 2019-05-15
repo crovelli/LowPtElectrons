@@ -124,11 +124,13 @@ if args.SW94X and 'seeding' in args.what:
 else:
    fields += additional
 
+#@@
 if 'gsf_pt' not in fields : fields += ['gsf_pt']
 
 if not args.load_model :# dataset.endswith('.hdf'):
    data = pre_process_data(
       dataset, fields, 
+      is_egamma=False, #@@ train using low pT electrons only!
       for_seeding=('seeding' in args.what),
       keep_nonmatch=args.usenomatch
       )
@@ -257,8 +259,11 @@ if args.what in ['seeding', 'fullseeding']:
    rocs['baseline'] = [[mistag], [eff]]
    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)   
 elif 'id' in args.what:
-   mva_v2 = roc_curve(validation.is_e, validation.ele_mvaIdV2)[:2]
-   mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mvaIdV2)
+   #@@
+   #mva_v2 = roc_curve(validation.is_e, validation.ele_mvaIdV2)[:2]
+   #mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mvaIdV2)
+   mva_v2 = roc_curve(validation.is_e, validation.ele_mva_value)[:2]
+   mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mva_value)
    rocs['mva_v2'] = mva_v2
    plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
 else:

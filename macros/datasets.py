@@ -4,12 +4,12 @@ from glob import glob
 #tag = '2019Feb05'
 #posix = '2019Feb05'
 
-tag = '2019Feb22'
-posix = '2019Feb22'
+#tag = '2019Feb22'
+#posix = '2019Feb22'
 #target_dataset = 'all'
 
-#tag = '2019May15'
-#posix = '2019May15'
+tag = '2019May15'
+posix = '2019May15'
 target_dataset = 'test'
 
 import socket
@@ -31,8 +31,8 @@ for inf in all_sets:
       if os.path.basename(inf).startswith(name):
          input_files[name].append(inf)
          break
-input_files['test'] = input_files['BToJPsieeK'][:1]
-#input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root']
+#input_files['test'] = input_files['BToJPsieeK'][:1]
+input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root'] #@@
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
@@ -244,7 +244,7 @@ def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_
    #
    # pre-process data
    #   
-   if 'trk_charge' in data.columns:
+   if 'trk_charge' in data.columns: #@@
       for feat in ['ktf_ecal_cluster_dphi', 'ktf_hcal_cluster_dphi', 'preid_trk_ecal_Dphi']:
          if feat in data.columns:
             data[feat] = data[feat]*data['trk_charge']
