@@ -35,20 +35,18 @@ input_files['test'] = input_files['BToJPsieeK'][:1]
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
-#base='/afs/cern.ch/user/b/bainbrid/eos/electrons/lowpteleid/CRAB_UserFiles/crab_lowpteleid/190401_224052/'
-#'\store/user/bainbrid/lowpteleid/BuToKJpsi_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/crab_lowpteleid/190410_170825/0000/'
-#input_files['test'] = [ 
-   #'/afs/cern.ch/user/b/bainbrid/work/public/5-full-chain/20-retrain-id/CMSSW_10_2_13/src/2-ntuples-from-crab/output.root'
-   #base+'output_1.root',
-   #base+'output_2.root',
-   #base+'output_3.root',
-   #base+'output_4.root',
-   #base+'output_5.root',
-   #base+'output_6.root',
-   #base+'output_7.root',
-   #base+'output_8.root',
-   #base+'output_9.root',
-   #base+'output_10.root',
+#base='/afs/cern.ch/user/b/bainbrid/eos/electrons/lowpteleid/CRAB_UserFiles/crab_lowpteleid/190410_170825/'
+#input_files['test'] = [
+#   base+'output_1.root',
+#   base+'output_2.root',
+#   base+'output_3.root',
+#   base+'output_4.root',
+#   base+'output_5.root',
+#   base+'output_6.root',
+#   base+'output_7.root',
+#   base+'output_8.root',
+#   base+'output_9.root',
+#   base+'output_10.root',
 #   ][:]
 
 dataset_names = {

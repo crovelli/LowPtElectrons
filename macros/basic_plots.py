@@ -165,12 +165,14 @@ for feat in multi_dim_branches:
    except : pass
    plt.clf()
 
-mask_gsf = ( (data.gsf_pt > 0.5) & (np.abs(data.gsf_eta) < 2.5) )
-mask_ele = ( mask_gsf & (data.eid_ele_pt > 0) )
-mask_ele_L = ( mask_ele_V & (data.preid_bdtout1 > 1.20) )
-mask_ele_T = ( mask_ele_M & (data.preid_bdtout1 > 3.05) )
-data_gsf = data[mask_gsf_V]
-data_ele = data[mask_ele_V]
+mask_gsf   = ( (data.gsf_pt > 0.5) & (np.abs(data.gsf_eta) < 2.5) )
+mask_ele   = ( mask_gsf & (data.eid_ele_pt > 0) )
+mask_ele_V = ( mask_ele & (data.preid_bdtout1 > 0.19) )
+mask_ele_L = ( mask_ele & (data.preid_bdtout1 > 1.20) )
+mask_ele_M = ( mask_ele & (data.preid_bdtout1 > 2.02) )
+mask_ele_T = ( mask_ele & (data.preid_bdtout1 > 3.05) )
+data_gsf   = data[mask_gsf]
+data_ele   = data[mask_ele_V]
 data_ele_L = data[mask_ele_L]
 data_ele_T = data[mask_ele_T]
 

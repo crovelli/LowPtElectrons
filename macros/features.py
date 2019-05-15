@@ -314,7 +314,8 @@ def get_features(ftype):
       additional = seed_additional
    elif ftype == 'cmssw_mva_id':
       features = cmssw_mva_id
-      additional = id_additional + ['has_pfele','has_pfgsf','preid_bdtout1','preid_bdtout2']
+      additional = id_additional + [#'has_pfele','has_pfgsf',
+                                    'preid_bdtout1','preid_bdtout2']
    elif ftype == 'cmssw_mva_id_extended':
       features = cmssw_mva_id + ['preid_bdtout1']
       additional = id_additional + ['has_pfele','has_pfgsf','preid_bdtout1','preid_bdtout2']
