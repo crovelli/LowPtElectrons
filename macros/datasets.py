@@ -6,11 +6,11 @@ from glob import glob
 
 tag = '2019Feb22'
 posix = '2019Feb22'
-target_dataset = 'all'
+#target_dataset = 'all'
 
-#tag = '2019Apr02'
-#posix = '2019Feb22'
-#target_dataset = 'test'
+#tag = '2019May15'
+#posix = '2019May15'
+target_dataset = 'test'
 
 import socket
 path = ""
@@ -32,6 +32,7 @@ for inf in all_sets:
          input_files[name].append(inf)
          break
 input_files['test'] = input_files['BToJPsieeK'][:1]
+#input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root']
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
@@ -116,7 +117,6 @@ def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), excl
          ret[column] = np.concatenate((ret[column],arrays[column]))
    return ret
 
-
 from sklearn.cluster import KMeans
 from sklearn.externals import joblib
 import json
@@ -136,7 +136,7 @@ def kmeans_weighter(features, fname):
          pass
    return apply_weight(cluster, weights)
 
-def training_selection(df,low=0.,high=15.):
+def training_selection(df,low=0.5,high=15.):
    'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
    return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
 
@@ -169,9 +169,13 @@ class HistWeighter(object):
 
 import pandas as pd
 import numpy as np
-def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):  
+def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_nonmatch=False):  
+   if is_egamma is not None and type(is_egamma) is not bool : 
+      raise ValueError('is_egamma arg should be of boolean type!')
    mods = get_models_dir()
-   features = list(set(features+['trk_pt', 'trk_eta', 'gsf_charge', 'gsf_pt', 'gsf_eta', 'evt'])) #@@ gsf_charge -> trk_charge
+   #@@
+   #features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_charge', 'evt']))
+   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'gsf_charge', 'evt', 'gsf_eta']))
    data_dict = get_data_sync(dataset, features)
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
@@ -180,6 +184,10 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
       if feat in features:
          multi_dim[feat] = data_dict.pop(feat, None)
    data = pd.DataFrame(data_dict)
+   #@@
+   #data = data.head(1000).copy()
+   #@@
+   if is_egamma is not None : data = data[(data.is_egamma==is_egamma)]
    ##FIXME
    ##if 'gsf_ecal_cluster_ematrix' in features:
    ##   flattened = pd.DataFrame(multi_dim['gsf_ecal_cluster_ematrix'].reshape(multi_dim.shape[0], -1))
@@ -241,10 +249,10 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
          if feat in data.columns:
             data[feat] = data[feat]*data['trk_charge']
 
-      charge = data.trk_charge
-      for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:
-         if feat in multi_dim:
-            multi_dim[feat][charge == -1] = np.flip(multi_dim[feat][charge == -1], axis=2)
+#      charge = data.trk_charge
+#      for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:
+#         if feat in multi_dim:
+#            multi_dim[feat][charge == -1] = np.flip(multi_dim[feat][charge == -1], axis=2)
 
    #add baseline seeding (for seeding only)
    if for_seeding:

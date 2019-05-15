@@ -47,9 +47,10 @@ if not os.path.isdir(plots):
 
 print 'Getting dataset "{:s}"...'.format(dataset)
 data = pd.DataFrame(
-   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other', 'evt'])
+   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other', 'evt', 'is_egamma'])
 )
 print '...Done'
+data = data[np.invert(data.is_egamma)] # remove EGamma electrons
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 #remove things that do not yield tracks
 data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
