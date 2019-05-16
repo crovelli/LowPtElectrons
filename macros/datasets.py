@@ -32,7 +32,8 @@ for inf in all_sets:
          input_files[name].append(inf)
          break
 #input_files['test'] = input_files['BToJPsieeK'][:1]
-input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root'] #@@
+#input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root'] #@@
+input_files['test'] = ['/afs/cern.ch/user/b/bainbrid/work/public/6-ntuplizer/CMSSW_10_2_14/src/2-ntuples-from-crab/lowpteleid/crab_lowpteleid/results/output_10.root'] #@@
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
@@ -169,9 +170,10 @@ class HistWeighter(object):
 
 import pandas as pd
 import numpy as np
-def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_nonmatch=False):  
-   if is_egamma is not None and type(is_egamma) is not bool : 
-      raise ValueError('is_egamma arg should be of boolean type!')
+def pre_process_data(dataset, features, #@@is_egamma=None, 
+                     for_seeding=False, keep_nonmatch=False):  
+#@@   if is_egamma is not None and type(is_egamma) is not bool : 
+#@@      raise ValueError('is_egamma arg should be of boolean type!')
    mods = get_models_dir()
    #@@
    features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_charge', 'evt']))
@@ -184,10 +186,7 @@ def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_
       if feat in features:
          multi_dim[feat] = data_dict.pop(feat, None)
    data = pd.DataFrame(data_dict)
-   #@@
-   #data = data.head(1000).copy()
-   #@@
-   if is_egamma is not None : data = data[(data.is_egamma==is_egamma)]
+#@@   if is_egamma is not None : data = data[(data.is_egamma==is_egamma)]
    ##FIXME
    ##if 'gsf_ecal_cluster_ematrix' in features:
    ##   flattened = pd.DataFrame(multi_dim['gsf_ecal_cluster_ematrix'].reshape(multi_dim.shape[0], -1))
@@ -244,10 +243,10 @@ def pre_process_data(dataset, features, is_egamma=None, for_seeding=False, keep_
    #
    # pre-process data
    #   
-#   if 'trk_charge' in data.columns: #@@
-#      for feat in ['ktf_ecal_cluster_dphi', 'ktf_hcal_cluster_dphi', 'preid_trk_ecal_Dphi']:
-#         if feat in data.columns:
-#            data[feat] = data[feat]*data['trk_charge']
+   if 'trk_charge' in data.columns:
+      for feat in ['ktf_ecal_cluster_dphi', 'ktf_hcal_cluster_dphi', 'preid_trk_ecal_Dphi']:
+         if feat in data.columns:
+            data[feat] = data[feat]*data['trk_charge']
 
 #      charge = data.trk_charge
 #      for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:

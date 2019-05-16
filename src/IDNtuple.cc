@@ -9,9 +9,9 @@
 //
 void IDNtuple::link_tree( TTree *tree ) {
 
-  tree->Branch("run",  &run_ , "run/I");
-  tree->Branch("lumi", &lumi_, "lumi/I");
-  tree->Branch("evt",  &evt_ , "evt/I");
+  tree->Branch("run",  &run_ , "run/i");
+  tree->Branch("lumi", &lumi_, "lumi/i");
+  tree->Branch("evt",  &evt_ , "evt/i");
   
   tree->Branch("weight", &weight_, "weight/f");
   tree->Branch("rho", &rho_, "rho/f");
@@ -203,8 +203,8 @@ void IDNtuple::fill_trk( const reco::TrackRef& trk,
     }
     // quality
     trk_nhits_ = trk->found();
-    //trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(HitPattern::MISSING_INNER_HITS);
-    //trk_high_purity_ = trk->quality( TrackBase::qualityByName("highPurity") );
+    trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
+    trk_high_purity_ = trk->quality( reco::TrackBase::qualityByName("highPurity") );
     trk_chi2red_ = trk->normalizedChi2();
     // displ
     trk_dxy_ = trk->dxy(spot);

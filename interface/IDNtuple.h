@@ -24,8 +24,8 @@ class TTree;
 namespace reco { typedef edm::Ptr<GsfElectron> GsfElectronPtr; }
 
 constexpr size_t NHITS_MAX = 30;
-constexpr int NEG_INT = -10;
-constexpr float NEG_FLOAT = -10.;
+constexpr int NEG_INT = -1; //@@ -10;
+constexpr float NEG_FLOAT = -1.; //@@ -10.;
 
 // Small class to provide fillers and hide tree I/O
 class IDNtuple {
@@ -121,7 +121,7 @@ class IDNtuple {
   float trk_eta_ = NEG_FLOAT;
   float trk_phi_ = NEG_FLOAT;
   float trk_p_ = NEG_INT;
-  int trk_charge_ = NEG_INT;
+  int trk_charge_ = 0; //@@ NEG_INT;
   float trk_inp_ = NEG_FLOAT;
   float trk_outp_ = NEG_FLOAT;
   float trk_dpt_ = NEG_FLOAT;
@@ -129,7 +129,7 @@ class IDNtuple {
   // KF tracks: quality
   int trk_nhits_ = NEG_INT;
   int trk_missing_inner_hits_ = NEG_INT;
-  int trk_high_purity_ = NEG_INT;
+  int trk_high_purity_ = 0; //@@ NEG_INT;
   float trk_chi2red_ = NEG_FLOAT;
 
   // KF tracks: displ
@@ -151,7 +151,7 @@ class IDNtuple {
   float gsf_eta_ = NEG_FLOAT;
   float gsf_phi_ = NEG_FLOAT;
   float gsf_p_ = NEG_FLOAT;
-  int gsf_charge_ = NEG_INT;
+  int gsf_charge_ = 0; //@@ NEG_INT;
   float gsf_inp_ = NEG_FLOAT;
   float gsf_outp_ = NEG_FLOAT;
   float gsf_dpt_ = NEG_FLOAT;
@@ -174,9 +174,9 @@ class IDNtuple {
   float gsf_dz_err_ = NEG_FLOAT;
 
   // GSF tracks: tangents
-  int gsf_ntangents_ = NEG_INT;
-  float gsf_hit_dpt_[NHITS_MAX] = {NEG_FLOAT};
-  float gsf_hit_dpt_unc_[NHITS_MAX] = {NEG_FLOAT};
+  int gsf_ntangents_ = 0; //@@ NEG_INT;
+  float gsf_hit_dpt_[NHITS_MAX] = {0}; //@@ {NEG_FLOAT};
+  float gsf_hit_dpt_unc_[NHITS_MAX] = {0}; //@@ {NEG_FLOAT};
   //std::vector<float> gsf_extapolated_eta_;
   //std::vector<float> gsf_extapolated_phi_;
 
@@ -187,39 +187,39 @@ class IDNtuple {
   float ele_p_ = NEG_FLOAT;
 
   // Electrons: IDs
-  float ele_mva_value_ = NEG_FLOAT;
+  float ele_mva_value_ = -999.; //@ NEG_FLOAT;
   int ele_mva_id_ = NEG_INT;
   float ele_conv_vtx_fit_prob_ = NEG_FLOAT;
 
   // Electrons: MVA variables
-  float eid_rho_ = NEG_FLOAT;
-  float eid_ele_pt_ = NEG_FLOAT;
+  float eid_rho_ = -666; //@@ NEG_FLOAT;
+  float eid_ele_pt_ = -666; //@@ NEG_FLOAT;
 
-  float eid_trk_p_ = NEG_FLOAT;
-  float eid_trk_nhits_ = NEG_FLOAT;
-  float eid_trk_chi2red_ = NEG_FLOAT;
+  float eid_trk_p_ = -666; //@@ NEG_FLOAT;
+  float eid_trk_nhits_ = -666; //@@ NEG_FLOAT;
+  float eid_trk_chi2red_ = -666; //@@ NEG_FLOAT;
 
-  float eid_gsf_nhits_ = NEG_FLOAT;
-  float eid_gsf_chi2red_ = NEG_FLOAT;
+  float eid_gsf_nhits_ = -666; //@@ NEG_FLOAT;
+  float eid_gsf_chi2red_ = -666; //@@ NEG_FLOAT;
 
-  float eid_sc_E_ = NEG_FLOAT;
-  float eid_sc_eta_ = NEG_FLOAT;
-  float eid_sc_etaWidth_ = NEG_FLOAT;
-  float eid_sc_phiWidth_ = NEG_FLOAT;
+  float eid_sc_E_ = -666; //@@ NEG_FLOAT;
+  float eid_sc_eta_ = -666; //@@ NEG_FLOAT;
+  float eid_sc_etaWidth_ = -666; //@@ NEG_FLOAT;
+  float eid_sc_phiWidth_ = -666; //@@ NEG_FLOAT;
 
-  float eid_match_seed_dEta_ = NEG_FLOAT;
-  float eid_match_eclu_EoverP_ = NEG_FLOAT;
-  float eid_match_SC_EoverP_ = NEG_FLOAT;
-  float eid_match_SC_dEta_ = NEG_FLOAT;
-  float eid_match_SC_dPhi_ = NEG_FLOAT;
+  float eid_match_seed_dEta_ = -666; //@@ NEG_FLOAT;
+  float eid_match_eclu_EoverP_ = -666; //@@ NEG_FLOAT;
+  float eid_match_SC_EoverP_ = -666; //@@ NEG_FLOAT;
+  float eid_match_SC_dEta_ = -666; //@@ NEG_FLOAT;
+  float eid_match_SC_dPhi_ = -666; //@@ NEG_FLOAT;
 
-  float eid_shape_full5x5_sigmaIetaIeta_ = NEG_FLOAT;
-  float eid_shape_full5x5_sigmaIphiIphi_ = NEG_FLOAT;
-  float eid_shape_full5x5_HoverE_ = NEG_FLOAT;
-  float eid_shape_full5x5_r9_ = NEG_FLOAT;
-  float eid_shape_full5x5_circularity_ = NEG_FLOAT;
+  float eid_shape_full5x5_sigmaIetaIeta_ = -666; //@@ NEG_FLOAT;
+  float eid_shape_full5x5_sigmaIphiIphi_ = -666; //@@ NEG_FLOAT;
+  float eid_shape_full5x5_HoverE_ = -666; //@@ NEG_FLOAT;
+  float eid_shape_full5x5_r9_ = -666; //@@ NEG_FLOAT;
+  float eid_shape_full5x5_circularity_ = -666; //@@ NEG_FLOAT;
 
-  float eid_brem_frac_ = NEG_FLOAT;
+  float eid_brem_frac_ = -666; //@@ NEG_FLOAT;
   
 };
 

@@ -130,10 +130,31 @@ else:
 if not args.load_model :# dataset.endswith('.hdf'):
    data = pre_process_data(
       dataset, fields, 
-      is_egamma=False, #@@ train using low pT electrons only!
+      #@@is_egamma=False, #@@ train using low pT electrons only!
       for_seeding=('seeding' in args.what),
       keep_nonmatch=args.usenomatch
       )
+   egamma = data[data.is_egamma]          # EGamma electrons
+   data = data[np.invert(data.is_egamma)] # low pT electrons
+   
+   #@@
+   #data = data.head(10000).copy()
+
+   # replicate 'nan' values in old ntuples
+   data.replace(-10.,-1.,inplace=True)
+   data.replace(-10,-1,inplace=True)
+   vars = [x for x in data.columns if x.startswith('eid_')]
+   data[vars].replace(-10.,-666.,inplace=True)
+
+#   # replace -10. with -1. for 
+#   vars = ["trk_p","trk_chi2red","gsf_chi2red","sc_E","sc_eta","sc_etaWidth",
+#           "sc_phiWidth","match_seed_dEta","match_eclu_EoverP","match_SC_EoverP",
+#           "match_SC_dEta","match_SC_dPhi","shape_full5x5_sigmaIetaIeta",
+#           "shape_full5x5_sigmaIphiIphi","shape_full5x5_HoverE","shape_full5x5_r9",
+#           "shape_full5x5_circularity","rho","brem_frac","ele_pt",]
+#   data[vars].replace(-10.,-1.,inplace=True)
+#   data[["trk_nhits","gsf_nhits"]].replace(-10,-1,inplace=True)
+
    if args.selection:
       data = data.query(args.selection)
 
@@ -262,10 +283,14 @@ elif 'id' in args.what:
    #@@
    #mva_v2 = roc_curve(validation.is_e, validation.ele_mvaIdV2)[:2]
    #mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mvaIdV2)
-   mva_v2 = roc_curve(validation.is_e, validation.ele_mva_value)[:2]
-   mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mva_value)
-   rocs['mva_v2'] = mva_v2
-   plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
+   mva_lowpt = roc_curve(validation.is_e, validation.ele_mva_value)[:2]
+   mva_lowpt_auc = roc_auc_score(validation.is_e, validation.ele_mva_value)
+   rocs['mva_lowpt'] = mva_lowpt
+   plt.plot(*mva_lowpt, label='MVA ID low pT (AUC: %.2f)'  % mva_lowpt_auc)
+   mva_egamma = roc_curve(egamma.is_e, egamma.ele_mva_value)[:2]
+   mva_egamma_auc = roc_auc_score(egamma.is_e, egamma.ele_mva_value)
+   rocs['mva_egamma'] = mva_egamma
+   plt.plot(*mva_egamma, label='MVA ID V2 (AUC: %.2f)'  % mva_egamma_auc)
 else:
    pass #raise ValueError()
 
