@@ -8,8 +8,8 @@ from glob import glob
 #posix = '2019Feb22'
 #target_dataset = 'all'
 
-tag = '2019May15'
-posix = '2019May15'
+tag = '2019May24'
+posix = '2019May24'
 target_dataset = 'test'
 
 import socket
@@ -32,24 +32,24 @@ for inf in all_sets:
          input_files[name].append(inf)
          break
 #input_files['test'] = input_files['BToJPsieeK'][:1]
-#input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root'] #@@
-input_files['test'] = ['/afs/cern.ch/user/b/bainbrid/work/public/6-ntuplizer/CMSSW_10_2_14/src/2-ntuples-from-crab/lowpteleid/crab_lowpteleid/results/output_10.root'] #@@
+#input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root'] #@@ new ntuple
+#input_files['test'] = ['/afs/cern.ch/user/b/bainbrid/work/public/6-ntuplizer/CMSSW_10_2_14/src/2-ntuples-from-crab/lowpteleid/crab_lowpteleid/results/output_10.root'] #@@ reverted defaults
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
-#base='/afs/cern.ch/user/b/bainbrid/eos/electrons/lowpteleid/CRAB_UserFiles/crab_lowpteleid/190410_170825/'
-#input_files['test'] = [
-#   base+'output_1.root',
-#   base+'output_2.root',
-#   base+'output_3.root',
-#   base+'output_4.root',
-#   base+'output_5.root',
-#   base+'output_6.root',
-#   base+'output_7.root',
-#   base+'output_8.root',
-#   base+'output_9.root',
-#   base+'output_10.root',
-#   ][:]
+base='/eos/cms/store/cmst3/group/bpark/electron_training/2019May24/'
+input_files['test'] = [
+   base+'output_1.root',
+   base+'output_2.root',
+   base+'output_3.root',
+   base+'output_4.root',
+   base+'output_5.root',
+   base+'output_6.root',
+   base+'output_7.root',
+   base+'output_8.root',
+   base+'output_9.root',
+   base+'output_10.root',
+   ][:]
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
@@ -137,9 +137,31 @@ def kmeans_weighter(features, fname):
          pass
    return apply_weight(cluster, weights)
 
-def training_selection(df,low=0.5,high=15.):
-   'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
-   return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4) & (df.gsf_pt > 0)
+def training_selection(df,low=0.,high=15.,gsf=False):
+   #'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
+   #return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4)# & (df.gsf_pt > 0)
+   if gsf == True :
+      return ( (df.gsf_pt>low) & 
+               (df.gsf_pt<high) &
+               (np.abs(df.gsf_eta)<2.4) )
+   else :
+      return ( (df.trk_pt>low) & 
+               (df.trk_pt<high) &
+               (np.abs(df.trk_eta)<2.4) )
+#   if gsf == False :
+#      return ( ( (df.gen_pt<=0.) |                     # True if no GEN info (bkgd)
+#                 ((df.gen_pt>0.1) &                    # pT limits if GEN info (signal)
+#                  (np.abs(df.gen_eta)<2.4)) ) &        # eta limits if GEN info (signal)
+#               ( (df.trk_pt<=0.) |                     # True if no trk (same as ~has_trk ?)
+#                 ((df.trk_pt>low) & (df.trk_pt<high) & # pT limits if trk
+#                  (np.abs(df.trk_eta)<2.4)) ) )        # eta limits if trk
+#   else :
+#      return ( ( (df.gen_pt<=0.) |                     # True if no GEN info (bkgd)
+#                 ((df.gen_pt>0.1) &                    # pT limits if GEN info (signal)
+#                  (np.abs(df.gen_eta)<2.4)) ) &        # eta limits if GEN info (signal)
+#               ( (df.gsf_pt<=0.) |                     # True if no trk (same as ~has_trk ?)
+#                 ((df.gsf_pt>low) & (df.gsf_pt<high) & # pT limits if trk
+#                  (np.abs(df.gsf_eta)<2.4)) ) )        # eta limits if trk
 
 import rootpy.plotting as rplt
 import root_numpy
@@ -175,9 +197,12 @@ def pre_process_data(dataset, features, #@@is_egamma=None,
 #@@   if is_egamma is not None and type(is_egamma) is not bool : 
 #@@      raise ValueError('is_egamma arg should be of boolean type!')
    mods = get_models_dir()
-   #@@
-   features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'trk_charge', 'evt']))
    #features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'gsf_charge', 'evt', 'gsf_eta']))
+   features = list(set(features+['gen_pt', 'gen_eta', 
+                                 'trk_pt', 'trk_eta', 'trk_charge', 
+                                 'gsf_pt', 'gsf_eta', 
+                                 'ele_pt', 'ele_eta', 
+                                 'evt', 'weight'])) #@@
    data_dict = get_data_sync(dataset, features)
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
@@ -186,7 +211,7 @@ def pre_process_data(dataset, features, #@@is_egamma=None,
       if feat in features:
          multi_dim[feat] = data_dict.pop(feat, None)
    data = pd.DataFrame(data_dict)
-#@@   if is_egamma is not None : data = data[(data.is_egamma==is_egamma)]
+   #if is_egamma is not None : data = data[(data.is_egamma==is_egamma)] #@@
    ##FIXME
    ##if 'gsf_ecal_cluster_ematrix' in features:
    ##   flattened = pd.DataFrame(multi_dim['gsf_ecal_cluster_ematrix'].reshape(multi_dim.shape[0], -1))
@@ -194,6 +219,10 @@ def pre_process_data(dataset, features, #@@is_egamma=None,
    ##   flattened.columns = new_features
    ##   features += new_features
    ##   data = pd.concat([data, flattened], axis=1)
+
+   # hack to rename weight column to prescale column
+   data['prescale'] = data.weight
+   data['weight'] = np.ones(data.weight.shape)
 
    #remove non-matched electrons
    if not keep_nonmatch:
@@ -207,7 +236,7 @@ def pre_process_data(dataset, features, #@@is_egamma=None,
       notmatched = notmatched[mask]
       data = pd.concat((data, notmatched))
    # training pre-selection
-   mask = training_selection(data)
+   mask = training_selection(data,gsf=True) #@@
    multi_dim = {i : j[mask] for i, j in multi_dim.iteritems()}   
    data = data[mask]
    if 'trk_dxy' in data_dict and 'trk_dxy_err' in data_dict:
