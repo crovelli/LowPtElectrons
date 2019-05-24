@@ -187,8 +187,9 @@ seed_94X_additional = ['preid_trk_ecal_match', 'preid_trkfilter_pass', 'preid_mv
 #id_additional = ['ele_mvaIdV2', 'ele_lowPtMva', 'ele_pt']
 id_additional = ['ele_mva_value', 'ele_mva_id', 'ele_pt'] #@@
 
-#labeling = ['is_e', 'is_e_not_matched', 'is_other']
-labeling = ['is_e', 'is_e_not_matched', 'is_other', 'is_egamma'] #@@
+labeling = ['is_e', 'is_e_not_matched', 'is_other', # original labels
+            'is_egamma', 'has_trk', 'has_seed', 'has_gsf', 'has_ele', ] #@@ new
+
 gen_features = [
    'gen_pt',
    'gen_eta',
@@ -316,11 +317,11 @@ def get_features(ftype):
       additional = seed_additional
    elif ftype == 'cmssw_mva_id':
       features = cmssw_mva_id
-      additional = id_additional + [#'has_pfele','has_pfgsf',
-                                    'preid_bdtout1','preid_bdtout2']
+      additional = id_additional + ['preid_bdtout1','preid_bdtout2',
+                                    'gsf_bdtout1','gsf_bdtout2', ] # 'has_pfele','has_pfgsf',
    elif ftype == 'cmssw_mva_id_extended':
       features = cmssw_mva_id + ['preid_bdtout1']
-      additional = id_additional + ['has_pfele','has_pfgsf','preid_bdtout1','preid_bdtout2']
+      additional = id_additional + ['preid_bdtout1','preid_bdtout2'] # 'has_pfele','has_pfgsf',
    elif ftype == 'cmssw_displaced_improvedfullseeding_fixSIP':
       features = cmssw_displaced_improvedfullseeding_fixSIP
       additional = seed_additional
