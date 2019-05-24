@@ -31,7 +31,7 @@ from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, apply_weight, get_data_sync, target_dataset, HistWeighter
+from datasets import tag, apply_weight, get_data_sync, target_dataset, HistWeighter, training_selection
 import os
 dataset = 'test' if args.test else target_dataset
 if args.dataset:
@@ -47,14 +47,20 @@ if not os.path.isdir(plots):
 
 print 'Getting dataset "{:s}"...'.format(dataset)
 data = pd.DataFrame(
-   get_data_sync(dataset, ['trk_pt', 'trk_eta', 'is_e', 'is_e_not_matched', 'is_other', 'evt', 'is_egamma'])
+   get_data_sync(dataset, ['gen_pt', 'gen_eta', 
+                           'trk_pt', 'trk_eta', 
+                           'evt', 
+                           'is_e', 'is_e_not_matched', 'is_other', 'is_egamma'])
 )
 print '...Done'
 data = data[np.invert(data.is_egamma)] # remove EGamma electrons
 data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
 #remove things that do not yield tracks
+data.gsf_pt = data.trk_pt #@@
+data.gsf_eta = data.trk_eta #@@
 data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
 data['log_trkpt'] = np.log10(data.trk_pt)
+
 # original_weight = HistWeighter('../data/fakesWeights.txt')
 data['original_weight'] = 1. #np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
 
