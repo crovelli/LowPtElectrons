@@ -25,6 +25,9 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("has_seed", &has_seed_, "has_seed/O");
   tree->Branch("has_gsf", &has_gsf_, "has_gsf/O");
   tree->Branch("has_ele", &has_ele_, "has_ele/O");
+
+  tree->Branch("trk_dr", &trk_dr_, "trk_dr/f");
+  tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
   
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
