@@ -53,6 +53,9 @@ class IDNtuple {
   void has_seed( bool f = false ) { has_seed_ = f; }
   void has_gsf( bool f = false ) { has_gsf_ = f; }
   void has_ele( bool f = false ) { has_ele_ = f; }
+
+  void trk_dr( float dr ) { trk_dr_ = dr; }
+  void gsf_dr( float dr ) { gsf_dr_ = dr; }
   
   //void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
   //void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
@@ -99,11 +102,14 @@ class IDNtuple {
   bool is_other_ = false;
   bool is_egamma_ = false;
 
-  // CMS PF reco
+  // RECO steps
   bool has_trk_ = false;
   bool has_seed_ = false;
   bool has_gsf_ = false;
   bool has_ele_ = false;
+
+  float trk_dr_ = NEG_FLOAT;
+  float gsf_dr_ = NEG_FLOAT;
 
   // GEN electrons
   float gen_pt_ = NEG_FLOAT;
