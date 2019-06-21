@@ -7,6 +7,7 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/Common/interface/Ref.h"
+#include "DataFormats/Common/interface/RefToPtr.h"
 #include "DataFormats/Common/interface/View.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
@@ -64,8 +65,11 @@ private:
 	     const edm::EventSetup& setup,
 	     std::map<reco::CandidatePtr, reco::TrackRef>& gen2trk,
 	     std::map<reco::CandidatePtr, reco::GsfTrackRef>& gen2gsf,
+	     std::map<reco::CandidatePtr, reco::GsfElectronPtr>& gen2ele,
 	     std::map<reco::CandidatePtr, float>& gen2trk_dr2,
+	     std::map<reco::CandidatePtr, float>& gen2gsf_dr2_mode,
 	     std::map<reco::CandidatePtr, float>& gen2gsf_dr2,
+	     std::map<reco::CandidatePtr, float>& gen2ele_dr2,
 	     const std::map<reco::TrackRef, reco::ElectronSeedRef>& trk2seed,
 	     const std::map<reco::ElectronSeedRef, reco::GsfTrackRef>& seed2gsf,
 	     const std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele,
@@ -92,12 +96,15 @@ private:
   
   //////////
 
-  void electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& genParticles,
+//  void electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& genParticles,
+//		       std::set<reco::CandidatePtr>& electrons_from_B );
+
+  void electronsFromB( const edm::Handle< std::vector<reco::GenParticle> >& genParticles,
 		       std::set<reco::CandidatePtr>& electrons_from_B );
 
-  void electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& prunedGenParticles,
-		       const edm::Handle< edm::View<reco::Candidate> >& packedGenParticles,
-		       std::set<reco::CandidatePtr>& electrons_from_B );
+//  void electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& prunedGenParticles,
+//		       const edm::Handle< edm::View<reco::Candidate> >& packedGenParticles,
+//		       std::set<reco::CandidatePtr>& electrons_from_B );
   
   bool isAncestor( const reco::Candidate* ancestor, 
 		   const reco::Candidate* particle );
@@ -109,6 +116,7 @@ private:
 		      std::map<reco::CandidatePtr, reco::TrackRef>& gen2trk,
 		      std::map<reco::CandidatePtr, float>& gen2trk_dr2,
 		      std::vector<reco::TrackRef>& other_trk );
+
 //  void matchGenToTrk( const std::set<reco::CandidatePtr>& electrons_from_B,
 //		      const edm::Handle<pat::PackedCandidateCollection>& packedCands,
 //		      const edm::Handle<pat::PackedCandidateCollection>& lostTracks,
@@ -136,8 +144,15 @@ private:
   void matchGenToGsf( const std::set<reco::CandidatePtr>& electrons_from_B,
 		      const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
 		      std::map<reco::CandidatePtr, reco::GsfTrackRef>& gen2gsf,
+		      std::map<reco::CandidatePtr, float>& gen2gsf_dr2_mode,
 		      std::map<reco::CandidatePtr, float>& gen2gsf_dr2,
 		      std::vector<reco::GsfTrackRef>& other_gsf );
+
+  void matchGenToEle( const std::set<reco::CandidatePtr>& electrons_from_B,
+		      const edm::Handle< edm::View<reco::GsfElectron> >& gsfElectrons,
+		      std::map<reco::CandidatePtr, reco::GsfElectronPtr>& gen2ele,
+		      std::map<reco::CandidatePtr, float>& gen2ele_dr2,
+		      std::vector<reco::GsfElectronPtr>& other_ele );
 
   void matchTrkToGsf( const edm::Handle< std::vector<reco::Track> >& ctfTracks,
 		      const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
@@ -162,10 +177,10 @@ private:
   class Match {
   public:
     Match( reco::CandidatePtr gen, int itrk, double dr2 ) {
-      gen_ = gen; itrk_ = itrk; dr2_ = dr2;
+      gen_ = gen; idx_ = itrk; dr2_ = dr2;
     };
     reco::CandidatePtr gen_;
-    int itrk_;
+    int idx_;
     double dr2_;
     static bool compare_by_dr2( const Match& a, const Match& b ) {
       return a.dr2_ < b.dr2_;
@@ -181,7 +196,8 @@ private:
   IDNtuple ntuple_;
   int verbose_;
   bool check_from_B_;
-  double dr_max_; // DeltaR matching
+  double dr_max_; // Max DeltaR value considered
+  double dr_threshold_; // Threshold for DeltaR matching
   double prescale_;
   int isAOD_;
   bool hasGEN_;
@@ -195,12 +211,14 @@ private:
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;
   edm::Handle<reco::BeamSpot> beamspotH_;
 
-  const edm::EDGetTokenT< edm::View<reco::GenParticle> > genParticles_; // AOD
-  const edm::EDGetTokenT< edm::View<reco::GenParticle> > prunedGenParticles_; // mAOD
-  edm::Handle< edm::View<reco::GenParticle> > genParticlesH_;
+  const edm::EDGetTokenT< std::vector<reco::GenParticle> > genParticles_; // AOD
+  edm::Handle< std::vector<reco::GenParticle> > genParticlesH_;
 
-  const edm::EDGetTokenT< edm::View<reco::Candidate> > packedGenParticles_; // mAOD
-  edm::Handle< edm::View<reco::Candidate> > packedGenParticlesH_;
+//  const edm::EDGetTokenT< edm::View<reco::GenParticle> > prunedGenParticles_; // mAOD
+//  edm::Handle< edm::View<reco::GenParticle> > genParticlesH_;
+//
+//  const edm::EDGetTokenT< edm::View<reco::Candidate> > packedGenParticles_; // mAOD
+//  edm::Handle< edm::View<reco::Candidate> > packedGenParticlesH_;
 
   const edm::EDGetTokenT< std::vector<reco::Track> > ctfTracks_; // AOD
   edm::Handle< std::vector<reco::Track> > ctfTracksH_;
@@ -303,6 +321,7 @@ IDFeatures::IDFeatures( const edm::ParameterSet& cfg ) :
   verbose_(cfg.getParameter<int>("verbose")),
   check_from_B_(cfg.getParameter<bool>("checkFromB")),
   dr_max_(cfg.getParameter<double>("drMax")),
+  dr_threshold_(cfg.getParameter<double>("drThreshold")),
   prescale_(cfg.getParameter<double>("prescale")),
   isAOD_(-1),
   hasGEN_(true),
@@ -312,11 +331,13 @@ IDFeatures::IDFeatures( const edm::ParameterSet& cfg ) :
   rhoH_(),
   beamspot_(consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamspot"))),
   beamspotH_(),
-  genParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
-  prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
+  genParticles_(consumes< std::vector<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
   genParticlesH_(),
-  packedGenParticles_(consumes< edm::View<reco::Candidate> >(cfg.getParameter<edm::InputTag>("packedGenParticles"))),
-  packedGenParticlesH_(),
+  //genParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
+  //prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
+  //genParticlesH_(),
+  //packedGenParticles_(consumes< edm::View<reco::Candidate> >(cfg.getParameter<edm::InputTag>("packedGenParticles"))),
+  //packedGenParticlesH_(),
   ctfTracks_(consumes< std::vector<reco::Track> >(cfg.getParameter<edm::InputTag>("ctfTracks"))),
   ctfTracksH_(),
   ebRecHits_(consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("ebRecHits"))),
@@ -433,14 +454,14 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 	std::cout << "No GEN info found in AOD data tier!" << std::endl;
       }
     } else if ( isAOD_ == 0 ) { 
-      event.getByToken(prunedGenParticles_, genParticlesH_);
-      if ( !(genParticlesH_.isValid()) ) { 
-	hasGEN_ = false;
-	std::cout << "No GEN info found in MINIAOD data tier!" << std::endl;
-      }
+//      event.getByToken(prunedGenParticles_, genParticlesH_);
+//      if ( !(genParticlesH_.isValid()) ) { 
+//	hasGEN_ = false;
+//	std::cout << "No GEN info found in MINIAOD data tier!" << std::endl;
+//      }
     }
   }
-  if ( hasGEN_ && isAOD_ == 0 ) { event.getByToken(packedGenParticles_, packedGenParticlesH_); }
+//  if ( hasGEN_ && isAOD_ == 0 ) { event.getByToken(packedGenParticles_, packedGenParticlesH_); }
 
   // KF tracks
   if ( isAOD_ == 1 ) { 
@@ -504,7 +525,7 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   std::set<reco::CandidatePtr> electrons_from_B;
   if ( hasGEN_ ) {
     if      ( isAOD_ == 1 ) { electronsFromB( genParticlesH_, electrons_from_B ); }
-    else if ( isAOD_ == 0 ) { electronsFromB( genParticlesH_, packedGenParticlesH_, electrons_from_B ); }
+    //else if ( isAOD_ == 0 ) { electronsFromB( genParticlesH_, packedGenParticlesH_, electrons_from_B ); }
   }
 
   // Match GEN electrons to reco::Tracks
@@ -524,11 +545,23 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 
   // Match GEN electrons to low pT GsfTracks
   std::map<reco::CandidatePtr, reco::GsfTrackRef> gen2gsf;
+  std::map<reco::CandidatePtr, float> gen2gsf_dr2_mode;
   std::map<reco::CandidatePtr, float> gen2gsf_dr2;
   std::vector<reco::GsfTrackRef> other_gsf;
   if ( isAOD_ == 1 ) matchGenToGsf( electrons_from_B, gsfTracksH_, 
-				    gen2gsf, gen2gsf_dr2, other_gsf );
+				    gen2gsf, 
+				    gen2gsf_dr2_mode, gen2gsf_dr2, 
+				    other_gsf );
 
+  // Match GEN electrons to EGamma (PF) GsfElectrons
+  std::map<reco::CandidatePtr, reco::GsfElectronPtr> gen2ele;
+  std::map<reco::CandidatePtr, float> gen2ele_dr2;
+  std::vector<reco::GsfElectronPtr> other_ele;
+  if ( isAOD_ == 1 ) matchGenToEle( electrons_from_B, gsfElectronsH_, 
+				    gen2ele, 
+				    gen2ele_dr2, 
+				    other_ele );
+  
   //@@
   // Match reco::Tracks to low pT ElectronSeeds
   std::map<reco::TrackRef, reco::ElectronSeedRef> trk2seed;
@@ -564,20 +597,34 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
 
   // Match GEN electrons to EGamma GsfTracks
   std::map<reco::CandidatePtr, reco::GsfTrackRef> gen2gsf_egamma;
+  std::map<reco::CandidatePtr, float> gen2gsf_dr2_mode_egamma;
   std::map<reco::CandidatePtr, float> gen2gsf_dr2_egamma;
   std::vector<reco::GsfTrackRef> other_gsf_egamma;
   if ( isAOD_ == 1 ) matchGenToGsf( electrons_from_B, gsfTracksEGammaH_, 
-				    gen2gsf_egamma, gen2gsf_dr2_egamma, other_gsf_egamma );
+				    gen2gsf_egamma, 
+				    gen2gsf_dr2_mode_egamma, gen2gsf_dr2_egamma, 
+				    other_gsf_egamma );
+
+  // Match GEN electrons to EGamma (PF) GsfElectrons
+  std::map<reco::CandidatePtr, reco::GsfElectronPtr> gen2ele_egamma;
+  std::map<reco::CandidatePtr, float> gen2ele_dr2_egamma;
+  std::vector<reco::GsfElectronPtr> other_ele_egamma;
+  if ( isAOD_ == 1 ) matchGenToEle( electrons_from_B, gsfElectronsEGammaH_, 
+				    gen2ele_egamma, 
+				    gen2ele_dr2_egamma, 
+				    other_ele_egamma );
   
   // Match EGamma ElectronSeeds to EGamma GsfTracks
   std::map<reco::ElectronSeedRef, reco::GsfTrackRef> seed2gsf_egamma;
   if ( isAOD_ == 1 ) matchSeedToGsf( eleSeedsEGammaH_, gsfTracksEGammaH_, seed2gsf_egamma );
 
-  // Match reco::Tracks to EGamma ElectronSeeds
+  // Remove unmatched seeds (i.e. map entries with null GsfTrackRef)
   std::vector<reco::ElectronSeedRef> seeds;
   for ( const auto& iter : seed2gsf_egamma ) {
     if ( iter.second.isNonnull() ) { seeds.push_back(iter.first); }
   }
+
+  // Match reco::Tracks to EGamma ElectronSeeds
   std::map<reco::TrackRef, reco::ElectronSeedRef> trk2seed_egamma;
   if ( isAOD_ == 1 ) matchTrkToSeed( ctfTracksH_, seeds, trk2seed_egamma );
   
@@ -632,20 +679,26 @@ void IDFeatures::analyze( const edm::Event& event, const edm::EventSetup& setup 
   // Fill ntuple with signal and fake electrons from low pT reconstruction 
   //std::cout << "!!!LOW PT!!!" << std::endl;
   fill(event, setup,
-       gen2trk, gen2gsf, gen2trk_dr2, gen2gsf_dr2,
+       gen2trk, gen2gsf, gen2ele,
+       gen2trk_dr2,
+       gen2gsf_dr2_mode, gen2gsf_dr2,
+       gen2ele_dr2,
        trk2seed, seed2gsf, gsf2ele );
-//  fill( false, event, setup, 
-//	other_trk, 
-//	trk2seed, seed2gsf, gsf2ele );
+  fill( false, event, setup,
+	other_trk,
+	trk2seed, seed2gsf, gsf2ele );
   
   // Fill ntuple with signal and fake electrons from EGamma reconstruction  
   //std::cout << "!!!EGAMMA!!!" << std::endl;
-  fill( event, setup, 
-	gen2trk, gen2gsf_egamma, gen2trk_dr2, gen2gsf_dr2_egamma, 
+  fill( event, setup,
+	gen2trk, gen2gsf_egamma, gen2ele_egamma,
+	gen2trk_dr2,
+	gen2gsf_dr2_mode_egamma, gen2gsf_dr2_egamma,
+	gen2ele_dr2_egamma,
 	trk2seed_egamma, seed2gsf_egamma, gsf2ele_egamma, true );
-//  fill( false, event, setup, 
-//	other_trk, 
-//	trk2seed_egamma, seed2gsf_egamma, gsf2ele_egamma, true );
+  fill( false, event, setup,
+	other_trk,
+	trk2seed_egamma, seed2gsf_egamma, gsf2ele_egamma, true );
   
 }
 
@@ -657,8 +710,11 @@ void IDFeatures::fill( const edm::Event& event,
 		       const edm::EventSetup& setup,
 		       std::map<reco::CandidatePtr, reco::TrackRef>& gen2trk,
 		       std::map<reco::CandidatePtr, reco::GsfTrackRef>& gen2gsf,
+		       std::map<reco::CandidatePtr, reco::GsfElectronPtr>& gen2ele,
 		       std::map<reco::CandidatePtr, float>& gen2trk_dr2,
+		       std::map<reco::CandidatePtr, float>& gen2gsf_dr2_mode,
 		       std::map<reco::CandidatePtr, float>& gen2gsf_dr2,
+		       std::map<reco::CandidatePtr, float>& gen2ele_dr2,
 		       const std::map<reco::TrackRef, reco::ElectronSeedRef>& trk2seed,
 		       const std::map<reco::ElectronSeedRef, reco::GsfTrackRef>& seed2gsf,
 		       const std::map<reco::GsfTrackRef, reco::GsfElectronPtr>& gsf2ele,
@@ -710,11 +766,21 @@ void IDFeatures::fill( const edm::Event& event,
     ntuple_.set_rho(*rhoH_); // Fill Rho
     ntuple_.is_egamma(is_egamma); // Define if EGamma (or low pT)
 
-    // Record dr2, then set "has_gsf" if dr < dr_max_
+    // Record dr2, then set "has_gsf" if dr < dr_threshold_
     reco::GsfTrackRef gsf = iter.second;
     if ( gsf.isNonnull() ) {
+      ntuple_.gsf_dr_mode(gen2gsf_dr2_mode[gen]); 
       ntuple_.gsf_dr(gen2gsf_dr2[gen]); 
-      if ( gen2gsf_dr2[gen] < dr_max_*dr_max_ ) { 
+
+      // Find matched electron
+      if ( gen2ele.find(gen) != gen2ele.end() ) {
+	reco::GsfElectronPtr ele = gen2ele[gen];
+	if ( ele.isNonnull() ) { 
+	  ntuple_.ele_dr(gen2ele_dr2[gen]); 
+	}
+      }
+
+      if ( gen2gsf_dr2_mode[gen] < dr_threshold_*dr_threshold_ ) { 
 	if ( verbose_ > 3 ) {
 	  std::cout << "Matched GenParticle #" << gen.key()
 		    << " to reco::GsfTrack #" << gsf.key()
@@ -750,7 +816,7 @@ void IDFeatures::fill( const edm::Event& event,
 	  }
 	}
 
-	if ( one_trk.empty() ) { 
+	if ( !one_trk.empty() ) { 
 	  fill( true, // is_signal_ele
 		event,
 		setup,
@@ -771,8 +837,57 @@ void IDFeatures::fill( const edm::Event& event,
 		false ); // Do not reset_and_fill in nested method (do it here!)
 	}
 
-      } else { // dR(gen,gsf) < dr_max_ 
-	if ( gen2trk.find(gen) != gen2trk.end() ) { // fill at least reco::Track
+      } else { // dR(gen,gsf) < dr_threshold_ 
+
+	// Attempt to match to electron
+	if ( gen2ele.find(gen) != gen2ele.end() ) { 
+	  reco::GsfElectronPtr ele = gen2ele[gen];
+
+	  // Locate reco::Track that seeds this GsfTrack (if tracker-driven)
+	  std::vector<reco::TrackRef> one_trk;
+	  if ( ele.isNonnull() ) { 
+	    reco::GsfTrackRef gsf = ele->gsfTrack();
+	    if ( gsf.isNonnull() ) { 
+	      edm::RefToBase<TrajectorySeed> seed = gsf->seedRef();
+	      if ( seed.isNonnull() ) { 
+		reco::ElectronSeedRef ele_seed = seed.castTo<reco::ElectronSeedRef>();
+		if ( ele_seed.isNonnull() ) { 
+		  reco::TrackRef trk = ele_seed->ctfTrack();
+		  if ( trk.isNonnull() ) { 
+		    one_trk.push_back(trk);
+		    if ( gen2trk[gen] == trk ) { 
+		      ntuple_.trk_dr(gen2trk_dr2[gen]); 
+		      if ( verbose_ > 3 ) {
+			std::cout << "Matched GenParticle #" << gen.key()
+				  << " to reco::TrackRef #" << trk.key()
+				  << " via reco::GsfElectron #" << ele.key()
+				  << std::endl;
+		      }
+		    } else {
+		      std::cout << "WARNING! Track mismatch id/key: " 
+				<< gen2trk[gen].id() << "/" << gen2trk[gen].key()
+				<< " vs " << trk.id() << "/" << trk.key()
+				<< std::endl;
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+
+	  if ( !one_trk.empty() ) { 
+	    fill( true, // is_signal_ele
+		  event,
+		  setup,
+		  one_trk, // single TrackRef for this GEN particle
+		  trk2seed,
+		  seed2gsf,
+		  gsf2ele,
+		  is_egamma,
+		  false ); // Do not reset_and_fill in nested method (do it here!)
+	  }
+
+	} else if ( gen2trk.find(gen) != gen2trk.end() ) { // fill at least reco::Track
 	  reco::TrackRef trk = gen2trk[gen];
 	  if ( trk.isNonnull() ) { 
 	    ntuple_.trk_dr(gen2trk_dr2[gen]); 
@@ -793,15 +908,66 @@ void IDFeatures::fill( const edm::Event& event,
 		  false ); // Do not reset_and_fill in nested method (do it here!)
 	  }
 	}
+
       }
  
     } else {
-      // GsfTrackRef is null - not possible?!
+      
+      //std::cout << "ERROR! GsfTrackRef is null!!" << std::endl;
+      
+      // Find matched electron
+      if ( gen2ele.find(gen) != gen2ele.end() ) {
+	reco::GsfElectronPtr ele = gen2ele[gen];
+	ntuple_.ele_dr(gen2ele_dr2[gen]); 
+	std::vector<reco::TrackRef> one_trk;
+	if ( ele.isNonnull() ) { 
+	  ntuple_.ele_dr(gen2ele_dr2[gen]); 
+	  reco::GsfTrackRef gsf = ele->gsfTrack();
+	  if ( gsf.isNonnull() ) { 
+	    edm::RefToBase<TrajectorySeed> seed = gsf->seedRef();
+	    if ( seed.isNonnull() ) { 
+	      reco::ElectronSeedRef ele_seed = seed.castTo<reco::ElectronSeedRef>();
+	      if ( ele_seed.isNonnull() ) { 
+		reco::TrackRef trk = ele_seed->ctfTrack();
+		if ( trk.isNonnull() ) { 
+		  one_trk.push_back(trk);
+		  if ( gen2trk[gen] == trk ) { 
+		    ntuple_.trk_dr(gen2trk_dr2[gen]); 
+		    if ( verbose_ > 3 ) {
+		      std::cout << "Matched GenParticle #" << gen.key()
+				<< " to reco::TrackRef #" << trk.key()
+				<< " via reco::GsfElectron #" << ele.key()
+				<< std::endl;
+		    }
+		  } else {
+		    std::cout << "WARNING! Track mismatch id/key: " 
+			      << gen2trk[gen].id() << "/" << gen2trk[gen].key()
+			      << " vs " << trk.id() << "/" << trk.key()
+			      << std::endl;
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+	if ( !one_trk.empty() ) { 
+	  fill( true, // is_signal_ele
+		event,
+		setup,
+		one_trk, // single TrackRef for this GEN particle
+		trk2seed,
+		seed2gsf,
+		gsf2ele,
+		is_egamma,
+		false ); // Do not reset_and_fill in nested method (do it here!)
+	}
+      }
+
     }
     
     tree_->Fill(); // Fill tree here
     
-  }
+  } // GEN ele loop
   
 }
 
@@ -843,7 +1009,7 @@ void IDFeatures::fill( bool is_signal_ele,
 
     // Store reco::Track info
     ntuple_.has_trk(true); // Has reco::Track
-    ntuple_.fill_trk( trk, *beamspotH_ );
+    ntuple_.fill_trk( edm::refToPtr(trk), *beamspotH_ );
     const auto& matched_seed = trk2seed.find(trk);
     if ( matched_seed != trk2seed.end() && matched_seed->second.isNonnull() ) { 
       ntuple_.has_seed(true);
@@ -993,7 +1159,7 @@ void IDFeatures::fill( bool is_signal_ele,
 
     // Store reco::GsfTrack info
     ntuple_.has_gsf(true);
-    ntuple_.fill_gsf(gsf, *beamspotH_);
+    ntuple_.fill_gsf(edm::refToPtr(gsf), *beamspotH_);
 	
     // Store Seed BDT discrimator values (at GsfTrack-level)
     if ( !is_egamma ) { 
@@ -1056,84 +1222,115 @@ void IDFeatures::fill( bool is_signal_ele,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Assumes GenParticles from RECO/AOD
-void IDFeatures::electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& genParticles,
+//void IDFeatures::electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& genParticles,
+//				 std::set<reco::CandidatePtr>& electrons_from_B ) {
+void IDFeatures::electronsFromB( const edm::Handle< std::vector<reco::GenParticle> >& genParticles,
 				 std::set<reco::CandidatePtr>& electrons_from_B ) {
   
+  bool tag_side_muon = false;
+
   electrons_from_B.clear();
   for ( size_t idx = 0; idx < genParticles->size(); idx++ ) {
-    reco::CandidatePtr genp(genParticles, idx);
+    //reco::CandidatePtr genp(genParticles, idx);
+    reco::GenParticlePtr genp(genParticles, idx);
     
     // Last copy of GEN electron 
-    bool is_ele = std::abs(genp->pdgId()) == 11; // && genp->isLastCopy(); //@@ not a method of Candidate
-    
+    bool is_ele = std::abs(genp->pdgId()) == 11 && genp->isLastCopy(); //@@ not a method of Candidate
+
     // Does GEN ele comes from B decay?
-    bool comes_from_B = 
-      genp->numberOfMothers() >= 1 &&
-      std::abs(genp->mother()->pdgId()) > 510 &&
-      std::abs(genp->mother()->pdgId()) < 546;
+    bool non_resonant = 
+      genp->numberOfMothers() >= 1 && genp->mother() &&                     // has mother
+      std::abs(genp->mother()->pdgId()) > 510 &&                            // mother is B
+      std::abs(genp->mother()->pdgId()) < 546;                              // mother is B
+    bool resonant = 
+      genp->numberOfMothers() >= 1 && genp->mother() &&                     // has mother
+      std::abs(genp->mother()->pdgId()) == 443 &&                           // mother is J/psi
+      genp->mother()->numberOfMothers() >= 1 && genp->mother()->mother() && // has grandmother
+      std::abs(genp->mother()->mother()->pdgId()) > 510 &&                  // grandmother is B
+      std::abs(genp->mother()->mother()->pdgId()) < 546;                    // grandmother is B
     
-    if (!comes_from_B &&                                                      // from B decay
-	genp->numberOfMothers() >= 1 && genp->mother() &&                     // has mother
-	std::abs(genp->mother()->pdgId()) == 443 &&                           // mother is J/psi
-	genp->mother()->numberOfMothers() >= 1 && genp->mother()->mother() && // has grandmother
-	std::abs(genp->mother()->mother()->pdgId()) > 510 &&                  // grandmother is B
-	std::abs(genp->mother()->mother()->pdgId()) < 546 ) {
-      comes_from_B = true;
-    }
+    //  Check for tag side muon
+    float muon_pt = 7.;
+    float muon_eta = 1.5;
+    tag_side_muon |= ( std::abs(genp->pdgId()) == 13 && genp->isLastCopy() 
+		       && 
+		       ( ( genp->numberOfMothers() >= 1 &&
+			   genp->mother() &&
+			   std::abs(genp->mother()->pdgId()) > 510 &&
+			   std::abs(genp->mother()->pdgId()) < 546 && 
+			   genp->mother()->pt() > muon_pt && 
+			   std::abs(genp->mother()->eta()) < muon_eta ) 
+			 ||
+			 ( genp->numberOfMothers() >= 1 && 
+			   genp->mother() &&
+			   genp->mother()->numberOfMothers() >= 1 && 
+			   genp->mother()->mother() &&
+			   std::abs(genp->mother()->mother()->pdgId()) > 510 &&
+			   std::abs(genp->mother()->mother()->pdgId()) < 546 && 
+			   genp->mother()->mother()->pt() > muon_pt &&
+			   std::abs(genp->mother()->mother()->eta()) < muon_eta ) ) );
     
     // is coming from a B
-    if ( is_ele && ( comes_from_B || !check_from_B_ ) ) {
+    if ( is_ele && ( ( resonant || non_resonant ) || !check_from_B_ ) ) {
       electrons_from_B.insert(genp);
+//      std::cout << "electronsFromB: "
+//		<< " #gen_electrons: " << electrons_from_B.size()
+//		<< " resonant? " << resonant
+//		<< " non resonant? " << non_resonant
+//		<< " tag-side muon? " << tag_side_muon
+//		<< std::endl;
     }
     
   } // genParticles loop
 
+  if ( !tag_side_muon ) { electrons_from_B.clear(); }
+
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Assumes pruned and packed GenParticles from MINIAOD
-void IDFeatures::electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& prunedGenParticles,
-				 const edm::Handle< edm::View<reco::Candidate> >& packedGenParticles,
-				 std::set<reco::CandidatePtr>& electrons_from_B ) {
-
-  // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2015#Examples
-  // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/packedGenParticles_cfi.py
-  // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/prunedGenParticles_cfi.py
-
-  electrons_from_B.clear();
-  
-  // Iterate through ("status 1") packed candidates
-  for ( size_t ipa = 0; ipa < packedGenParticles->size(); ipa++ ) {
-    reco::CandidatePtr packed(packedGenParticles, ipa);
-    
-    // Find GEN electrons
-    bool is_ele = std::abs(packed->pdgId()) == 11; // && packed->isLastCopy() 
-
-    // Search for ancestors only for GEN electrons ... 
-    if ( !is_ele ) { continue; }
-    
-    // Does GEN ele come from B decay?
-    bool comes_from_B = false;
-    for ( size_t ipr = 0; ipr < prunedGenParticles->size(); ipr++ ) {
-      reco::GenParticlePtr pruned(prunedGenParticles, ipr);
-      comes_from_B = 
-	std::abs(pruned->pdgId()) > 510 &&
-	std::abs(pruned->pdgId()) < 546 &&
-	packed->mother(0) != nullptr && 
-	isAncestor( &*pruned, &*packed );
-
-      // Is coming from a B
-      if ( is_ele && ( comes_from_B || !check_from_B_ ) ) {
-	//electrons_from_B.insert(packed);
-      }
-      
-    }
-    
-    //std::cout << "is_ele: " << is_ele << " comes_from_B: " << comes_from_B << std::endl;
-    
-  } // packedGenParticles loop
-  
-}
+//////////////////////////////////////////////////////////////////////////////////
+//// Assumes pruned and packed GenParticles from MINIAOD
+//void IDFeatures::electronsFromB( const edm::Handle< edm::View<reco::GenParticle> >& prunedGenParticles,
+//				 const edm::Handle< edm::View<reco::Candidate> >& packedGenParticles,
+//				 std::set<reco::CandidatePtr>& electrons_from_B ) {
+//
+//  // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2015#Examples
+//  // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/packedGenParticles_cfi.py
+//  // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/prunedGenParticles_cfi.py
+//
+//  electrons_from_B.clear();
+//  
+//  // Iterate through ("status 1") packed candidates
+//  for ( size_t ipa = 0; ipa < packedGenParticles->size(); ipa++ ) {
+//    reco::CandidatePtr packed(packedGenParticles, ipa);
+//    
+//    // Find GEN electrons
+//    bool is_ele = std::abs(packed->pdgId()) == 11; // && packed->isLastCopy() 
+//
+//    // Search for ancestors only for GEN electrons ... 
+//    if ( !is_ele ) { continue; }
+//    
+//    // Does GEN ele come from B decay?
+//    bool comes_from_B = false;
+//    for ( size_t ipr = 0; ipr < prunedGenParticles->size(); ipr++ ) {
+//      reco::GenParticlePtr pruned(prunedGenParticles, ipr);
+//      comes_from_B = 
+//	std::abs(pruned->pdgId()) > 510 &&
+//	std::abs(pruned->pdgId()) < 546 &&
+//	packed->mother(0) != nullptr && 
+//	isAncestor( &*pruned, &*packed );
+//
+//      // Is coming from a B
+//      if ( is_ele && ( comes_from_B || !check_from_B_ ) ) {
+//	//electrons_from_B.insert(packed);
+//      }
+//      
+//    }
+//    
+//    //std::cout << "is_ele: " << is_ele << " comes_from_B: " << comes_from_B << std::endl;
+//    
+//  } // packedGenParticles loop
+//  
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
@@ -1178,23 +1375,12 @@ void IDFeatures::matchGenToTrk( const std::set<reco::CandidatePtr>& electrons_fr
   // Sort all matches by dr2
   std::sort(matches.begin(), matches.end(), Match::compare_by_dr2);
 
-  // Store best match by dr2
+  // Store best matches by dr2
   std::set<reco::CandidatePtr> matched_gen;
   std::set<reco::TrackRef> matched_trk;
-  if ( !matches.empty() ) { 
-    reco::CandidatePtr gen = matches.begin()->gen_;
-    reco::TrackRef trk(ctfTracks,matches.begin()->itrk_);
-    float dr2 = matches.begin()->dr2_;
-    gen2trk.insert( std::pair<reco::CandidatePtr, reco::TrackRef>( gen, trk ) );
-    gen2trk_dr2.insert( std::pair<reco::CandidatePtr, float>( gen, dr2 ) );
-    matched_gen.insert(gen);
-    matched_trk.insert(trk);
-  }
-
-  // Find next best matches, one per GEN ele
   for ( auto iter : matches ) {
     reco::CandidatePtr gen = iter.gen_;
-    reco::TrackRef trk(ctfTracks,iter.itrk_);
+    reco::TrackRef trk(ctfTracks,iter.idx_);
     float dr2 = iter.dr2_;
     if ( std::find( matched_gen.begin(), matched_gen.end(), gen ) == matched_gen.end() &&
 	 std::find( matched_trk.begin(), matched_trk.end(), trk ) == matched_trk.end() && 
@@ -1353,19 +1539,19 @@ void IDFeatures::matchTrkToSeed( const edm::Handle< std::vector<reco::Track> >& 
       std::cout << "INFO: ECAL-driven seed: " << ele_seed->isEcalDriven() << std::endl
 		<< "       TRK-driven seed: " << ele_seed->isTrackerDriven() << std::endl;
     }
-    reco::TrackRef trk = ele_seed->ctfTrack();
-    if ( trk.isNull() ) { 
-      if ( verbose_ > 2 ) { std::cout << "INFO: Null TrackRef!" << std::endl; }
-      continue;
-    }
     reco::CaloClusterRef calo = ele_seed->caloCluster();
     if ( calo.isNull() ) { 
       if ( verbose_ > 2 ) { std::cout << "INFO: Null CaloClusterRef!" << std::endl; }
     }
+    reco::TrackRef trk = ele_seed->ctfTrack();
+    if ( trk.isNull() ) { 
+      if ( verbose_ > 2 ) { std::cout << "INFO: Null TrackRef!" << std::endl; }
+      continue;
+    } 
     if ( trk.id() != ctfTracks.id() ) { 
       std::cout << "ERROR! Collections do not match!" << std::endl;
       continue;
-    }
+    } 
     Iter iter = trk2seed.find(trk);
     if ( iter == trk2seed.end() ) { 
       trk2seed[trk] = ele_seed;
@@ -1391,7 +1577,9 @@ void IDFeatures::matchTrkToSeed( const edm::Handle< std::vector<reco::Track> >& 
 								  calo->phi() ) ) )
 		  << std::endl;
       }
-    } else {
+      
+    } else { // if ( iter == trk2seed.end() )
+      
       std::cout << "ERROR! Single TrackRef mapped to many ElectronSeedRefs!" << std::endl;
       if ( iter->first.isNonnull() && iter->second.isNonnull() ) {
 	std::cout << " old: seed key: " << std::setw(3) << iter->second.key() 
@@ -1413,6 +1601,7 @@ void IDFeatures::matchTrkToSeed( const edm::Handle< std::vector<reco::Track> >& 
 		    << std::endl;
 	}
       }
+      
       if ( trk.isNonnull() && ele_seed.isNonnull() ) {
 	std::cout << " new: seed key: " << std::setw(3) << ele_seed.key() 
 		  << " trk key: " << std::setw(3) << trk.key() 
@@ -1422,7 +1611,7 @@ void IDFeatures::matchTrkToSeed( const edm::Handle< std::vector<reco::Track> >& 
 		  << std::endl;
 	if ( calo.isNonnull() ) {
 	  std::cout << " calo:                           Et: " 
-		    << calo->energy() 
+			<< calo->energy() 
 	    / std::cosh(calo->eta())
 		    << " eta: " << calo->eta() 
 		    << " phi: " << calo->phi() 
@@ -1433,6 +1622,7 @@ void IDFeatures::matchTrkToSeed( const edm::Handle< std::vector<reco::Track> >& 
 		    << std::endl;
 	}
       }
+      
       if ( trk.isNonnull() && iter->first.isNonnull() ) {
 	if ( reco::deltaR2( trk->eta(), 
 			    trk->phi(), 
@@ -1447,8 +1637,9 @@ void IDFeatures::matchTrkToSeed( const edm::Handle< std::vector<reco::Track> >& 
 	  matched.insert(trk);
 	}
       }
-    }
-  }
+      
+    } // if ( iter == trk2seed.end() ) 
+  } // eleSeeds iterator
 
   // Add null eleSeed Ref for unmatched ctfTracks
   for ( size_t idx = 0; idx < ctfTracks->size(); ++idx ) {
@@ -1635,7 +1826,7 @@ void IDFeatures::matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >
   for ( size_t idx = 0; idx < gsfElectrons->size(); ++idx ) {
     reco::GsfElectronPtr ele(gsfElectrons, idx);
     if ( ele.isNull() ) { 
-      std::cout << "ERROR! Null GsfElectronRef!" << std::endl;
+      std::cout << "ERROR! Null GsfElectronPtr!" << std::endl;
       continue;
     }
     reco::GsfTrackRef gsf = ele->gsfTrack();
@@ -1652,7 +1843,7 @@ void IDFeatures::matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >
       gsf2ele[gsf] = ele;
       matched.insert(gsf);
     } else {
-      std::cout << "ERROR! Single GsfTrackRef mapped to many GsfElectronRefs!" << std::endl;
+      std::cout << "ERROR! Single GsfTrackRef mapped to many GsfElectronPtrs!" << std::endl;
     }
   }
 
@@ -1699,50 +1890,62 @@ void IDFeatures::matchGsfToEle( const edm::Handle< std::vector<reco::GsfTrack> >
 void IDFeatures::matchGenToGsf( const std::set<reco::CandidatePtr>& electrons_from_B,
 				const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
 				std::map<reco::CandidatePtr, reco::GsfTrackRef>& gen2gsf,
+				std::map<reco::CandidatePtr, float>& gen2gsf_dr2_mode,
 				std::map<reco::CandidatePtr, float>& gen2gsf_dr2,
 				std::vector<reco::GsfTrackRef>& other_gsf ) {
 
+  gen2gsf.clear();
+  gen2gsf_dr2_mode.clear();
+  gen2gsf_dr2.clear();
+  
   // Identify all possible matches b/w GEN ele and tracks, store indices and dr2
+  std::vector<Match> matches_mode;
   std::vector<Match> matches;
+  matches_mode.reserve( electrons_from_B.size()*gsfTracks->size() );
   matches.reserve( electrons_from_B.size()*gsfTracks->size() );
   for ( auto gen : electrons_from_B ) {
     for ( size_t itrk = 0; itrk < gsfTracks->size(); ++itrk ) {
       reco::GsfTrackRef trk(gsfTracks,itrk);
-      matches.emplace_back(gen,itrk,reco::deltaR2(trk->etaMode(),
-						  trk->phiMode(),
+      matches_mode.emplace_back(gen,itrk,reco::deltaR2(trk->etaMode(),
+						       trk->phiMode(),
+						       gen->eta(), 
+						       gen->phi()) );
+      matches.emplace_back(gen,itrk,reco::deltaR2(trk->eta(),
+						  trk->phi(),
 						  gen->eta(), 
 						  gen->phi()) );
     }
   }
-
+  
   // Sort all matches by dr2
+  std::sort(matches_mode.begin(), matches_mode.end(), Match::compare_by_dr2);
   std::sort(matches.begin(), matches.end(), Match::compare_by_dr2);
 
-  // Store best match by dr2
+  // Store best matches by dr2
   std::set<reco::CandidatePtr> matched_gen;
   std::set<reco::GsfTrackRef> matched_trk;
-  if ( !matches.empty() ) { 
-    reco::CandidatePtr gen = matches.begin()->gen_;
-    reco::GsfTrackRef trk(gsfTracks,matches.begin()->itrk_);
-    float dr2 = matches.begin()->dr2_;
-    gen2gsf.insert( std::pair<reco::CandidatePtr, reco::GsfTrackRef>( gen, trk ) );
-    gen2gsf_dr2.insert( std::pair<reco::CandidatePtr, float>( gen, dr2 ) );
-    matched_gen.insert(gen);
-    matched_trk.insert(trk);
-  }
-
-  // Find next best matches, one per GEN ele
-  for ( auto iter : matches ) {
+  for ( auto iter : matches_mode ) {
     reco::CandidatePtr gen = iter.gen_;
-    reco::GsfTrackRef trk(gsfTracks,iter.itrk_);
+    reco::GsfTrackRef trk(gsfTracks,iter.idx_);
     float dr2 = iter.dr2_;
     if ( std::find( matched_gen.begin(), matched_gen.end(), gen ) == matched_gen.end() &&
 	 std::find( matched_trk.begin(), matched_trk.end(), trk ) == matched_trk.end() && 
-	 dr2 < 0.01 ) { //@@ max dR is 0.1
+	 dr2 < dr_max_*dr_max_ ) { //@@ max deltaR considered
       gen2gsf.insert( std::pair<reco::CandidatePtr, reco::GsfTrackRef>( gen, trk ) );
-      gen2gsf_dr2.insert( std::pair<reco::CandidatePtr, float>( gen, dr2 ) );
+      gen2gsf_dr2_mode.insert( std::pair<reco::CandidatePtr, float>( gen, dr2 ) );
       matched_gen.insert(gen);
       matched_trk.insert(trk);
+      // store dr2 for "non-mode" eta/phi values 
+      auto match = std::find_if(matches.begin(), 
+				matches.end(), 
+				[gen](const Match& m) {return m.gen_ == gen;}
+				);
+      if ( match != matches.end() ) {
+	gen2gsf_dr2.insert( std::pair<reco::CandidatePtr, float>( match->gen_, match->dr2_ ) );
+      } else { 
+	gen2gsf_dr2.insert( std::pair<reco::CandidatePtr, float>( gen, -1. ) );
+      }
+      // Check if match found for all gen particles
       if ( matched_gen.size() >= electrons_from_B.size() &&
 	   matched_trk.size() >= electrons_from_B.size() ) {
 	break;
@@ -1813,6 +2016,7 @@ void IDFeatures::matchGenToGsf( const std::set<reco::CandidatePtr>& electrons_fr
   for ( const auto& gen : electrons_from_B ) {
     if ( std::find( matched_gen.begin(), matched_gen.end(), gen ) != matched_gen.end() ) { continue; }
     gen2gsf[gen] = reco::GsfTrackRef();
+    gen2gsf_dr2_mode[gen] = -1.;
     gen2gsf_dr2[gen] = -1.;
   }
 
@@ -1822,6 +2026,79 @@ void IDFeatures::matchGenToGsf( const std::set<reco::CandidatePtr>& electrons_fr
     reco::GsfTrackRef gsf(gsfTracks,idx);
     if ( matched_trk.find(gsf) == matched_trk.end() ) {
       other_gsf.push_back(gsf);
+    }
+  }
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 
+void IDFeatures::matchGenToEle( const std::set<reco::CandidatePtr>& electrons_from_B,
+				const edm::Handle< edm::View<reco::GsfElectron> >& gsfElectrons,
+				std::map<reco::CandidatePtr, reco::GsfElectronPtr>& gen2ele,
+				std::map<reco::CandidatePtr, float>& gen2ele_dr2,
+				std::vector<reco::GsfElectronPtr>& other_ele ) {
+
+  gen2ele.clear();
+  gen2ele_dr2.clear();
+  
+  // Identify all possible matches b/w GEN ele and tracks, store indices and dr2
+  std::vector<Match> matches;
+  matches.reserve( electrons_from_B.size()*gsfElectrons->size() );
+  for ( auto gen : electrons_from_B ) {
+    for ( size_t iele = 0; iele < gsfElectrons->size(); ++iele ) {
+      reco::GsfElectronPtr ele(gsfElectrons,iele);
+      matches.emplace_back(gen,iele,reco::deltaR2(ele->eta(),
+						  ele->phi(),
+						  gen->eta(), 
+						  gen->phi()) );
+    }
+  }
+  
+  // Sort all matches by dr2
+  std::sort(matches.begin(), matches.end(), Match::compare_by_dr2);
+
+  // Store best matches by dr2
+  std::set<reco::CandidatePtr> matched_gen;
+  std::set<reco::GsfElectronPtr> matched_ele;
+  for ( auto iter : matches ) {
+    reco::CandidatePtr gen = iter.gen_;
+    reco::GsfElectronPtr ele(gsfElectrons,iter.idx_);
+    float dr2 = iter.dr2_;
+    if ( std::find( matched_gen.begin(), matched_gen.end(), gen ) == matched_gen.end() &&
+	 std::find( matched_ele.begin(), matched_ele.end(), ele ) == matched_ele.end() && 
+	 dr2 < dr_max_*dr_max_ ) { //@@ max deltaR considered
+      gen2ele.insert( std::pair<reco::CandidatePtr, reco::GsfElectronPtr>( gen, ele ) );
+      gen2ele_dr2.insert( std::pair<reco::CandidatePtr, float>( gen, dr2 ) );
+      matched_gen.insert(gen);
+      matched_ele.insert(ele);
+      // Check if match found for all gen particles
+      if ( matched_gen.size() >= electrons_from_B.size() &&
+	   matched_ele.size() >= electrons_from_B.size() ) {
+	break;
+      }
+    }
+  }
+
+  if ( verbose_ > 0 ) {
+    if ( gen2ele.size() <  electrons_from_B.size() ) {
+      std::cout << "WARNING: Fewer matches than GEN electrons!" << std::endl;
+    }
+  }
+
+  // Add null reco::GsfElectron Ref for unmatched GEN particles
+  for ( const auto& gen : electrons_from_B ) {
+    if ( std::find( matched_gen.begin(), matched_gen.end(), gen ) != matched_gen.end() ) { continue; }
+    gen2ele[gen] = reco::GsfElectronPtr();
+    gen2ele_dr2[gen] = -1.;
+  }
+
+  // Identify GsfTracks from background, i.e. not matched to a GEN electron
+  other_ele.reserve( gsfElectrons->size() - matched_ele.size() );
+  for ( size_t idx = 0; idx < gsfElectrons->size(); idx++ ) {
+    reco::GsfElectronPtr ele(gsfElectrons,idx);
+    if ( matched_ele.find(ele) == matched_ele.end() ) {
+      other_ele.push_back(ele);
     }
   }
 
@@ -2096,7 +2373,7 @@ void IDFeatures::checkGsfToTrk( const edm::Handle< std::vector<reco::Track> >& c
 reco::GsfTrackRef IDFeatures::matchGsfToEgammaGsf( const reco::GsfTrackRef gsfTrack,
 						   const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks_egamma ) {
   size_t best_idx = -1;
-  double min_dr2 = dr_max_*dr_max_;
+  double min_dr2 = dr_threshold_*dr_threshold_;
   for ( size_t idx = 0; idx < gsfTracks_egamma->size(); ++idx ) {
     reco::GsfTrackRef gsf_egamma(gsfTracks_egamma,idx);
     double dr2 = reco::deltaR2(gsf_egamma->etaMode(), //@@ use mode value for eta ?!
@@ -2108,7 +2385,7 @@ reco::GsfTrackRef IDFeatures::matchGsfToEgammaGsf( const reco::GsfTrackRef gsfTr
       best_idx = idx;
     }
   }
-  if ( min_dr2 < dr_max_*dr_max_ ) {
+  if ( min_dr2 < dr_threshold_*dr_threshold_ ) {
     return reco::GsfTrackRef(gsfTracks_egamma,best_idx);
   } else {
     return reco::GsfTrackRef(gsfTracks_egamma.id()); // null Ref

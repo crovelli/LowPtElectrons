@@ -4,7 +4,8 @@ features = cms.EDAnalyzer(
     "IDFeatures",
     verbose = cms.int32(0),
     checkFromB = cms.bool(True),
-    drMax = cms.double(0.02),
+    drMax = cms.double(0.1),
+    drThreshold = cms.double(0.02),
     prescale = cms.double(0.01),
     minTrackPt = cms.double(0.5),
     # Generic collections

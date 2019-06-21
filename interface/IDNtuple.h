@@ -21,6 +21,9 @@
 
 class TTree;
 
+namespace reco { typedef edm::Ptr<GenParticle> GenParticlePtr; }
+namespace reco { typedef edm::Ptr<Track> TrackPtr; }
+namespace reco { typedef edm::Ptr<GsfTrack> GsfTrackPtr; }
 namespace reco { typedef edm::Ptr<GsfElectron> GsfElectronPtr; }
 
 constexpr size_t NHITS_MAX = 30;
@@ -54,8 +57,10 @@ class IDNtuple {
   void has_gsf( bool f = false ) { has_gsf_ = f; }
   void has_ele( bool f = false ) { has_ele_ = f; }
 
-  void trk_dr( float dr ) { trk_dr_ = dr; }
-  void gsf_dr( float dr ) { gsf_dr_ = dr; }
+  void trk_dr( float dr2 ) { trk_dr_ = sqrt(dr2); }
+  void gsf_dr_mode( float dr2_mode ) { gsf_dr_mode_ = sqrt(dr2_mode); }
+  void gsf_dr( float dr2 ) { gsf_dr_ = sqrt(dr2); }
+  void ele_dr( float dr2 ) { ele_dr_ = sqrt(dr2); }
   
   //void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
   //void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
@@ -63,14 +68,21 @@ class IDNtuple {
   void fill_evt( const edm::EventID& id );
 
   void fill_gen( const pat::PackedGenParticleRef );
-  void fill_gen( const reco::GenParticleRef ); //@@ AOD
+  void fill_gen( const reco::GenParticlePtr ); //@@ AOD
   void fill_gen( const reco::CandidatePtr );
 
-  void fill_trk( const reco::TrackRef& trk,
+  void fill_trk( const reco::TrackPtr& trk,
 		 const reco::BeamSpot& spot );
 
+  void fill_seed( bool seed_trk_driven, 
+		  bool seed_ecal_driven );
+
+   // to be deprecated
   void fill_seed( double seed_unbiased,
 		  double seed_ptbiased );
+
+  void fill_bdt( double seed_unbiased,
+		 double seed_ptbiased );
   
   void fill_preid( const reco::PreId& preid_ecal,
 		   const reco::PreId& preid_hcal,
@@ -78,7 +90,7 @@ class IDNtuple {
 		   const double rho, 
 		   noZS::EcalClusterLazyTools& ecalTools );
 
-  void fill_gsf( const reco::GsfTrackRef trk,
+  void fill_gsf( const reco::GsfTrackPtr trk,
 		 const reco::BeamSpot& spot );
 
   void fill_ele( const reco::GsfElectronPtr ele,
@@ -87,7 +99,7 @@ class IDNtuple {
 		 float ele_conv_vtx_fit_prob,
 		 const double rho );
   
- private:
+ public:
 
   // Event
   unsigned int run_ = 0;
@@ -109,7 +121,9 @@ class IDNtuple {
   bool has_ele_ = false;
 
   float trk_dr_ = NEG_FLOAT;
+  float gsf_dr_mode_ = NEG_FLOAT;
   float gsf_dr_ = NEG_FLOAT;
+  float ele_dr_ = NEG_FLOAT;
 
   // GEN electrons
   float gen_pt_ = NEG_FLOAT;
@@ -151,6 +165,9 @@ class IDNtuple {
   // Seed BDT discriminator values at GsfTrack level
   float seed_unbiased_ = NEG_FLOAT;
   float seed_ptbiased_ = NEG_FLOAT;
+
+  bool seed_trk_driven_ = false;
+  bool seed_ecal_driven_ = false;
 
   // GSF tracks: kine
   float gsf_pt_ = NEG_FLOAT;

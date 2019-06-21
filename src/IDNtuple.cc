@@ -27,7 +27,9 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("has_ele", &has_ele_, "has_ele/O");
 
   tree->Branch("trk_dr", &trk_dr_, "trk_dr/f");
+  tree->Branch("gsf_dr_mode", &gsf_dr_mode_, "gsf_dr_mode/f");
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
+  tree->Branch("ele_dr", &ele_dr_, "ele_dr/f");
   
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
@@ -62,6 +64,9 @@ void IDNtuple::link_tree( TTree *tree ) {
 //  tree->Branch("preid_ptbiased", &preid_ptbiased_, "preid_ptbiased/f");
   tree->Branch("preid_bdtout1", &preid_unbiased_, "preid_bdtout1/f");
   tree->Branch("preid_bdtout2", &preid_ptbiased_, "preid_bdtout2/f");
+
+  tree->Branch("seed_trk_driven", &seed_trk_driven_, "seed_trk_driven/O");
+  tree->Branch("seed_ecal_driven", &seed_ecal_driven_, "seed_ecal_driven/O");
 
   tree->Branch("gsf_bdtout1", &seed_unbiased_, "gsf_bdtout1/f");
   tree->Branch("gsf_bdtout2", &seed_ptbiased_, "gsf_bdtout2/f");
@@ -145,7 +150,7 @@ void IDNtuple::fill_evt( const edm::EventID& id ) {
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_gen( const reco::GenParticleRef genp ) {
+void IDNtuple::fill_gen( const reco::GenParticlePtr genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
@@ -187,7 +192,7 @@ void IDNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_trk( const reco::TrackRef& trk,
+void IDNtuple::fill_trk( const reco::TrackPtr& trk,
 			 const reco::BeamSpot& spot ) {
   
   if ( trk.isNonnull() ) {
@@ -220,7 +225,24 @@ void IDNtuple::fill_trk( const reco::TrackRef& trk,
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_seed( double seed_unbiased, double seed_ptbiased ) {
+void IDNtuple::fill_seed( bool seed_trk_driven, 
+			  bool seed_ecal_driven ) {
+  seed_trk_driven_ = seed_trk_driven;
+  seed_ecal_driven_ = seed_ecal_driven;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// to be deprecated
+void IDNtuple::fill_seed( double seed_unbiased, 
+			  double seed_ptbiased ) {
+  seed_unbiased_ = seed_unbiased;
+  seed_ptbiased_ = seed_ptbiased;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+void IDNtuple::fill_bdt( double seed_unbiased, 
+			 double seed_ptbiased ) {
   seed_unbiased_ = seed_unbiased;
   seed_ptbiased_ = seed_ptbiased;
 }
@@ -280,7 +302,7 @@ void IDNtuple::fill_preid( const reco::PreId& preid_ecal,
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void IDNtuple::fill_gsf( const reco::GsfTrackRef gsf, 
+void IDNtuple::fill_gsf( const reco::GsfTrackPtr gsf, 
 			 const reco::BeamSpot& spot ) {
 
   if ( gsf.isNull() ) {
