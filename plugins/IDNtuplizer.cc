@@ -52,6 +52,9 @@ namespace reco { typedef edm::Ptr<ElectronSeed> ElectronSeedPtr; }
 namespace reco { typedef edm::Ptr<GsfTrack> GsfTrackPtr; }
 namespace reco { typedef edm::Ptr<PreId> PreIdPtr; }
 
+constexpr int NEG_INT = -10;
+constexpr float NEG_FLOAT = -10.;
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +67,7 @@ public:
   };
   edm::Ptr<T1> ptr1_;
   edm::Ptr<T2> ptr2_;
-  double dr2_ = -1.;
+  double dr2_ = NEG_FLOAT;
   static bool compare_by_dr2( const DeltaR2<T1,T2>& a, const DeltaR2<T1,T2>& b ) {
     return a.dr2_ < b.dr2_;
   };
@@ -77,7 +80,7 @@ std::ostream& operator<< ( std::ostream& out, const DeltaR2<T1,T2>& obj ) {
       << "  Ptr2 type:   " << boost::core::demangle( typeid(obj.ptr2_).name() ) << "\n"
       << "  Ptr1 id/key: " << obj.ptr1_.id() << "/" << obj.ptr1_.key() << "\n"
       << "  Ptr2 id/key: " << obj.ptr2_.id() << "/" << obj.ptr2_.key() << "\n"
-      << "  dR(1,2):     " << ( obj.dr2_ >= 0. ? sqrt(obj.dr2_) : -1. );
+      << "  dR(1,2):     " << ( obj.dr2_ >= 0. ? sqrt(obj.dr2_) : NEG_FLOAT );
   return out;
 };
 
@@ -98,9 +101,6 @@ public :
 
   explicit ElectronChain() {;}
   ~ElectronChain() {;}
-
-  static constexpr int NEG_INT = -1; //@@ -10;
-  static constexpr float NEG_FLOAT = -1.; //@@ -10.;
 
 public:
 
@@ -818,15 +818,16 @@ void IDNtuplizer::sigToCandLinks( std::set<reco::CandidatePtr>& signal_electrons
 		<< " cand.isAvailable(): " << cand.isAvailable()
 		<< std::endl;
     }
+    if ( !filterCand<T>(cand) ) { continue; }
     for ( auto sig : signal_electrons ) {
       sig2cand_all.emplace_back( sig, 
 				 cand, 
 				 deltaR2< reco::CandidatePtr, edm::Ptr<T> >(sig,cand) );
     }
     // Note: matched candidates are removed below
-    if ( filterCand<T>(cand) && ( prescale_ < 0. || gRandom->Rndm() < prescale_ ) ) { 
+    if ( prescale_ < 0. || ( gRandom->Rndm() < prescale_ ) ) { 
       reco::CandidatePtr null;
-      other_cand.emplace_back( null, cand, -1. );
+      other_cand.emplace_back( null, cand, NEG_FLOAT );
     }
   }
   
@@ -1202,7 +1203,7 @@ void IDNtuplizer::fakes( bool is_egamma,
 //    if ( match_ele != trk2ele.end() ) { 
 //      if ( validPtr(match_ele->ptr2_) ) {
 //	chain.ele_ = match_ele->ptr2_;
-//	chain.ele_dr_ = match_ele->dr2_ < 0. ? -1. : sqrt(match_ele->dr2_);
+//	chain.ele_dr_ = match_ele->dr2_ < 0. ? NEG_FLOAT : sqrt(match_ele->dr2_);
 //	chain.ele_match_ = ( chain.ele_dr_ >= 0. );// && ( chain.ele_dr_ < dr_threshold_ );
 //      }
 //    } else {
@@ -1223,7 +1224,7 @@ void IDNtuplizer::fakes( bool is_egamma,
     if ( match_gsf != trk2gsf.end() && validPtr(match_gsf->ptr2_) ) {
       chain.gsf_ = match_gsf->ptr2_;
       chain.gsf_match_ = true;
-      chain.gsf_dr_ = match_gsf->dr2_ < 0. ? -1. : sqrt(match_gsf->dr2_);
+      chain.gsf_dr_ = match_gsf->dr2_ < 0. ? NEG_FLOAT : sqrt(match_gsf->dr2_);
     } else {
       chain.gsf_ = reco::GsfTrackPtr();
       chain.gsf_match_ = false;
@@ -1239,6 +1240,12 @@ void IDNtuplizer::fakes( bool is_egamma,
     // Check GsfTrackPtr, then update ElectronChain info
     if ( !validPtr(chain.gsf_) ) { continue; } 
 
+    // Update Seed BDTs
+    if ( !chain.is_egamma_ ) { 
+      chain.unbiased_ = (*mvaUnbiasedH_)[chain.gsf_];
+      chain.ptbiased_ = (*mvaPtbiasedH_)[chain.gsf_];
+    }
+    
     // Update (override?) GsfElectron info (should be identical to that above?!)
     auto match = std::find_if( gsf2ele.begin(), 
 			       gsf2ele.end(), 
@@ -1337,8 +1344,8 @@ void IDNtuplizer::fill( const edm::Event& event,
     }
 
     // Track info
-    ntuple_.has_trk( chain.trk_match_ );
     if ( validPtr(chain.trk_) ) {
+      ntuple_.has_trk( chain.trk_match_ );
       ntuple_.fill_trk( chain.trk_, *beamspotH_ );
     }
 
@@ -1358,16 +1365,18 @@ void IDNtuplizer::fill( const edm::Event& event,
 //			ecal_tools );
     
     // GsfTrack info
-    ntuple_.has_gsf( chain.gsf_match_ );
     if ( validPtr(chain.gsf_) ) {
+      ntuple_.has_gsf( chain.gsf_match_ );
       ntuple_.fill_gsf( chain.gsf_, *beamspotH_ );
+      ntuple_.gsf_dr( chain.gsf_dr_ );
       ntuple_.gsf_dr_mode( chain.gsf_dr_ );
       ntuple_.fill_bdt( chain.unbiased_, chain.ptbiased_ );
     }
 
     // GsfElectron info
-    ntuple_.has_ele( chain.ele_match_ );
     if ( validPtr(chain.ele_) ) {
+
+      ntuple_.has_ele( chain.ele_match_ );
 
       //@@ dirty hack as ID is not in Event nor embedded in pat::Electron
       float mva_value = -999.;
@@ -1513,14 +1522,14 @@ void IDNtuplizer::trkToGsfLinks( edm::Handle< std::vector<reco::Track> >& ctfTra
       reco::GsfTrackPtr gsf(gsfTracks, igsf);
       reco::TrackPtr ptr;
       if ( gsfToTrk(gsf,ptr) && ptr == trk ) { 
-	trk2gsf_all.emplace_back( trk, gsf, -1. ); // match via ElectronSeed
+	trk2gsf_all.emplace_back( trk, gsf, NEG_FLOAT ); // match via ElectronSeed
       } else { 
 	trk2gsf_all.emplace_back( trk, gsf, deltaR2(trk,gsf) ); // match via deltaR
       }
     }
   }
   
-  // Sort by DeltaR2!! (Matches via ElectronSeed have deltaR2 of -1.)
+  // Sort by DeltaR2!! (Matches via ElectronSeed have deltaR2 of NEG_FLOAT)
   std::sort( trk2gsf_all.begin(), 
 	     trk2gsf_all.end(), 
 	     TrkToGsfR2::compare_by_dr2 );
@@ -1548,10 +1557,10 @@ void IDNtuplizer::trkToGsfLinks( edm::Handle< std::vector<reco::Track> >& ctfTra
 			     iter.ptr2_,
 			     deltaR2(iter.ptr1_,iter.ptr2_)); 
       } else {
-	// For matches using "surrogate" Tracks, update to -1.
+	// For matches using "surrogate" Tracks, update to NEG_FLOAT
 	trk2gsf.emplace_back(iter.ptr1_,
 			     iter.ptr2_,
-			     -1.); 
+			     NEG_FLOAT); 
       }
     }
     if ( trk2gsf.size() >= ctfTracks->size() ) { break; } // found unique match for all tracks
@@ -1577,14 +1586,14 @@ void IDNtuplizer::trkToEleLinks( edm::Handle< std::vector<reco::Track> >& ctfTra
       reco::GsfElectronPtr ele(gsfElectrons, iele);
       reco::TrackPtr ptr;
       if ( eleToTrk(ele,ptr) && ptr == trk ) { 
-	trk2ele_all.emplace_back( trk, ele, -1. ); // match via ElectronSeed
+	trk2ele_all.emplace_back( trk, ele, NEG_FLOAT ); // match via ElectronSeed
       } else { 
 	trk2ele_all.emplace_back( trk, ele, deltaR2(trk,ele) ); // match via deltaR
       }
     }
   }
   
-  // Sort by DeltaR2!! (Matches via ElectronSeed have deltaR2 of -1.)
+  // Sort by DeltaR2!! (Matches via ElectronSeed have deltaR2 of NEG_FLOAT)
   std::sort( trk2ele_all.begin(), 
 	     trk2ele_all.end(), 
 	     TrkToEleR2::compare_by_dr2 );
@@ -1612,10 +1621,10 @@ void IDNtuplizer::trkToEleLinks( edm::Handle< std::vector<reco::Track> >& ctfTra
 			     iter.ptr2_,
 			     deltaR2(iter.ptr1_,iter.ptr1_)); 
       } else {
-	// For matches using "surrogate" Tracks, update to -1.
+	// For matches using "surrogate" Tracks, update to NEG_FLOAT
 	trk2ele.emplace_back(iter.ptr1_,
 			     iter.ptr2_,
-			     -1.); 
+			     NEG_FLOAT); 
       }
     }
     if ( trk2ele.size() >= ctfTracks->size() ) { break; } // found unique match for all tracks
@@ -1662,7 +1671,7 @@ void IDNtuplizer::gsfToEleLinks( const edm::Handle< std::vector<reco::GsfTrack> 
 			       }
 			       );
     if ( match == gsf2ele.end() ) {
-      gsf2ele.emplace_back( gsf, ele, -1.); // do not set deltaR2
+      gsf2ele.emplace_back( gsf, ele, NEG_FLOAT); // do not set deltaR2
     } else { std::cout << "ERROR! GsfTrackPtr is already mapped a GsfElectronPtr!" << std::endl; }
     
   }
@@ -1880,7 +1889,7 @@ DEFINE_FWK_MODULE(IDNtuplizer);
 //				   gsf->phiMode(),
 //				   sig->eta(), 
 //				   sig->phi());
-//	chain.gsf_dr_ = dr2 < 0. ? -1. : sqrt(dr2);
+//	chain.gsf_dr_ = dr2 < 0. ? NEG_FLOAT : sqrt(dr2);
 //	chain.gsf_match_ = ( chain.gsf_dr_ >= 0. ) && ( chain.gsf_dr_ < dr_threshold_ );
 //	
 //	// Check if GsfTrack matched to GsfElectron
@@ -1895,7 +1904,7 @@ DEFINE_FWK_MODULE(IDNtuplizer);
 //	if ( match != gsf2ele.end() ) {
 //	  reco::GsfElectronPtr ele = match->ptr2_;
 //	  chain.ele_ = ele;
-//	  chain.ele_dr_ = match->dr2_ < 0. ? -1. : sqrt(match->dr2_);
+//	  chain.ele_dr_ = match->dr2_ < 0. ? NEG_FLOAT : sqrt(match->dr2_);
 //	  chain.ele_match_ = ( chain.ele_dr_ >= 0. ) && ( chain.ele_dr_ < dr_threshold_ );
 //	}
 //
