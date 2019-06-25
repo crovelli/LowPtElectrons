@@ -27,8 +27,8 @@ namespace reco { typedef edm::Ptr<GsfTrack> GsfTrackPtr; }
 namespace reco { typedef edm::Ptr<GsfElectron> GsfElectronPtr; }
 
 constexpr size_t NHITS_MAX = 30;
-constexpr int NEG_INT = -1; //@@ -10;
-constexpr float NEG_FLOAT = -1.; //@@ -10.;
+constexpr int NEG_INT = -10;
+constexpr float NEG_FLOAT = -10.;
 
 // Small class to provide fillers and hide tree I/O
 class IDNtuple {
