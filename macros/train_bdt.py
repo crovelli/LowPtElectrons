@@ -4,8 +4,6 @@ matplotlib.use('Agg')
 from argparse import ArgumentParser
 from cmsjson import CMSJson
 from pdb import set_trace
-from matplotlib.legend_handler import HandlerLine2D
-from matplotlib.font_manager import FontProperties
 
 parser = ArgumentParser()
 parser.add_argument(
@@ -129,34 +127,21 @@ if args.SW94X and 'seeding' in args.what:
 else:
    fields += additional
 
-#if 'gsf_pt' not in fields : fields += ['gsf_pt'] #@@
+if 'gsf_pt' not in fields : fields += ['gsf_pt'] #@@ redundant?
 
-if not args.load_model :# dataset.endswith('.hdf'):
+if not dataset.endswith('.hdf'): # if not args.load_model :
    data = pre_process_data(
       dataset, fields, 
-      #is_egamma=False, #@@ train using low pT electrons only!
       for_seeding=('seeding' in args.what),
       keep_nonmatch=args.usenomatch
       )
+
    egamma = data[data.is_egamma]          # EGamma electrons
+   orig = data.copy()                     # all electrons
    data = data[np.invert(data.is_egamma)] # low pT electrons
-   
-   #data = data.head(1000).copy() #@@
-
-#   # replicate 'nan' values in old ntuples
-#   data.replace(-10.,-1.,inplace=True)
-#   data.replace(-10,-1,inplace=True)
-#   vars = [x for x in data.columns if x.startswith('eid_')]
-#   data[vars].replace(-10.,-666.,inplace=True)
-
-#   # replace -10. with -1. for 
-#   vars = ["trk_p","trk_chi2red","gsf_chi2red","sc_E","sc_eta","sc_etaWidth",
-#           "sc_phiWidth","match_seed_dEta","match_eclu_EoverP","match_SC_EoverP",
-#           "match_SC_dEta","match_SC_dPhi","shape_full5x5_sigmaIetaIeta",
-#           "shape_full5x5_sigmaIphiIphi","shape_full5x5_HoverE","shape_full5x5_r9",
-#           "shape_full5x5_circularity","rho","brem_frac","ele_pt",]
-#   data[vars].replace(-10.,-1.,inplace=True)
-#   data[["trk_nhits","gsf_nhits"]].replace(-10,-1,inplace=True)
+   print "orig.shape",orig.shape
+   print "lowpt.shape",data.shape
+   print "egamma.shape",egamma.shape
 
    if args.selection:
       data = data.query(args.selection)
@@ -166,37 +151,37 @@ if not args.load_model :# dataset.endswith('.hdf'):
 
    if args.noweight:
       data['weight'] = 1
-   train_test, test = train_test_split(data, 10, 8)
-   train, validation = train_test_split(train_test, 10, 6)
+   train_test, validation = train_test_split(data, 10, 8)
+   train, test = train_test_split(train_test, 10, 6)
+   validation.to_hdf(
+      '%s/bdt_%s_testdata.hdf' % (mods, args.what),
+      'data'
+      ) 
    train.to_hdf(
       '%s/bdt_%s_traindata.hdf' % (mods, args.what),
       'data'
       ) 
-   validation.to_hdf(
-      '%s/bdt_%s_valdata.hdf' % (mods, args.what),
-      'data'
-      ) 
    test.to_hdf(
-      '%s/bdt_%s_testdata.hdf' % (mods, args.what),
+      '%s/bdt_%s_valdata.hdf' % (mods, args.what),
       'data'
       ) 
 else:   
    train = pd.read_hdf('%s/bdt_%s_traindata.hdf' % (mods, args.what), 'data')
-   validation = pd.read_hdf('%s/bdt_%s_valdata.hdf' % (mods, args.what), 'data')
-   test = pd.read_hdf('%s/bdt_%s_testdata.hdf' % (mods, args.what), 'data')
+   test = pd.read_hdf('%s/bdt_%s_valdata.hdf' % (mods, args.what), 'data') #mis-used name in this script 
+   validation = pd.read_hdf('%s/bdt_%s_testdata.hdf' % (mods, args.what), 'data')
    if args.selection:
       train = train.query(args.selection)
-      validation  = validation.query(args.selection)
-      test = test.query(args.selection)
+      test  = test.query(args.selection)
+      validation = validation.query(args.selection)
 
    if args.as_weight:
       train['weight'] = train[args.as_weight]
-      validation['weight'] = validation[args.as_weight]
       test['weight'] = test[args.as_weight]
+      validation['weight'] = validation[args.as_weight]
    if args.noweight:
       train['weight'] = 1
-      validation['weight'] = 1
       test['weight'] = 1
+      validation['weight'] = 1
    dataset = os.path.basename(dataset).split('.')[0]
 
 from sklearn.externals import joblib
@@ -226,8 +211,8 @@ elif not args.load_model :
    )
    
    early_stop_kwargs = {
-      'eval_set' : [(validation[features].as_matrix(), validation.is_e.as_matrix().astype(int))],
-      #'sample_weight_eval_set' : [validation.weight.as_matrix()], #undefined in this version
+      'eval_set' : [(test[features].as_matrix(), test.is_e.as_matrix().astype(int))],
+      #'sample_weight_eval_set' : [test.weight.as_matrix()], #undefined in this version
       'eval_metric' : 'auc',
       'early_stopping_rounds' : 10
    } if not args.no_early_stop else {}
@@ -260,8 +245,8 @@ rocs = {}
 if not args.notraining :
    for df, name in [
       ##(train, 'train'),
-      ##(validation, 'validation'),
-      (test, 'test')
+      ##(test, 'test'),
+      (validation, 'validation')
       ]:
       training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
       rocs[name] = roc_curve(
@@ -274,198 +259,28 @@ if not args.notraining :
 
 # make plots
 print "Making plots ..."
-plt.figure(figsize=[8, 12])
-ax = plt.subplot(111)
-box = ax.get_position()
-ax.set_position([box.x0, box.y0, box.width, box.height*0.666])
+plt.figure(figsize=[8, 8])
 plt.title('%s training' % args.what.replace("_"," "))
 plt.plot(
    np.arange(0,1,0.01),
    np.arange(0,1,0.01),
    'k--')
 if not args.notraining : 
-
-   plt.plot(rocs['test'][0][:-1], rocs['test'][1][:-1], 
+   plt.plot(rocs['validation'][0][:-1], rocs['validation'][1][:-1], 
             linestyle='solid', 
             color='black', 
-            label='Low pT, retraining, AUC: %.3f'  % args_dict['test_AUC'])
+            label='Low pT, retraining, AUC: %.3f'  % args_dict['validation_AUC'])
 
 if args.what in ['seeding', 'fullseeding']:
-
-   eff = float((test.baseline & test.is_e).sum())/test.is_e.sum()
-   mistag = float((test.baseline & np.invert(test.is_e)).sum())/np.invert(test.is_e).sum()
+   eff = float((validation.baseline & validation.is_e).sum())/validation.is_e.sum()
+   mistag = float((validation.baseline & np.invert(validation.is_e)).sum())/np.invert(validation.is_e).sum()
    rocs['baseline'] = [[mistag], [eff]]
    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)   
-
 elif 'id' in args.what:
-   #mva_v2 = roc_curve(test.is_e, test.ele_mvaIdV2)[:2]
-   #mva_v2_auc = roc_auc_score(test.is_e, test.ele_mvaIdV2)
-   #rocs['mva_v2'] = mva_v2
-   #plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
-
-   ## ID (Low pT) ROC curve
-   #mva_lowpt = roc_curve(test.is_e, test.ele_mva_value)[:2] #@@ 
-   #mva_lowpt_auc = roc_auc_score(test.is_e, test.ele_mva_value) #@@
-   #rocs['mva_lowpt'] = mva_lowpt
-   #plt.plot(*mva_lowpt, label='MVA ID low pT (AUC: %.2f)'  % mva_lowpt_auc)
-
-   ##########
-   #test['preid_bdtoutOR'] = test[['preid_bdtout1','preid_bdtout2']].max(axis=1)
-
-   # Low pT selections
-   has_gsf = (test.has_gsf) & (test.gsf_pt>0.5) & (np.abs(test.gsf_eta)<2.4)
-   has_ele = has_gsf & test.has_ele & (test.gsf_bdtout1>test.gsf_bdtout1.min())
-   has_ele2 = has_ele & (test.ele_pt>2.0)
-
-   # Low pT seed and ID ROC, AxE
-   seed_lowpt = roc_curve(test.is_e, test.gsf_bdtout1)
-   seed_lowpt_auc = roc_auc_score(test.is_e, test.gsf_bdtout1)
-   #rocs['seed_lowpt_axe'] = seed_lowpt[:2]
-   plt.plot(seed_lowpt[0][:-1], seed_lowpt[1][:-1], 
-            linestyle='solid', 
-            color='green', 
-            label='Seed, $\mathcal{A}\epsilon$, AUC: %.2f'%seed_lowpt_auc)
-   denom = test.is_e; numer = denom & has_ele
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(test.is_e); numer = denom & has_ele; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='green', markersize=5 )
-
-   # Low pT seed and ID ROC, Eff(pT>0.5)
-   seed_lowpt = roc_curve(test[has_ele].is_e, test[has_ele].gsf_bdtout1)
-   seed_lowpt_auc = roc_auc_score(test[has_ele].is_e, test[has_ele].gsf_bdtout1)
-   #rocs['seed_lowpt_pt0p5'] = seed_lowpt[:2]
-   plt.plot(seed_lowpt[0][:-1], seed_lowpt[1][:-1], 
-            linestyle='dashed', 
-            color='green', 
-            label='Seed, prior: $p^{trk}_{T} > 0.5\, GeV$, AUC: %.2f'%seed_lowpt_auc)
-   denom = test.is_e & has_ele; numer = denom & has_ele
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(test.is_e) & has_ele; numer = denom & has_ele; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='green', markersize=5)
-
-   # Low pT seed and ID ROC, Eff(pT>2.0)
-   seed_lowpt = roc_curve(test[has_ele2].is_e, test[has_ele2].gsf_bdtout1)
-   seed_lowpt_auc = roc_auc_score(test[has_ele2].is_e, test[has_ele2].gsf_bdtout1)
-   #rocs['seed_lowpt_pt0p5'] = seed_lowpt[:2]
-   plt.plot(seed_lowpt[0][:-1], seed_lowpt[1][:-1], 
-            linestyle='dashdot', 
-            color='green', 
-            label='Seed, prior: $p^{trk}_{T} > 2.0\, GeV$, AUC: %.2f'%seed_lowpt_auc)
-   denom = test.is_e & has_ele2; numer = denom & has_ele2
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(test.is_e) & has_ele2; numer = denom & has_ele2; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='green', markersize=5)
-
-   ##########
-
-   # Low pT selections
-   has_gsf = (test.has_gsf) & (test.gsf_pt>0.5) & (np.abs(test.gsf_eta)<2.4)
-   has_ele = has_gsf & test.has_ele & (test.ele_mva_value>test.ele_mva_value.min())
-   has_ele2 = has_ele & (test.ele_pt>2.0)
-
-   # Low pT ele and ID ROC, AxE
-   mva_lowpt = roc_curve(test.is_e, test.ele_mva_value)
-   mva_lowpt_auc = roc_auc_score(test.is_e, test.ele_mva_value)
-   rocs['mva_lowpt_axe'] = mva_lowpt[:2]
-   plt.plot(mva_lowpt[0][:-1], mva_lowpt[1][:-1], 
-            linestyle='solid', 
-            color='blue', 
-            label='Low pT, $\mathcal{A}\epsilon$, AUC: %.2f'%mva_lowpt_auc)
-   # Low pT electron: AxE
-   denom = test.is_e; numer = denom & has_ele
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(test.is_e); numer = denom & has_ele; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='blue', markersize=5 )
-
-   # Low pT ele and ID ROC, Eff(pT>0.5)
-   mva_lowpt = roc_curve(test[has_ele].is_e, test[has_ele].ele_mva_value)
-   mva_lowpt_auc = roc_auc_score(test[has_ele].is_e, test[has_ele].ele_mva_value)
-   rocs['mva_lowpt_pt0p5'] = mva_lowpt[:2]
-   plt.plot(mva_lowpt[0][:-1], mva_lowpt[1][:-1], 
-            linestyle='dashed', 
-            color='blue', 
-            label='Low pT, prior: $p^{trk}_{T} > 0.5\, GeV$, AUC: %.2f'%mva_lowpt_auc)
-   denom = test.is_e & has_ele; numer = denom & has_ele
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(test.is_e) & has_ele; numer = denom & has_ele; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='blue', markersize=5)
-
-   # Low pT ele and ID ROC, Eff(pT>2.0)
-   mva_lowpt = roc_curve(test[has_ele2].is_e, test[has_ele2].ele_mva_value)
-   mva_lowpt_auc = roc_auc_score(test[has_ele2].is_e, test[has_ele2].ele_mva_value)
-   rocs['mva_lowpt_pt0p5'] = mva_lowpt[:2]
-   plt.plot(mva_lowpt[0][:-1], mva_lowpt[1][:-1], 
-            linestyle='dashdot', 
-            color='blue', 
-            label='Low pT, prior: $p^{trk}_{T} > 2.0\, GeV$, AUC: %.2f'%mva_lowpt_auc)
-   denom = test.is_e & has_ele2; numer = denom & has_ele2
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(test.is_e) & has_ele2; numer = denom & has_ele2; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='blue', markersize=5)
-
-   ##########
-
-   # Egamma selections
-   has_gsf = (egamma.has_gsf) & (egamma.gsf_pt>0.5) & (np.abs(egamma.gsf_eta)<2.4)
-   has_ele = has_gsf & egamma.has_ele & (egamma.ele_mva_value>egamma.ele_mva_value.min())
-   has_ele2 = has_ele & (egamma.ele_pt>2.0)
-
-   # PF ele and ID ROC, AxE
-   mva_egamma = roc_curve(egamma.is_e, egamma.ele_mva_value)
-   mva_egamma_auc = roc_auc_score(egamma.is_e, egamma.ele_mva_value)
-   rocs['mva_egamma_axe'] = mva_egamma[:2]
-   plt.plot(mva_egamma[0][:-1], mva_egamma[1][:-1], 
-            linestyle='solid', 
-            color='red', 
-            label='PF ele, $\mathcal{A}\epsilon$, AUC: %.2f'%mva_egamma_auc)
-   denom = egamma.is_e; numer = denom & has_ele
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(egamma.is_e); numer = denom & has_ele; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='red', markersize=5 )
-
-   # PF ele and ID ROC, Eff(pT>0.5)
-   mva_egamma = roc_curve(egamma[has_ele].is_e, egamma[has_ele].ele_mva_value)
-   mva_egamma_auc = roc_auc_score(egamma[has_ele].is_e, egamma[has_ele].ele_mva_value)
-   rocs['mva_egamma_pt0p5'] = mva_egamma[:2]
-   plt.plot(mva_egamma[0][:-1], mva_egamma[1][:-1], 
-            linestyle='dashed', 
-            color='red', 
-            label='PF ele, prior: $p^{trk}_{T} > 0.5\, GeV$, AUC: %.2f'%mva_egamma_auc)
-   denom = egamma.is_e & has_ele; numer = denom & has_ele
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(egamma.is_e) & has_ele; numer = denom & has_ele; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='red', markersize=5)
-
-   # PF ele and ID ROC, Eff(pT>2.0)
-   mva_egamma = roc_curve(egamma[has_ele2].is_e, egamma[has_ele2].ele_mva_value)
-   mva_egamma_auc = roc_auc_score(egamma[has_ele2].is_e, egamma[has_ele2].ele_mva_value)
-   rocs['mva_egamma_pt0p5'] = mva_egamma[:2]
-   plt.plot(mva_egamma[0][:-1], mva_egamma[1][:-1], 
-            linestyle='dashdot', 
-            color='red', 
-            label='PF ele, prior: $p^{trk}_{T} > 2.0\, GeV$, AUC: %.2f'%mva_egamma_auc)
-   denom = egamma.is_e & has_ele2; numer = denom & has_ele2
-   eff = float(numer.sum()) / float(denom.sum())
-   denom = np.invert(egamma.is_e) & has_ele2; numer = denom & has_ele2; 
-   mistag = float(numer.sum()) / float(denom.sum())
-   plt.plot([mistag], [eff], marker='o', color='red', markersize=5)
-
-   ##########
-
-   # Adapt legend
-   def update_prop(handle, orig):
-      handle.update_from(orig)
-      handle.set_marker("o")
-   plt.legend(handler_map={plt.Line2D:HandlerLine2D(update_func=update_prop)})
-
+   mva_v2 = roc_curve(validation.is_e, validation.ele_mva_value)[:2]
+   mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mva_value)
+   rocs['mva_v2'] = mva_v2
+   plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
 else:
    pass #raise ValueError()
 
@@ -478,8 +293,7 @@ with open('%s/%s_%s_%s_ROCS.json' % (plots, dataset, args.jobtag, args.what), 'w
 
 plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
-plt.legend(loc='lower left', bbox_to_anchor=(0., 1.1))
-#plt.legend(loc='best')
+plt.legend(loc='best')
 plt.xlim(0., 1)
 try : plt.savefig('%s/%s_%s_%s_BDT.png' % (plots, dataset, args.jobtag, args.what))
 except : pass
