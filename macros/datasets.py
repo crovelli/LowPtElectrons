@@ -4,12 +4,8 @@ from glob import glob
 #tag = '2019Feb05'
 #posix = '2019Feb05'
 
-#tag = '2019Feb22'
-#posix = '2019Feb22'
-#target_dataset = 'all'
-
-tag = '2019May24'
-posix = '2019May24'
+tag = '2019Jun28'
+posix = '2019Jun28'
 target_dataset = 'test'
 
 import socket
@@ -37,10 +33,7 @@ for inf in all_sets:
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
 
-base='/eos/cms/store/cmst3/group/bpark/electron_training/2019Jun27/output_{:.0f}.root'
-input_files['test'] = [base.format(x) for x in [1,2,3,4,5,7,8,10,11,
-                                                12,14,15,16,18,19] ][-1:]
-#input_files['test'] = ['/afs/cern.ch/user/b/bainbrid/work/public/6-ntuplizer/CMSSW_10_2_14/src/2-ntuples-from-crab/output.root'] ## OVERRIDES!!!
+input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019Jun28/output_3.root']
 
 dataset_names = {
    'BToKee' : r'B $\to$ K ee',
@@ -85,7 +78,7 @@ def get_models_dir():
 ##          ret[column] = np.concatenate((ret[column],tmp[column]))
 ##    return ret
 
-def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}, path='features/tree'):
+def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}, path='ntuplizer/tree'):
    if dataset not in input_files:
       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
    print 'getting files from "%s": ' % dataset
@@ -131,6 +124,7 @@ def kmeans_weighter(features, fname):
 def training_selection(df,low=0.,high=15.):
    #'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
    return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4)
+   #return (df.gen_pt < 0.) | (df.gen_pt > 0.)
 
 import rootpy.plotting as rplt
 import root_numpy
@@ -166,10 +160,11 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
    #features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'gsf_charge', 'evt', 'gsf_eta']))
    features = list(set(features+['gen_pt', 'gen_eta', 
                                  'trk_pt', 'trk_eta', 'trk_charge', 'trk_dr',
+                                 'seed_trk_driven', 'seed_ecal_driven',
                                  'gsf_pt', 'gsf_eta', 'gsf_dr', 'ele_dr',
                                  'ele_pt', 'ele_eta', 'ele_dr',
                                  'evt', 'weight']))
-   data_dict = get_data_sync(dataset, features, path='ntuplizer/tree')
+   data_dict = get_data_sync(dataset, features) # path='features/tree')
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
    multi_dim = {}
