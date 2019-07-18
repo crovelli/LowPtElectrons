@@ -58,12 +58,8 @@ class IDNtuple {
   void has_ele( bool f = false ) { has_ele_ = f; }
 
   void trk_dr( float dr2 ) { trk_dr_ = sqrt(dr2); }
-  void gsf_dr_mode( float dr2_mode ) { gsf_dr_mode_ = sqrt(dr2_mode); }
   void gsf_dr( float dr2 ) { gsf_dr_ = sqrt(dr2); }
   void ele_dr( float dr2 ) { ele_dr_ = sqrt(dr2); }
-  
-  //void has_egamma_gsf( bool f = false ) { has_egamma_gsf_ = f; }
-  //void has_egamma_ele( bool f = false ) { has_egamma_ele_ = f; }
 
   void fill_evt( const edm::EventID& id );
 
@@ -121,7 +117,6 @@ class IDNtuple {
   bool has_ele_ = false;
 
   float trk_dr_ = IDNtuple::NEG_FLOAT;
-  float gsf_dr_mode_ = IDNtuple::NEG_FLOAT;
   float gsf_dr_ = IDNtuple::NEG_FLOAT;
   float ele_dr_ = IDNtuple::NEG_FLOAT;
 

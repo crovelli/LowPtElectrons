@@ -27,7 +27,6 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("has_ele", &has_ele_, "has_ele/O");
 
   tree->Branch("trk_dr", &trk_dr_, "trk_dr/f");
-  tree->Branch("gsf_dr_mode", &gsf_dr_mode_, "gsf_dr_mode/f");
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
   tree->Branch("ele_dr", &ele_dr_, "ele_dr/f");
   
@@ -206,8 +205,6 @@ void IDNtuple::fill_trk( const reco::TrackPtr& trk,
       trk_inp_ = sqrt( trk->innerMomentum().mag2() );
       trk_outp_ = sqrt( trk->outerMomentum().mag2() );
       trk_dpt_ = ( trk_inp_ > 0. ) ? fabs( trk_outp_ - trk_inp_ ) / trk_inp_ : 0.; //@@ redundant?
-    } else {
-      //@@ if ( fullChain ) { std::cout << "ERROR! blah" << std::endl; }
     }
     // quality
     trk_nhits_ = trk->found();
@@ -232,9 +229,10 @@ void IDNtuple::fill_seed( bool seed_trk_driven,
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// to be deprecated
+//@@ to be deprecated
 void IDNtuple::fill_seed( double seed_unbiased, 
 			  double seed_ptbiased ) {
+  std::cout << "TO BE DEPRECATED!" << std::endl;
   seed_unbiased_ = seed_unbiased;
   seed_ptbiased_ = seed_ptbiased;
 }
@@ -268,7 +266,7 @@ void IDNtuple::fill_preid( const reco::PreId& preid_ecal,
   features.set( preid_ecal, preid_hcal, rho, spot, ecal_tools );
   auto vfeatures = features.get();
 
-  //@@ HERE HERE HERE 
+  //@@ ADD THESE PREID VARS TO THE NTUPLE???
 
 //  //@@ ORDER IS IMPORTANT!
 //  size_t idx = 0;
@@ -319,8 +317,6 @@ void IDNtuple::fill_gsf( const reco::GsfTrackPtr gsf,
       gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
       gsf_outp_ = sqrt(gsf->outerMomentum().mag2());
       gsf_dpt_ = ( gsf_inp_ > 0. ) ? fabs( gsf_outp_ - gsf_inp_ ) / gsf_inp_ : 0.; //@@ redundant?
-    } else {
-      //@@ if ( fullChain ) { std::cout << "ERROR! blah" << std::endl; }
     }
     
     // Kinematics (MODE)
