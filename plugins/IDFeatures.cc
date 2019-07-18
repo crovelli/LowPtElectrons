@@ -769,8 +769,8 @@ void IDFeatures::fill( const edm::Event& event,
     // Record dr2, then set "has_gsf" if dr < dr_threshold_
     reco::GsfTrackRef gsf = iter.second;
     if ( gsf.isNonnull() ) {
-      ntuple_.gsf_dr_mode(gen2gsf_dr2_mode[gen]); 
-      ntuple_.gsf_dr(gen2gsf_dr2[gen]); 
+      //@@ntuple_.gsf_dr_mode(gen2gsf_dr2_mode[gen]); 
+      ntuple_.gsf_dr(gen2gsf_dr2_mode[gen]); //@@gen2gsf_dr2[gen]); 
 
       // Find matched electron
       if ( gen2ele.find(gen) != gen2ele.end() ) {
