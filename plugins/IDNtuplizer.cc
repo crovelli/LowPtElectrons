@@ -53,6 +53,7 @@ namespace reco { typedef edm::Ptr<ElectronSeed> ElectronSeedPtr; }
 namespace reco { typedef edm::Ptr<GsfTrack> GsfTrackPtr; }
 namespace reco { typedef edm::Ptr<PreId> PreIdPtr; }
 namespace pat { typedef edm::Ptr<PackedCandidate> PackedCandidatePtr; }
+typedef std::map<unsigned long,int> PdgIds;
 
 //constexpr int NEG_INT = -10;
 //constexpr float NEG_FLOAT = -10.;
@@ -105,9 +106,11 @@ public :
   ~ElectronChain() {;}
 
 public:
+  
+  int is_mc_ = -1;
+  int is_aod_ = -1;
 
   bool is_e_ = false;
-  bool is_mc_ = false;
   bool is_egamma_ = false;
 
   // "Signal electron" info 
@@ -117,6 +120,7 @@ public:
   reco::TrackPtr trk_;
   float trk_dr_ = IDNtuple::NEG_FLOAT;
   bool trk_match_ = false;
+  int pdg_id_ = 0;
 
   // CaloCluster info
   reco::CaloClusterPtr calo_;
@@ -150,7 +154,7 @@ template <typename T>
 void key_id( const edm::Ptr<T>& ptr, std::stringstream& ss ) {
   ss << "id/key: " 
      << ptr.id() << ", " 
-     << std::setw(4) << int( ptr.key() );// << "\n";
+     << std::setw(6) << int( ptr.key() );// << "\n";
 }
 
 template <typename T> 
@@ -179,9 +183,11 @@ std::ostream& operator<< ( std::ostream& out, const ElectronChain& obj ) {
   ss << "ElectronChain:"
      << " is_egamma: " << obj.is_egamma_
      << " is_e: " << obj.is_e_
-     << " is_mc: " << obj.is_mc_;
+     << " is_mc: " << obj.is_mc_
+     << " is_aod:  " << obj.is_aod_;
   ss << "\n SIG:   "; key_id(obj.sig_,ss); pt_eta_phi(obj.sig_,ss);
-  ss << "\n TRK:   "; key_id(obj.trk_,ss); pt_eta_phi(obj.trk_,ss);
+  ss << "\n TRK:   "; key_id(obj.trk_,ss); pt_eta_phi(obj.trk_,ss); 
+  ss << ", PdgId: " << obj.pdg_id_;
   ss << "\n CALO:  "; key_id(obj.calo_,ss); pt_eta_phi(obj.calo_,ss);
   ss << "\n GSF:   "; key_id(obj.gsf_,ss); pt_eta_phi(obj.gsf_,ss);
   ss << "\n ELE:   "; key_id(obj.ele_,ss); pt_eta_phi(obj.ele_,ss);
@@ -448,6 +454,7 @@ private:
   std::vector<ElectronChain> chains_;
 
   std::vector<reco::TrackPtr> tracks_;
+  PdgIds pdgids_;
   
 };
 
@@ -537,7 +544,8 @@ IDNtuplizer::IDNtuplizer( const edm::ParameterSet& cfg )
     // Conversions
     //convVtxFitProb_(consumes<edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("convVtxFitProb")))
     chains_(),
-    tracks_()
+    tracks_(),
+    pdgids_()
   {
     tree_ = fs_->make<TTree>("tree","tree");
     ntuple_.link_tree(tree_);
@@ -1128,9 +1136,10 @@ void IDNtuplizer::signal( bool is_egamma,
   for ( auto sig : signal_electrons ) {
     chains_.push_back(ElectronChain());
     ElectronChain& chain = chains_.back();
+    chain.is_mc_ = isMC_;
+    chain.is_aod_ = isAOD_;
     chain.is_e_ = true;
     chain.is_egamma_ = is_egamma;
-    chain.is_mc_ = isMC_;
     chain.sig_ = sig;
 
     // Find match between "signal electron" and reconstructed objects (info passed by ref)
@@ -1170,10 +1179,13 @@ void IDNtuplizer::signal( bool is_egamma,
 	chain.trk_ = trk; 
 	chain.trk_match_ = true;
 	chain.trk_dr_ = sqrt(deltaR2(chain.sig_,chain.trk_));
+	PdgIds::const_iterator pos = pdgids_.find(chain.trk_.key());
+	if ( pos != pdgids_.end() ) { chain.pdg_id_ = pos->second; }
       } else {
 	chain.trk_ = reco::TrackPtr(); 
 	chain.trk_match_ = false;
 	chain.trk_dr_ = IDNtuple::NEG_FLOAT;
+	chain.pdg_id_ = 0;
       }
       
       // Update ElectronSeed info
@@ -1205,10 +1217,13 @@ void IDNtuplizer::signal( bool is_egamma,
 	    chain.trk_ = match_gsf->obj1_; 
 	    chain.trk_match_ = true;
 	    chain.trk_dr_ = sqrt(deltaR2(chain.sig_,chain.trk_));
+	    PdgIds::const_iterator pos = pdgids_.find(chain.trk_.key());
+	    if ( pos != pdgids_.end() ) { chain.pdg_id_ = pos->second; }
 	  } else {
 	    chain.trk_ = reco::TrackPtr(); 
 	    chain.trk_match_ = false;
 	    chain.trk_dr_ = IDNtuple::NEG_FLOAT;
+	    chain.pdg_id_ = 0;
 	  }
 	}
       }
@@ -1238,9 +1253,10 @@ void IDNtuplizer::fakes( bool is_egamma,
     // Create ElectronChain object and start to populate
     chains_.push_back(ElectronChain());
     ElectronChain& chain = chains_.back();
+    chain.is_mc_ = isMC_;
+    chain.is_aod_ = isAOD_;
     chain.is_e_ = false;
     chain.is_egamma_ = is_egamma;
-    chain.is_mc_ = isMC_;
     
     // Store Track info
     chain.trk_ = iter.obj2_;
@@ -1379,6 +1395,10 @@ void IDNtuplizer::fill( const edm::Event& event,
     // Init tree here
     ntuple_.reset();
 
+    // Data sample
+    ntuple_.is_mc( chain.is_mc_ );
+    ntuple_.is_aod( chain.is_aod_ );
+
     // Event stuff
     ntuple_.fill_evt( event.id() );
     ntuple_.set_rho( *rhoH_ );
@@ -1403,6 +1423,7 @@ void IDNtuplizer::fill( const edm::Event& event,
       ntuple_.has_trk( chain.trk_match_ );
       ntuple_.fill_trk( chain.trk_, *beamspotH_ );
       ntuple_.trk_dr( chain.trk_dr_ );
+      ntuple_.pdg_id( chain.pdg_id_ );
     }
 
     // ElectronSeed
@@ -1483,11 +1504,13 @@ void IDNtuplizer::fill( const edm::Event& event,
 //
 void IDNtuplizer::extractTrackPtrs() {
   tracks_.clear();
+  pdgids_.clear();
   if ( isAOD_ == 1 ) {
     for ( size_t itrk = 0; itrk < ctfTracksH_->size(); ++itrk ) { 
       reco::TrackPtr ptr(ctfTracksH_,itrk);
       if ( !filterCand<reco::Track>(ptr) ) { continue; }
       tracks_.push_back(ptr); 
+      pdgids_.insert(PdgIds::value_type(ptr.key(),0));
     }
   } else if ( isAOD_ == 0 ) {
     size_t iptr = 0;
@@ -1495,7 +1518,8 @@ void IDNtuplizer::extractTrackPtrs() {
       if ( ptr.bestTrack() == nullptr ) { continue; }
       reco::TrackPtr trk(ptr.bestTrack(),iptr);
       if ( !filterCand<reco::Track>(trk) ) { continue; }
-      tracks_.push_back(trk); 
+      tracks_.push_back(trk);
+      pdgids_.insert(PdgIds::value_type(trk.key(),ptr.pdgId()));
       ++iptr;
     }
     for ( const auto& ptr : *lostTracksH_ ) { 
@@ -1503,6 +1527,7 @@ void IDNtuplizer::extractTrackPtrs() {
       reco::TrackPtr trk(ptr.bestTrack(),iptr);
       if ( !filterCand<reco::Track>(trk) ) { continue; }
       tracks_.push_back(trk); 
+      pdgids_.insert(PdgIds::value_type(trk.key(),ptr.pdgId()));
       ++iptr;
     }
   }
