@@ -35,8 +35,6 @@ ntuplizer = cms.EDAnalyzer(
     mvaUnbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:unbiased"),
     mvaPtbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:ptbiased"),
     mvaValueLowPt = cms.InputTag('lowPtGsfElectronID'),
-    #mvaValue = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17NoIsoV2Values'),
-    #mvaId = cms.InputTag('egmGsfElectronIDs:mvaEleID-Fall17-noIso-V2-wp80'),
     # EGamma collections
     eleSeedsEGamma = cms.InputTag("electronMergedSeeds"), # AOD   # trackerDrivenElectronSeeds:SeedsForGsf
     gsfTracksEGamma = cms.InputTag("electronGsfTracks"), # AOD
@@ -44,7 +42,7 @@ ntuplizer = cms.EDAnalyzer(
     gsfElectronsEGamma = cms.InputTag("gedGsfElectrons"), # AOD
     patElectronsEGamma = cms.InputTag("slimmedElectrons"), # MINIAOD
     mvaValueEGamma = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17NoIsoV2Values'),
-    mvaIdEGamma = cms.InputTag('egmGsfElectronIDs:mvaEleID-Fall17-noIso-V2-wp90'),
+    mvaIdEGamma = cms.InputTag('egmGsfElectronIDs:mvaEleID-Fall17-noIso-V2-wp90'), # wp80?
     )
 
     #convVtxFitProb = cms.InputTag('electronMVAVariableHelper:convVtxFitProb'),
