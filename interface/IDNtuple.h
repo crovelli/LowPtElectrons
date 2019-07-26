@@ -47,6 +47,9 @@ class IDNtuple {
   void set_weight( float w ) { weight_ = w; }
   void set_rho( float r ) { rho_ = r; }
 
+  void is_aod( int aod ) { is_aod_ = aod; }
+  void is_mc( int mc ) { is_mc_ = mc; }
+
   void is_e( bool t = true ) { is_e_ = t; }
   void is_e_not_matched( bool t = true ) { is_e_not_matched_ = t; }
   void is_other( bool t = true ) { is_other_ = t; }
@@ -57,9 +60,9 @@ class IDNtuple {
   void has_gsf( bool f = false ) { has_gsf_ = f; }
   void has_ele( bool f = false ) { has_ele_ = f; }
 
-  void trk_dr( float dr2 ) { trk_dr_ = sqrt(dr2); }
-  void gsf_dr( float dr2 ) { gsf_dr_ = sqrt(dr2); }
-  void ele_dr( float dr2 ) { ele_dr_ = sqrt(dr2); }
+  void trk_dr( float dr ) { trk_dr_ = dr; }
+  void gsf_dr( float dr ) { gsf_dr_ = dr; }
+  void ele_dr( float dr ) { ele_dr_ = dr; }
 
   void fill_evt( const edm::EventID& id );
 
@@ -69,6 +72,8 @@ class IDNtuple {
 
   void fill_trk( const reco::TrackPtr& trk,
 		 const reco::BeamSpot& spot );
+
+  void pdg_id( int id ) { pdg_id_ = id; }
 
   void fill_seed( bool seed_trk_driven, 
 		  bool seed_ecal_driven );
@@ -103,6 +108,10 @@ class IDNtuple {
   unsigned long long evt_ = 0;
   float weight_ = 1.;
   float rho_ = IDNtuple::NEG_FLOAT;
+
+  // Data sample
+  int is_aod_ = -1;
+  int is_mc_ = -1;
 
   // Labels
   bool is_e_ = false;
@@ -140,6 +149,8 @@ class IDNtuple {
   float trk_inp_ = IDNtuple::NEG_FLOAT;
   float trk_outp_ = IDNtuple::NEG_FLOAT;
   float trk_dpt_ = IDNtuple::NEG_FLOAT;
+
+  int pdg_id_ = 0;
 
   // KF tracks: quality
   int trk_nhits_ = IDNtuple::NEG_INT;
