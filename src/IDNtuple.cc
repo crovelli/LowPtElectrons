@@ -16,6 +16,9 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("weight", &weight_, "weight/f");
   tree->Branch("rho", &rho_, "rho/f");
 
+  tree->Branch("is_aod", &is_aod_, "is_aod/i");
+  tree->Branch("is_mc", &is_mc_, "is_mc/i");
+
   tree->Branch("is_e", &is_e_, "is_e/O");
   tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
   tree->Branch("is_other", &is_other_, "is_other/O");
@@ -48,6 +51,8 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("trk_inp", &trk_inp_, "trk_inp/f");
   tree->Branch("trk_outp", &trk_outp_, "trk_outp/f");
   tree->Branch("trk_dpt", &trk_dpt_, "trk_dpt/f");
+
+  tree->Branch("pdg_id", &pdg_id_, "pdg_id/I");
 
   tree->Branch("trk_nhits", &trk_nhits_, "trk_nhits/I");
   tree->Branch("trk_missing_inner_hits", &trk_missing_inner_hits_, "trk_missing_inner_hits/I"); 
