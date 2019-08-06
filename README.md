@@ -32,6 +32,7 @@ mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/
 ### Install ntuplizer code
 ```
 git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons 
+scram b
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
 voms-proxy-init --voms cms
 cmsRun ntuplizer.py 
