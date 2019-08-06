@@ -55,9 +55,6 @@ namespace reco { typedef edm::Ptr<PreId> PreIdPtr; }
 namespace pat { typedef edm::Ptr<PackedCandidate> PackedCandidatePtr; }
 typedef std::map<unsigned long,int> PdgIds;
 
-//constexpr int NEG_INT = -10;
-//constexpr float NEG_FLOAT = -10.;
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -359,9 +356,6 @@ private:
   const edm::EDGetTokenT< edm::View<reco::GenParticle> > prunedGenParticles_; // MINIAOD
   edm::Handle< edm::View<reco::GenParticle> > genParticlesH_;
 
-  //const edm::EDGetTokenT< edm::View<reco::Candidate> > packedGenParticles_; // MINIAOD
-  //edm::Handle< edm::View<reco::Candidate> > packedGenParticlesH_;
-
   const edm::EDGetTokenT< edm::View<reco::Track> > ctfTracks_; // AOD
   edm::Handle< edm::View<reco::Track> > ctfTracksH_;
 
@@ -424,12 +418,6 @@ private:
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaValueLowPt_; // on the fly?
   edm::Handle< edm::ValueMap<float> > mvaValueLowPtH_;
 
-//  const edm::EDGetTokenT< edm::ValueMap<float> > mvaValue_; // on the fly?
-//  edm::Handle< edm::ValueMap<float> > mvaValueH_;
-
-//  const edm::EDGetTokenT< edm::ValueMap<bool> > mvaId_; // on the fly?
-//  edm::Handle< edm::ValueMap<bool> > mvaIdH_;
-
   // EGamma collections
 
   const edm::EDGetTokenT< std::vector<reco::ElectronSeed> > eleSeedsEGamma_; // AOD
@@ -483,8 +471,6 @@ IDNtuplizer::IDNtuplizer( const edm::ParameterSet& cfg )
     genParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
     prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
     genParticlesH_(),
-    //packedGenParticles_(consumes< edm::View<reco::Candidate> >(cfg.getParameter<edm::InputTag>("packedGenParticles"))),
-    //packedGenParticlesH_(),
     ctfTracks_(consumes< edm::View<reco::Track> >(cfg.getParameter<edm::InputTag>("ctfTracks"))),
     ctfTracksH_(),
     packedCands_(consumes< edm::View<pat::PackedCandidate> >(cfg.getParameter<edm::InputTag>("packedCands"))),
@@ -526,10 +512,6 @@ IDNtuplizer::IDNtuplizer( const edm::ParameterSet& cfg )
     mvaPtbiasedH_(),
     mvaValueLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("mvaValueLowPt"))),
     mvaValueLowPtH_(),
-    //mvaValue_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("mvaValue"))),
-    //mvaValueH_(),
-    //mvaId_(consumes<edm::ValueMap<bool> >(cfg.getParameter<edm::InputTag>("mvaId"))),
-    //mvaIdH_(),
     // EGamma collections
     eleSeedsEGamma_(consumes< std::vector<reco::ElectronSeed> >(cfg.getParameter<edm::InputTag>("eleSeedsEGamma"))),
     eleSeedsEGammaH_(),
@@ -615,12 +597,12 @@ void IDNtuplizer::readCollections( const edm::Event& event, const edm::EventSetu
 
   // Low pT electrons (and identify if data or MC and RECO/AOD or MINIAOD)
   if ( isAOD_ == -1 ) {
-    event.getByToken(gsfElectrons_, gsfElectronsH_); // edm::View<reco::GsfElectron>
+    event.getByToken(gsfElectrons_, gsfElectronsH_);
     if ( gsfElectronsH_.isValid() ) {
       isAOD_ = 1;
       std::cout << "File contains AOD data tier!" << std::endl;
     } else {
-      event.getByToken(patElectrons_,gsfElectronsH_); // edm::View<pat::Electron>
+      event.getByToken(patElectrons_,gsfElectronsH_);
       if ( gsfElectronsH_.isValid() ) { 
 	isAOD_ = 0;
 	std::cout << "File contains MINIAOD data tier!" << std::endl;
@@ -631,9 +613,9 @@ void IDNtuplizer::readCollections( const edm::Event& event, const edm::EventSetu
       }
     }
   } else if ( isAOD_ == 1 ) {
-    event.getByToken(gsfElectrons_, gsfElectronsH_); // edm::View<reco::GsfElectron>
+    event.getByToken(gsfElectrons_, gsfElectronsH_);
   } else if ( isAOD_ == 0 ) {
-    event.getByToken(patElectrons_,gsfElectronsH_); // edm::View<pat::Electron>
+    event.getByToken(patElectrons_,gsfElectronsH_);
   } else {
     throw cms::Exception(" Invalid value for isAOD: ") 
       << isAOD_ 
@@ -660,7 +642,6 @@ void IDNtuplizer::readCollections( const edm::Event& event, const edm::EventSetu
       }
     }
   }
-  //if ( isMC_ && isAOD_ == 0 ) { event.getByToken(packedGenParticles_, packedGenParticlesH_); }
 
   // KF tracks
   if ( isAOD_ == 1 ) { 
@@ -704,14 +685,12 @@ void IDNtuplizer::readCollections( const edm::Event& event, const edm::EventSetu
   if      ( isAOD_ == 1 ) { event.getByToken(gsfTracksEGamma_, gsfTracksEGammaH_); }
   else if ( isAOD_ == 0 ) { event.getByToken(gsfTracksEGamma_MAOD_, gsfTracksEGammaH_); }
   if      ( isAOD_ == 1 ) { event.getByToken(gsfElectronsEGamma_, gsfElectronsEGammaH_); }
-  else if ( isAOD_ == 0 ) { event.getByToken(patElectronsEGamma_, gsfElectronsEGammaH_); } //@@ was patElectronsEGammaH_
+  else if ( isAOD_ == 0 ) { event.getByToken(patElectronsEGamma_, gsfElectronsEGammaH_); }
 
   // IDs
   event.getByToken(mvaUnbiased_, mvaUnbiasedH_);
   event.getByToken(mvaPtbiased_, mvaPtbiasedH_);
   event.getByToken(mvaValueLowPt_, mvaValueLowPtH_);
-  //event.getByToken(mvaValue_, mvaValueH_);
-  //event.getByToken(mvaId_, mvaIdH_);
   event.getByToken(mvaValueEGamma_, mvaValueEGammaH_);
   event.getByToken(mvaIdEGamma_, mvaIdEGammaH_);
 
@@ -1265,28 +1244,6 @@ void IDNtuplizer::fakes( bool is_egamma,
     chain.trk_match_ = true;
     chain.trk_dr_ = IDNtuple::NEG_FLOAT;
     
-//@@ Match to GsfTracks only (to prevent instances of matching to unconnected GsfElectron)
-//    // Find matched GsfElectron match (via GsfTrack/ElectronSeed or "surrogate" track)
-//    auto match_ele = std::find_if( trk2ele.begin(), 
-//				   trk2ele.end(), 
-//				   [trk](const TrkToEleR2& dr2) { 
-//				     return dr2.obj1_ == trk;
-//				   }
-//				   );
-//    if ( match_ele != trk2ele.end() ) { 
-//      if ( validPtr(match_ele->obj2_) ) {
-//	chain.ele_ = match_ele->obj2_;
-//	chain.ele_dr_ = match_ele->dr2_ < 0. ? IDNtuple::NEG_FLOAT : sqrt(match_ele->dr2_);
-//	chain.ele_match_ = ( chain.ele_dr_ >= 0. );// && ( chain.ele_dr_ < dr_threshold_ );
-//      }
-//    } else {
-//      if ( verbose_ > 3 ) {
-//	std::cout << "INFO! Cannot match TrackPtr to GsfElectronPtr:"
-//		  << " TrackPtr: " << trk.id() << "/" << trk.key()
-//		  << std::endl;
-//      }
-//    }
-    
     // Find matched GsfTrack match, either via ElectronSeed or just deltaR
     auto match_gsf = std::find_if( trk2gsf.begin(), 
 				   trk2gsf.end(), 
@@ -1762,10 +1719,7 @@ void IDNtuplizer::gsfToEleLinks( const edm::Handle< std::vector<reco::GsfTrack> 
   // Iterate through GsfElectrons
   for ( size_t idx = 0; idx < gsfElectrons->size(); ++idx ) {
     reco::GsfElectronPtr ele(gsfElectrons, idx);
-    if ( !validPtr(ele) ) { 
-      std::cout << "TEST" << std::endl;
-      continue; 
-    } //@@ shouldn't ever happen?!
+    if ( !validPtr(ele) ) { continue; } //@@ shouldn't ever happen?!
     
     // Retrieve GsfTrack
     reco::GsfTrackPtr gsf;
@@ -1989,10 +1943,6 @@ bool IDNtuplizer::eleToTrk( reco::GsfElectronPtr& ele,
 			    reco::TrackPtr& trk, 
 			    bool is_egamma ) {
   reco::GsfTrackPtr gsf;
-//  reco::ElectronSeedPtr seed;
-//  if ( eleToGsf(ele,gsf) && 
-//       gsfToSeed(gsf,seed) && 
-//       seedToTrk(seed,trk) ) { return true; }
   // For low pT ele, use Associations if no TrackExtra
   if ( eleToGsf(ele,gsf) && gsfToTrk(gsf,trk,is_egamma) ) { return true; }
   return false;

@@ -252,48 +252,4 @@ class IDNtuple {
   
 };
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-//namespace eleid {
-//  
-//  class Features {
-//  public:
-//    // KF track
-//    float trk_p_ = IDNtuple::NEG_FLOAT;
-//    float trk_nhits_ = IDNtuple::NEG_FLOAT;
-//    float trk_chi2red_ = IDNtuple::NEG_FLOAT;
-//    // GSF track
-//    float gsf_nhits_ = IDNtuple::NEG_FLOAT;
-//    float gsf_chi2red_ = IDNtuple::NEG_FLOAT;
-//    // SC 
-//    float sc_E_ = IDNtuple::NEG_FLOAT;
-//    float sc_eta_ = IDNtuple::NEG_FLOAT;
-//    float sc_etaWidth_ = IDNtuple::NEG_FLOAT;
-//    float sc_phiWidth_ = IDNtuple::NEG_FLOAT;
-//    // Track-cluster matching
-//    float match_seed_dEta_ = IDNtuple::NEG_FLOAT;
-//    float match_eclu_EoverP_ = IDNtuple::NEG_FLOAT;
-//    float match_SC_EoverP_ = IDNtuple::NEG_FLOAT;
-//    float match_SC_dEta_ = IDNtuple::NEG_FLOAT;
-//    float match_SC_dPhi_ = IDNtuple::NEG_FLOAT;
-//    // Shower shape vars
-//    float shape_full5x5_sigmaIetaIeta_ = IDNtuple::NEG_FLOAT;
-//    float shape_full5x5_sigmaIphiIphi_ = IDNtuple::NEG_FLOAT;
-//    float shape_full5x5_HoverE_ = IDNtuple::NEG_FLOAT;
-//    float shape_full5x5_r9_ = IDNtuple::NEG_FLOAT;
-//    float shape_full5x5_circularity_ = IDNtuple::NEG_FLOAT;
-//    // Misc
-//    float rho_ = IDNtuple::NEG_FLOAT;
-//    float brem_frac_ = IDNtuple::NEG_FLOAT;
-//    float ele_pt_ = IDNtuple::NEG_FLOAT;
-//  public:
-//    std::vector<float> get();
-//    void set( const pat::ElectronRef& ele, double rho );
-//    void set( const reco::GsfElectronPtr& ele, double rho );
-//  };
-//
-//}
-
 #endif // LowPtElectrons_LowPtElectrons_IDNtuple
