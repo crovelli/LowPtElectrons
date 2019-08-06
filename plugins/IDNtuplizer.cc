@@ -1445,7 +1445,7 @@ void IDNtuplizer::fill( const edm::Event& event,
     
     // GsfTrack info
     if ( validPtr(chain.gsf_) ) {
-      //ntuple_.has_trk( chain.gsf_match_ ); // if Gsf, then also Trk
+      ntuple_.has_trk( chain.gsf_match_ ); // if Gsf, then also Trk
       ntuple_.has_gsf( chain.gsf_match_ );
       ntuple_.fill_gsf( chain.gsf_, *beamspotH_ );
       ntuple_.gsf_dr( chain.gsf_dr_ );
@@ -1455,8 +1455,8 @@ void IDNtuplizer::fill( const edm::Event& event,
     // GsfElectron info
     if ( validPtr(chain.ele_) ) {
 
-      //ntuple_.has_trk( chain.ele_match_ ); // if Gsf, then also Trk
-      //ntuple_.has_gsf( chain.ele_match_ ); // if Ele, then also Gsf
+      ntuple_.has_trk( chain.ele_match_ ); // if Gsf, then also Trk
+      ntuple_.has_gsf( chain.ele_match_ ); // if Ele, then also Gsf
       ntuple_.has_ele( chain.ele_match_ );
       ntuple_.ele_dr( chain.ele_dr_ );
 
