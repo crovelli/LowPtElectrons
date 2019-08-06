@@ -308,15 +308,17 @@ public:
   template <typename T>
   void match( reco::CandidatePtr& sig,
 	      std::vector< DeltaR2<reco::Candidate,T> >& sig2cand,
-	      edm::Ptr<T>& cand, float& dr2, bool& match ); // pass by ref
+	      edm::Ptr<T>& cand, float& dr, bool& match ); // pass by ref
   
   void trkToGsfLinks( std::vector<reco::TrackPtr>& ctfTracks,
 		      edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
-		      std::vector<TrkToGsfR2>& trk2gsf );
+		      std::vector<TrkToGsfR2>& trk2gsf,
+		      bool is_egamma );
 
   void trkToEleLinks( std::vector<reco::TrackPtr>& ctfTracks,
 		      edm::Handle< edm::View<reco::GsfElectron> >& gsfElectron,
-		      std::vector<TrkToEleR2>& trk2gsf );
+		      std::vector<TrkToEleR2>& trk2gsf,
+		      bool is_egamma );
   
   void gsfToEleLinks( const edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
 		      const edm::Handle< edm::View<reco::GsfElectron> >& gsfElectrons,
@@ -326,8 +328,8 @@ public:
   bool gsfToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed );
   bool seedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk );
   bool seedToCalo( reco::ElectronSeedPtr& seed, reco::CaloClusterPtr& calo );
-  bool gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk );
-  bool eleToTrk( reco::GsfElectronPtr& ele, reco::TrackPtr& trk );
+  bool gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk, bool is_egamma );
+  bool eleToTrk( reco::GsfElectronPtr& ele, reco::TrackPtr& trk, bool is_egamma );
   
 private:
   
@@ -965,7 +967,7 @@ void IDNtuplizer::pfElectrons( std::set<reco::CandidatePtr>& signal_electrons,
   
   // Match Tracks to GsfTracks
   std::vector<TrkToGsfR2> trk2gsf;
-  trkToGsfLinks( tracks_, gsfTracksEGammaH_, trk2gsf );
+  trkToGsfLinks( tracks_, gsfTracksEGammaH_, trk2gsf, true/*is_egamma*/ );
   if ( verbose_ > 2 ) {
     std::cout << "trk2gsf.size(): " << trk2gsf.size() << std::endl;
     for ( auto iter : trk2gsf ) { std::cout << iter << std::endl; }
@@ -974,7 +976,7 @@ void IDNtuplizer::pfElectrons( std::set<reco::CandidatePtr>& signal_electrons,
   
   // Match Tracks to GsfElectrons
   std::vector<TrkToEleR2> trk2ele;
-  trkToEleLinks( tracks_, gsfElectronsEGammaH_, trk2ele );
+  trkToEleLinks( tracks_, gsfElectronsEGammaH_, trk2ele, true/*is_egamma*/ );
   if ( verbose_ > 2 ) {
     std::cout << "trk2ele.size(): " << trk2ele.size() << std::endl;
     for ( auto iter : trk2ele ) { std::cout << iter << std::endl; }
@@ -1058,7 +1060,7 @@ void IDNtuplizer::lowPtElectrons( std::set<reco::CandidatePtr>& signal_electrons
 
   // Match Tracks to GsfTracks
   std::vector<TrkToGsfR2> trk2gsf;
-  trkToGsfLinks( tracks_, gsfTracksH_, trk2gsf );
+  trkToGsfLinks( tracks_, gsfTracksH_, trk2gsf, false/*is_egamma*/ );
   if ( verbose_ > 2 ) {
     std::cout << "trk2gsf.size(): " << trk2gsf.size() << std::endl;
     for ( auto iter : trk2gsf ) { std::cout << iter << std::endl; }
@@ -1067,7 +1069,7 @@ void IDNtuplizer::lowPtElectrons( std::set<reco::CandidatePtr>& signal_electrons
   
   // Match Tracks to GsfElectrons
   std::vector<TrkToEleR2> trk2ele;
-  trkToEleLinks( tracks_, gsfElectronsH_, trk2ele );
+  trkToEleLinks( tracks_, gsfElectronsH_, trk2ele, false/*is_egamma*/ );
   if ( verbose_ > 2 ) {
     std::cout << "trk2ele.size(): " << trk2ele.size() << std::endl;
     for ( auto iter : trk2ele ) { std::cout << iter << std::endl; }
@@ -1147,7 +1149,7 @@ void IDNtuplizer::signal( bool is_egamma,
     match<reco::GsfTrack>(sig,sig2gsf,chain.gsf_,chain.gsf_dr_,chain.gsf_match_);
     match<reco::Track>(sig,sig2trk,chain.trk_,chain.trk_dr_,chain.trk_match_);
     
-    // Update ElectronChain 
+    // Update ElectronChain if matched to GsfTrack
     if ( chain.gsf_match_ ) {
 
       // Update Seed BDTs
@@ -1175,7 +1177,7 @@ void IDNtuplizer::signal( bool is_egamma,
 
       // Update Track info
       reco::TrackPtr trk;
-      if ( gsfToTrk(chain.gsf_,trk) ) {  // Use Associations if no TrackExtra
+      if ( gsfToTrk(chain.gsf_,trk,is_egamma) ) {  // Use Associations if no TrackExtra
 	chain.trk_ = trk; 
 	chain.trk_match_ = true;
 	chain.trk_dr_ = sqrt(deltaR2(chain.sig_,chain.trk_));
@@ -1443,6 +1445,7 @@ void IDNtuplizer::fill( const edm::Event& event,
     
     // GsfTrack info
     if ( validPtr(chain.gsf_) ) {
+      //ntuple_.has_trk( chain.gsf_match_ ); // if Gsf, then also Trk
       ntuple_.has_gsf( chain.gsf_match_ );
       ntuple_.fill_gsf( chain.gsf_, *beamspotH_ );
       ntuple_.gsf_dr( chain.gsf_dr_ );
@@ -1452,6 +1455,8 @@ void IDNtuplizer::fill( const edm::Event& event,
     // GsfElectron info
     if ( validPtr(chain.ele_) ) {
 
+      //ntuple_.has_trk( chain.ele_match_ ); // if Gsf, then also Trk
+      //ntuple_.has_gsf( chain.ele_match_ ); // if Ele, then also Gsf
       ntuple_.has_ele( chain.ele_match_ );
       ntuple_.ele_dr( chain.ele_dr_ );
 
@@ -1621,7 +1626,8 @@ void IDNtuplizer::match( reco::CandidatePtr& sig,
 //
 void IDNtuplizer::trkToGsfLinks( std::vector<reco::TrackPtr>& ctfTracks,
 				 edm::Handle< std::vector<reco::GsfTrack> >& gsfTracks,
-				 std::vector<TrkToGsfR2>& trk2gsf ) {
+				 std::vector<TrkToGsfR2>& trk2gsf,
+				 bool is_egamma ) {
   
   // If not, use deltaR match between GsfTrack and "surrogate" Track
   
@@ -1632,7 +1638,7 @@ void IDNtuplizer::trkToGsfLinks( std::vector<reco::TrackPtr>& ctfTracks,
     for ( size_t igsf = 0; igsf < gsfTracks->size(); ++igsf ) {
       reco::GsfTrackPtr gsf(gsfTracks, igsf);
       reco::TrackPtr ptr;
-      if ( gsfToTrk(gsf,ptr) && ptr == trk ) { 
+      if ( gsfToTrk(gsf,ptr,is_egamma) && ptr == trk ) { 
 	trk2gsf_all.emplace_back( trk, gsf, IDNtuple::NEG_FLOAT ); // match via ElectronSeed
       } else { 
 	trk2gsf_all.emplace_back( trk, gsf, deltaR2(trk,gsf) ); // match via deltaR
@@ -1685,7 +1691,8 @@ void IDNtuplizer::trkToGsfLinks( std::vector<reco::TrackPtr>& ctfTracks,
 //
 void IDNtuplizer::trkToEleLinks( std::vector<reco::TrackPtr>& ctfTracks,
 				 edm::Handle< edm::View<reco::GsfElectron> >& gsfElectrons,
-				 std::vector<TrkToEleR2>& trk2ele ) {
+				 std::vector<TrkToEleR2>& trk2ele,
+				 bool is_egamma ) {
   
   // If not, use deltaR match between GsfElectron and "surrogate" Track
   
@@ -1695,7 +1702,7 @@ void IDNtuplizer::trkToEleLinks( std::vector<reco::TrackPtr>& ctfTracks,
     for ( size_t iele = 0; iele < gsfElectrons->size(); ++iele ) {
       reco::GsfElectronPtr ele(gsfElectrons, iele);
       reco::TrackPtr ptr;
-      if ( eleToTrk(ele,ptr) && ptr == trk ) { 
+      if ( eleToTrk(ele,ptr,is_egamma) && ptr == trk ) { 
 	trk2ele_all.emplace_back( trk, ele, IDNtuple::NEG_FLOAT ); // match via ElectronSeed
       } else { 
 	trk2ele_all.emplace_back( trk, ele, deltaR2(trk,ele) ); // match via deltaR
@@ -1933,35 +1940,44 @@ bool IDNtuplizer::seedToCalo( reco::ElectronSeedPtr& seed, reco::CaloClusterPtr&
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-bool IDNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {
-  if ( isAOD_ == 1 ) {
-    reco::ElectronSeedPtr seed;
-    // Attempt to navigate via TrackExtra to Seed to Track
-    if ( gsfToSeed(gsf,seed) && seedToTrk(seed,trk) ) { return true; }
-    // If above fails (e.g. TrackExtra missing), attempt to use track Association in AOD
-    reco::GsfTrackRef gsf_ref(gsfTracksH_,(unsigned long)gsf.key());
-    reco::TrackRef trk_ref = (*gsfTrackLinksH_)[gsf_ref];
-    trk = edm::refToPtr(trk_ref);
-    if ( validPtr(trk) ) { return true; }
-  } else if ( isAOD_ == 0 ) {
-    // If above fail, attempt to use "packedCand" Associations in MINIAOD
-    reco::GsfTrackRef gsf_ref(gsfTracksH_,(unsigned long)gsf.key());
-    pat::PackedCandidateRef packed_ref = (*packedCandLinksH_)[gsf_ref];
-    if ( packed_ref.isAvailable() && 
-	 packed_ref.isNonnull() && 
-	 packed_ref->bestTrack() != nullptr ) { 
-      trk = reco::TrackPtr(packed_ref->bestTrack(),packed_ref.key());
+bool IDNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, 
+			    reco::TrackPtr& trk, 
+			    bool is_egamma ) {
+
+  // Attempt to navigate via Seed (and TrackExtra) to Track
+  reco::ElectronSeedPtr seed;
+  if ( gsfToSeed(gsf,seed) && seedToTrk(seed,trk) ) { return true; }
+
+  // In the case of low pT electrons ...
+  if ( !is_egamma ) {
+    // ... if above fails (e.g. TrackExtra missing), attempt to use ...
+    if ( isAOD_ == 1 ) {
+      // ... track Association in AOD
+      reco::GsfTrackRef gsf_ref(gsfTracksH_,(unsigned long)gsf.key());
+      reco::TrackRef trk_ref = (*gsfTrackLinksH_)[gsf_ref];
+      trk = edm::refToPtr(trk_ref);
       if ( validPtr(trk) ) { return true; }
-    }
-    // If above fail, attempt to use "lostTrack" Associations in MINIAOD
-    pat::PackedCandidateRef lost_ref = (*lostTrackLinksH_)[gsf_ref];
-    if ( lost_ref.isAvailable() && 
-	 lost_ref.isNonnull() && 
-	 lost_ref->bestTrack() != nullptr ) { 
-      trk = reco::TrackPtr(lost_ref->bestTrack(),lost_ref.key());
-      if ( validPtr(trk) ) { return true; }
+    } else if ( isAOD_ == 0 ) {
+      // ... "packedCand" Associations in MINIAOD
+      reco::GsfTrackRef gsf_ref(gsfTracksH_,(unsigned long)gsf.key());
+      pat::PackedCandidateRef packed_ref = (*packedCandLinksH_)[gsf_ref];
+      if ( packed_ref.isAvailable() && 
+	   packed_ref.isNonnull() && 
+	   packed_ref->bestTrack() != nullptr ) { 
+	trk = reco::TrackPtr(packed_ref->bestTrack(),packed_ref.key());
+	if ( validPtr(trk) ) { return true; }
+      }
+      // ... "lostTrack" Associations in MINIAOD
+      pat::PackedCandidateRef lost_ref = (*lostTrackLinksH_)[gsf_ref];
+      if ( lost_ref.isAvailable() && 
+	   lost_ref.isNonnull() && 
+	   lost_ref->bestTrack() != nullptr ) { 
+	trk = reco::TrackPtr(lost_ref->bestTrack(),lost_ref.key());
+	if ( validPtr(trk) ) { return true; }
+      }
     }
   }
+
   return false;
 }
 
@@ -1969,14 +1985,16 @@ bool IDNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-bool IDNtuplizer::eleToTrk( reco::GsfElectronPtr& ele, reco::TrackPtr& trk ) {
+bool IDNtuplizer::eleToTrk( reco::GsfElectronPtr& ele, 
+			    reco::TrackPtr& trk, 
+			    bool is_egamma ) {
   reco::GsfTrackPtr gsf;
-  reco::ElectronSeedPtr seed;
-  if ( eleToGsf(ele,gsf) && 
-       gsfToSeed(gsf,seed) && 
-       seedToTrk(seed,trk) ) { return true; }
-  if ( eleToGsf(ele,gsf) && 
-       gsfToTrk(gsf,trk) ) { return true; } // Use Associations if no TrackExtra
+//  reco::ElectronSeedPtr seed;
+//  if ( eleToGsf(ele,gsf) && 
+//       gsfToSeed(gsf,seed) && 
+//       seedToTrk(seed,trk) ) { return true; }
+  // For low pT ele, use Associations if no TrackExtra
+  if ( eleToGsf(ele,gsf) && gsfToTrk(gsf,trk,is_egamma) ) { return true; }
   return false;
 }
 
