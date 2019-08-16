@@ -75,6 +75,9 @@ parser.add_argument(
 parser.add_argument(
    '--load_model', action='store_true'
 )
+parser.add_argument(
+   '--notraining', action='store_true'
+)
 
 args = parser.parse_args()
 
@@ -124,14 +127,22 @@ if args.SW94X and 'seeding' in args.what:
 else:
    fields += additional
 
-if 'gsf_pt' not in fields : fields += ['gsf_pt']
+if 'gsf_pt' not in fields : fields += ['gsf_pt'] #@@ redundant?
 
-if not args.load_model :# dataset.endswith('.hdf'):
+if not dataset.endswith('.hdf'): # if not args.load_model :
    data = pre_process_data(
       dataset, fields, 
       for_seeding=('seeding' in args.what),
       keep_nonmatch=args.usenomatch
       )
+
+   egamma = data[data.is_egamma]          # EGamma electrons
+   orig = data.copy()                     # all electrons
+   data = data[np.invert(data.is_egamma)] # low pT electrons
+   print "orig.shape",orig.shape
+   print "lowpt.shape",data.shape
+   print "egamma.shape",egamma.shape
+
    if args.selection:
       data = data.query(args.selection)
 
@@ -156,7 +167,7 @@ if not args.load_model :# dataset.endswith('.hdf'):
       ) 
 else:   
    train = pd.read_hdf('%s/bdt_%s_traindata.hdf' % (mods, args.what), 'data')
-   test = pd.read_hdf('%s/bdt_%s_valdata.hdf' % (mods, args.what), 'data')
+   test = pd.read_hdf('%s/bdt_%s_valdata.hdf' % (mods, args.what), 'data') #mis-used name in this script 
    validation = pd.read_hdf('%s/bdt_%s_testdata.hdf' % (mods, args.what), 'data')
    if args.selection:
       train = train.query(args.selection)
@@ -180,7 +191,9 @@ import xgboost as xgb
 #
 
 clf = None
-if not args.load_model :
+if args.notraining :
+   print 'No training done, no pre-existing model loaded!'
+elif not args.load_model :
 
    print 'Training'
    print 'Input features:\n',features
@@ -229,36 +242,43 @@ from sklearn.metrics import roc_curve, roc_auc_score
 args_dict = args.__dict__
 
 rocs = {}
-for df, name in [
-   ##(train, 'train'),
-   ##(test, 'test'),
-   (validation, 'validation')
-   ]:
-   training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
-   rocs[name] = roc_curve(
-      df.is_e.as_matrix().astype(int), 
-      training_out)[:2]
-   args_dict['%s_AUC' % name] = roc_auc_score(df.is_e, training_out)
+if not args.notraining :
+   for df, name in [
+      ##(train, 'train'),
+      ##(test, 'test'),
+      (validation, 'validation')
+      ]:
+      training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
+      rocs[name] = roc_curve(
+         df.is_e.as_matrix().astype(int), 
+         training_out)[:2]
+      args_dict['%s_AUC' % name] = roc_auc_score(df.is_e, training_out)
 
-with open('%s/%s_%s_%s_BDT.json' % (mods, dataset, args.jobtag, args.what), 'w') as info:
-   json.dump(args_dict, info)
+   with open('%s/%s_%s_%s_BDT.json' % (mods, dataset, args.jobtag, args.what), 'w') as info:
+      json.dump(args_dict, info)
 
 # make plots
+print "Making plots ..."
 plt.figure(figsize=[8, 8])
 plt.title('%s training' % args.what.replace("_"," "))
 plt.plot(
    np.arange(0,1,0.01),
    np.arange(0,1,0.01),
    'k--')
-plt.plot(*rocs['validation'], label='Retraining (AUC: %.3f)'  % args_dict['validation_AUC'])
+if not args.notraining : 
+   plt.plot(rocs['validation'][0][:-1], rocs['validation'][1][:-1], 
+            linestyle='solid', 
+            color='black', 
+            label='Low pT, retraining, AUC: %.3f'  % args_dict['validation_AUC'])
+
 if args.what in ['seeding', 'fullseeding']:
    eff = float((validation.baseline & validation.is_e).sum())/validation.is_e.sum()
    mistag = float((validation.baseline & np.invert(validation.is_e)).sum())/np.invert(validation.is_e).sum()
    rocs['baseline'] = [[mistag], [eff]]
    plt.plot([mistag], [eff], 'o', label='baseline', markersize=5)   
 elif 'id' in args.what:
-   mva_v2 = roc_curve(validation.is_e, validation.ele_mvaIdV2)[:2]
-   mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mvaIdV2)
+   mva_v2 = roc_curve(validation.is_e, validation.ele_mva_value)[:2]
+   mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mva_value)
    rocs['mva_v2'] = mva_v2
    plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
 else:

@@ -495,7 +495,7 @@ void ElectronNtuple::fill_ele(
 	fill_supercluster(ele);
 
 	lowptgsfeleid::Features feats;
-	feats.set(ele, rho);
+	feats.set(reco::GsfElectronPtr(ele.id(),ele.get(),ele.key()),rho); //@@ Ref->Ptr
 	auto feat_v = feats.get();
 	size_t idx=0;
 
