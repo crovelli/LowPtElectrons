@@ -100,6 +100,9 @@ class IDNtuple {
 		 float ele_conv_vtx_fit_prob,
 		 const double rho );
   
+  void fill_supercluster(const reco::GsfElectronPtr ele ) ;
+
+
  public:
 
   // Event
@@ -249,6 +252,128 @@ class IDNtuple {
   float eid_shape_full5x5_circularity_ = -666; //@@ IDNtuple::NEG_FLOAT;
 
   float eid_brem_frac_ = -666; //@@ IDNtuple::NEG_FLOAT;
+
+
+  // Track-Cluster matching //////////
+
+  float match_SC_EoverP_ = -1.;
+
+  float match_SC_dEta_ = -1.;
+  float match_SC_dPhi_ = -1.;
+
+  float match_seed_EoverP_ = -1.;
+  float match_seed_EoverPout_ = -1.;
+
+  float match_seed_dEta_ = -1.;
+  float match_seed_dPhi_ = -1.;
+  float match_seed_dEta_vtx_ = -1.;
+
+  float match_eclu_EoverP_ = -1.;
+  float match_eclu_EoverPout_ = -1.;
+
+  float match_eclu_dEta_ = -1.;
+  float match_eclu_dPhi_ = -1.;
+
+  // Fiducial flags (booleans) //////////
+
+  int fiducial_isEB_ = -1;
+  int fiducial_isEE_ = -1;
+
+  int fiducial_isGap_ = -1;
+  int fiducial_isEBEEGap_ = -1;
+  int fiducial_isEBGap_ = -1;
+  int fiducial_isEBEtaGap_ = -1;
+  int fiducial_isEBPhiGap_ = -1;
+  int fiducial_isEEGap_ = -1;
+  int fiducial_isEEDeeGap_ = -1;
+  int fiducial_isEERingGap_ = -1;
+
+  // Shower shape //////////
+  
+  float shape_sigmaEtaEta_ = -1.;
+  float shape_sigmaIetaIeta_ = -1.;
+  float shape_sigmaIphiIphi_ = -1.;
+
+  float shape_e1x5_ = -1.;
+  float shape_e2x5Max_ = -1.;
+  float shape_e5x5_ = -1.;
+
+  float shape_r9_ = -1.;
+
+  float shape_HoverE_ = -1.;
+  float shape_HoverEBc_ = -1.;
+
+  float shape_hcalDepth1_ = -1.;
+  float shape_hcalDepth2_ = -1.;
+  float shape_hcalDepth1Bc_ = -1.;
+  float shape_hcalDepth2Bc_ = -1.;
+  int shape_nHcalTowersBc_ = -1;
+
+  float shape_eLeft_ = -1.;
+  float shape_eRight_ = -1.;
+  float shape_eTop_ = -1.;
+  float shape_eBottom_ = -1.;
+
+  // full 5x5
+
+  float shape_full5x5_sigmaEtaEta_ = -1.;
+  float shape_full5x5_sigmaIetaIeta_ = -1.;
+  float shape_full5x5_sigmaIphiIphi_ = -1.;
+  float shape_full5x5_circularity_ = -1.;
+
+  float shape_full5x5_e1x5_ = -1.;
+  float shape_full5x5_e2x5Max_ = -1.;
+  float shape_full5x5_e5x5_ = -1.;
+
+  float shape_full5x5_r9_ = -1.;
+
+  float shape_full5x5_HoverE_ = -1.;
+  float shape_full5x5_HoverEBc_ = -1.;
+
+  float shape_full5x5_hcalDepth1_ = -1.;
+  float shape_full5x5_hcalDepth2_ = -1.;
+  float shape_full5x5_hcalDepth1Bc_ = -1.;
+  float shape_full5x5_hcalDepth2Bc_ = -1.;
+
+  float shape_full5x5_eLeft_ = -1.;
+  float shape_full5x5_eRight_ = -1.;
+  float shape_full5x5_eTop_ = -1.;
+  float shape_full5x5_eBottom_ = -1.;
+  
+  // Isolation variables //////////
+  // Conversion rejection //////////
+  // PFlow info //////////
+  // Preselection and ambiguity //////////
+  // Corrections //////////
+  // ???
+  
+  // Brem fractions and classification //////////
+
+  float brem_frac_ = -1.;
+  float brem_fracTrk_ = -1.;
+  float brem_fracSC_ = -1.;
+  int brem_N_ = -1;
+  int p4kind_ = -1;
+
+  // SuperClusters //////////
+  //std::vector<float> sc_cluster_eta_;
+  //std::vector<float> sc_cluster_phi_;
+
+  float sc_etaWidth_ = -1.;
+  float sc_phiWidth_ = -1.;
+
+  float sc_ps_EoverEraw_ = -1.;
+  float sc_E_ = -1.;
+  float sc_Et_ = -1.;
+
+  float sc_eta_ = -1.;
+  float sc_phi_ = -1.;
+
+  float sc_RawE_ = -1.;
+  int sc_Nclus_ = -1;
+  int sc_Nxtal_ = -1;
+
+  float core_shFracHits_ =-1.;
   
 };
 

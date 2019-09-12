@@ -1450,9 +1450,11 @@ void IDNtuplizer::fill( const edm::Event& event,
       
       ntuple_.fill_ele( chain.ele_, mva_value, mva_id, conv_vtx_fit_prob, *rhoH_ );
 
+      ntuple_.fill_supercluster(chain.ele_);
+
+
     }
 
-    //ntuple_.fill_supercluster(chain.ele_);
     
     tree_->Fill(); 
     
