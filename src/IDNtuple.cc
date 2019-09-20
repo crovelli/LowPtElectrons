@@ -41,7 +41,6 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
   tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
-  tree->Branch("gen_e", &gen_e_, "gen_e/f");
   tree->Branch("gen_p", &gen_p_, "gen_p/f");
   tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
   tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
@@ -109,7 +108,6 @@ void IDNtuple::link_tree( TTree *tree ) {
   //tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
   //tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
   
-  tree->Branch("ele_pt", &ele_pt_, "ele_pt/f");
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
   tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
@@ -147,120 +145,71 @@ void IDNtuple::link_tree( TTree *tree ) {
 
   tree->Branch("eid_brem_frac", &eid_brem_frac_, "eid_brem_frac/f");
 
-
-  // Track-Cluster matching //////////
-
-  tree->Branch("match_SC_EoverP",&match_SC_EoverP_); 
-
-  tree->Branch("match_SC_dEta",&match_SC_dEta_); 
-  tree->Branch("match_SC_dPhi",&match_SC_dPhi_); 
-
+  // Further track-Cluster matching (not in default ID) //////////
   tree->Branch("match_seed_EoverP",&match_seed_EoverP_); 
   tree->Branch("match_seed_EoverPout",&match_seed_EoverPout_); 
-
-  tree->Branch("match_seed_dEta",&match_seed_dEta_); 
   tree->Branch("match_seed_dPhi",&match_seed_dPhi_); 
   tree->Branch("match_seed_dEta_vtx",&match_seed_dEta_vtx_); 
-
-  tree->Branch("match_eclu_EoverP",&match_eclu_EoverP_); 
   tree->Branch("match_eclu_EoverPout",&match_eclu_EoverPout_); 
-
   tree->Branch("match_eclu_dEta",&match_eclu_dEta_); 
   tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
 
   // Fiducial flags (booleans) //////////
-
   tree->Branch("fiducial_isEB",&fiducial_isEB_,"fiducial_isEB/I");
   tree->Branch("fiducial_isEE",&fiducial_isEE_,"fiducial_isEE/I"); 
-
-  tree->Branch("fiducial_isGap",&fiducial_isGap_,"fiducial_isGap/I"); 
   tree->Branch("fiducial_isEBEEGap",&fiducial_isEBEEGap_,"fiducial_isEBEEGap/I"); 
-  tree->Branch("fiducial_isEBGap",&fiducial_isEBGap_,"fiducial_isEBGap/I"); 
-  tree->Branch("fiducial_isEBEtaGap",&fiducial_isEBEtaGap_,"fiducial_isEBEtaGap/I"); 
-  tree->Branch("fiducial_isEBPhiGap",&fiducial_isEBPhiGap_,"fiducial_isEBPhiGap/I"); 
-  tree->Branch("fiducial_isEEGap",&fiducial_isEEGap_,"fiducial_isEEGap/I"); 
-  tree->Branch("fiducial_isEEDeeGap",&fiducial_isEEDeeGap_,"fiducial_isEEDeeGap/I"); 
-  tree->Branch("fiducial_isEERingGap",&fiducial_isEERingGap_,"fiducial_isEERingGap/I"); 
 
   // Shower shape //////////
-
   tree->Branch("shape_sigmaEtaEta",&shape_sigmaEtaEta_); 
   tree->Branch("shape_sigmaIetaIeta",&shape_sigmaIetaIeta_); 
   tree->Branch("shape_sigmaIphiIphi",&shape_sigmaIphiIphi_); 
-
   tree->Branch("shape_e1x5",&shape_e1x5_); 
   tree->Branch("shape_e2x5Max",&shape_e2x5Max_); 
   tree->Branch("shape_e5x5",&shape_e5x5_); 
-
   tree->Branch("shape_r9",&shape_r9_); 
-
   tree->Branch("shape_HoverE",&shape_HoverE_); 
   tree->Branch("shape_HoverEBc",&shape_HoverEBc_); 
-
   tree->Branch("shape_hcalDepth1",&shape_hcalDepth1_); 
   tree->Branch("shape_hcalDepth2",&shape_hcalDepth2_); 
   tree->Branch("shape_hcalDepth1Bc",&shape_hcalDepth1Bc_); 
   tree->Branch("shape_hcalDepth2Bc",&shape_hcalDepth2Bc_); 
   tree->Branch("shape_nHcalTowersBc",&shape_nHcalTowersBc_,"shape_nHcalTowersBc/I"); 
-
   tree->Branch("shape_eLeft",&shape_eLeft_); 
   tree->Branch("shape_eRight",&shape_eRight_); 
   tree->Branch("shape_eTop",&shape_eTop_); 
   tree->Branch("shape_eBottom",&shape_eBottom_); 
 
   // full 5x5
-
   tree->Branch("shape_full5x5_sigmaEtaEta",&shape_full5x5_sigmaEtaEta_); 
-  tree->Branch("shape_full5x5_sigmaIetaIeta",&shape_full5x5_sigmaIetaIeta_); 
-  tree->Branch("shape_full5x5_sigmaIphiIphi",&shape_full5x5_sigmaIphiIphi_); 
-  tree->Branch("shape_full5x5_circularity",&shape_full5x5_circularity_); 
-
   tree->Branch("shape_full5x5_e1x5",&shape_full5x5_e1x5_); 
   tree->Branch("shape_full5x5_e2x5Max",&shape_full5x5_e2x5Max_); 
-  tree->Branch("shape_full5x5_e5x5",&shape_full5x5_e5x5_); 
-
-  tree->Branch("shape_full5x5_r9",&shape_full5x5_r9_); 
-
-  tree->Branch("shape_full5x5_HoverE",&shape_full5x5_HoverE_); 
+  tree->Branch("shape_full5x5_e5x5",&shape_full5x5_e5x5_);
   tree->Branch("shape_full5x5_HoverEBc",&shape_full5x5_HoverEBc_); 
-
   tree->Branch("shape_full5x5_hcalDepth1",&shape_full5x5_hcalDepth1_); 
   tree->Branch("shape_full5x5_hcalDepth2",&shape_full5x5_hcalDepth2_); 
   tree->Branch("shape_full5x5_hcalDepth1Bc",&shape_full5x5_hcalDepth1Bc_); 
   tree->Branch("shape_full5x5_hcalDepth2Bc",&shape_full5x5_hcalDepth2Bc_); 
-
   tree->Branch("shape_full5x5_eLeft",&shape_full5x5_eLeft_); 
   tree->Branch("shape_full5x5_eRight",&shape_full5x5_eRight_); 
   tree->Branch("shape_full5x5_eTop",&shape_full5x5_eTop_); 
   tree->Branch("shape_full5x5_eBottom",&shape_full5x5_eBottom_); 
   
-  // Brem fractions and classification //////////
-
-  tree->Branch("brem_frac",&brem_frac_); 
+  // Other brem fractions and classification 
   tree->Branch("brem_fracTrk",&brem_fracTrk_); 
   tree->Branch("brem_fracSC",&brem_fracSC_); 
   tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
   tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
   
   // SuperClusters //////////	
-  //tree->Branch("sc_cluster_eta", &sc_cluster_eta_);
-  //tree->Branch("sc_cluster_phi", &sc_cluster_phi_);
-
-  tree->Branch("sc_etaWidth",&sc_etaWidth_); 
-  tree->Branch("sc_phiWidth",&sc_phiWidth_); 
-
-  tree->Branch("sc_ps_EoverEraw",&sc_ps_EoverEraw_); 
-  tree->Branch("sc_E",&sc_E_); 
   tree->Branch("sc_Et",&sc_Et_); 
-
-  tree->Branch("sc_eta",&sc_eta_); 
-  tree->Branch("sc_phi",&sc_phi_); 
-
-  tree->Branch("sc_RawE",&sc_RawE_); 
   tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
   tree->Branch("sc_Nxtal",&sc_Nxtal_,"sc_Nxtal/I"); 
 
-  
+  // Charge
+  tree->Branch("chPix",&chPix_,"chPix/I");
+  tree->Branch("chGCP",&chGCP_,"chGCP/I");
+  tree->Branch("chGP",&chGP_,"chGP/I");
+  tree->Branch("chGC",&chGC_,"chGC/I");
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -277,11 +226,13 @@ void IDNtuple::fill_gen( const reco::GenParticlePtr genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
-  gen_e_ = genp->energy();
   gen_p_ = genp->p();
   gen_charge_ = genp->charge();
-  gen_pdgid_ = 0;
-  gen_mom_pdgid_ = 0;
+  gen_pdgid_ = genp->pdgId();
+  if ( genp->mother(0) )
+    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
+  else 
+    gen_mom_pdgid_ = 0;
   gen_gran_pdgid_ = 0;
 }
 
@@ -291,11 +242,13 @@ void IDNtuple::fill_gen( const reco::CandidatePtr genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
-  gen_e_ = genp->energy();
   gen_p_ = genp->p();
   gen_charge_ = genp->charge();
-  gen_pdgid_ = 0;
-  gen_mom_pdgid_ = 0;
+  gen_pdgid_ = genp->pdgId();
+  if ( genp->mother(0) )
+    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
+  else 
+    gen_mom_pdgid_ = 0;
   gen_gran_pdgid_ = 0;
 }
 
@@ -305,11 +258,13 @@ void IDNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
-  gen_e_ = genp->energy();
   gen_p_ = genp->p();
   gen_charge_ = genp->charge();
-  gen_pdgid_ = 0;
-  gen_mom_pdgid_ = 0;
+  gen_pdgid_ = genp->pdgId();
+  if ( genp->mother(0) )
+    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
+  else 
+    gen_mom_pdgid_ = 0;
   gen_gran_pdgid_ = 0;
 }
 
@@ -481,157 +436,116 @@ void IDNtuple::fill_ele( const reco::GsfElectronPtr ele,
 			 float ele_conv_vtx_fit_prob,
 			 const double rho ) {
 
-  // Kinematics
-  ele_p_ = ele->p();
-  ele_pt_ = ele->pt();
-  ele_eta_ = ele->eta();
-  ele_phi_ = ele->phi();
-  
-  // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
-  if ( mva_value > -666. ) { ele_mva_value_ = mva_value; }
-  if ( mva_id > -666 ) { ele_mva_id_ = mva_id; }
-  if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
 
-  // Set Electron variables
-  lowptgsfeleid::Features features;
-  features.set(ele,rho);
-  auto vfeatures = features.get();
+  if ( ele.isNonnull() ) {  
 
-  //@@ ORDER IS IMPORTANT!
-  size_t idx = 0;
-  eid_rho_ = vfeatures[idx++];
-  eid_ele_pt_ = vfeatures[idx++];
-  eid_sc_eta_ = vfeatures[idx++];
-  eid_shape_full5x5_sigmaIetaIeta_ = vfeatures[idx++];
-  eid_shape_full5x5_sigmaIphiIphi_ = vfeatures[idx++];
-  eid_shape_full5x5_circularity_ = vfeatures[idx++];
-  eid_shape_full5x5_r9_ = vfeatures[idx++];
-  eid_sc_etaWidth_ = vfeatures[idx++];
-  eid_sc_phiWidth_ = vfeatures[idx++];
-  eid_shape_full5x5_HoverE_ = vfeatures[idx++];
-  eid_trk_nhits_ = vfeatures[idx++];
-  eid_trk_chi2red_ = vfeatures[idx++];
-  eid_gsf_chi2red_ = vfeatures[idx++];
-  eid_brem_frac_ = vfeatures[idx++];
-  eid_gsf_nhits_ = vfeatures[idx++];
-  eid_match_SC_EoverP_ = vfeatures[idx++];
-  eid_match_eclu_EoverP_ = vfeatures[idx++];
-  eid_match_SC_dEta_ = vfeatures[idx++];
-  eid_match_SC_dPhi_ = vfeatures[idx++];
-  eid_match_seed_dEta_ = vfeatures[idx++];
-  eid_sc_E_ = vfeatures[idx++];
-  eid_trk_p_ = vfeatures[idx++];
-
+    // Kinematics 
+    ele_p_ = ele->p();
+    ele_eta_ = ele->eta();
+    ele_phi_ = ele->phi();
+    
+    // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
+    if ( mva_value > -666. ) { ele_mva_value_ = mva_value; }
+    if ( mva_id > -666 ) { ele_mva_id_ = mva_id; }
+    if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
+    
+    // Set Electron variables
+    lowptgsfeleid::Features features;
+    features.set(ele,rho);
+    auto vfeatures = features.get();
+    
+    //@@ ORDER IS IMPORTANT!
+    size_t idx = 0;
+    eid_rho_ = vfeatures[idx++];
+    eid_ele_pt_ = vfeatures[idx++];
+    eid_sc_eta_ = vfeatures[idx++];
+    eid_shape_full5x5_sigmaIetaIeta_ = vfeatures[idx++];
+    eid_shape_full5x5_sigmaIphiIphi_ = vfeatures[idx++];
+    eid_shape_full5x5_circularity_ = vfeatures[idx++];
+    eid_shape_full5x5_r9_ = vfeatures[idx++];
+    eid_sc_etaWidth_ = vfeatures[idx++];
+    eid_sc_phiWidth_ = vfeatures[idx++];
+    eid_shape_full5x5_HoverE_ = vfeatures[idx++];
+    eid_trk_nhits_ = vfeatures[idx++];
+    eid_trk_chi2red_ = vfeatures[idx++];
+    eid_gsf_chi2red_ = vfeatures[idx++];
+    eid_brem_frac_ = vfeatures[idx++];
+    eid_gsf_nhits_ = vfeatures[idx++];
+    eid_match_SC_EoverP_ = vfeatures[idx++];
+    eid_match_eclu_EoverP_ = vfeatures[idx++];
+    eid_match_SC_dEta_ = vfeatures[idx++];
+    eid_match_SC_dPhi_ = vfeatures[idx++];
+    eid_match_seed_dEta_ = vfeatures[idx++];
+    eid_sc_E_ = vfeatures[idx++];
+    eid_trk_p_ = vfeatures[idx++];
+  }    
 }
-
-
 
 void IDNtuple::fill_supercluster(const reco::GsfElectronPtr ele ) {
 
   if ( ele.isNull() ) { return; }
 
   // Charge //////////
-
-  //scPixCharge();
-  //isGsfCtfScPixChargeConsistent();
-  //isGsfScPixChargeConsistent();
-  //isGsfCtfChargeConsistent();
+  chPix_ = ele->scPixCharge();
+  chGCP_ = ele->isGsfCtfScPixChargeConsistent();
+  chGP_  = ele->isGsfScPixChargeConsistent();
+  chGC_  = ele->isGsfCtfChargeConsistent();
 
   // Core //////////
-
   core_shFracHits_ = ele->shFracInnerHits();
 
-  // Track-Cluster matching //////////
-
-  match_SC_EoverP_ = ele->eSuperClusterOverP();
-
-  match_SC_dEta_ = ele->deltaEtaSuperClusterTrackAtVtx();
-  match_SC_dPhi_ = ele->deltaPhiSuperClusterTrackAtVtx();
-
+  // Further track-Cluster matching //////////
   match_seed_EoverP_    = ele->eSeedClusterOverP();
   match_seed_EoverPout_ = ele->eSeedClusterOverPout();
-
-  match_seed_dEta_     = ele->deltaEtaSeedClusterTrackAtCalo();
-  match_seed_dPhi_     = ele->deltaPhiSeedClusterTrackAtCalo();
-  match_seed_dEta_vtx_ = ele->deltaEtaSeedClusterTrackAtVtx();
-
-  match_eclu_EoverP_ = (1./ele->ecalEnergy()) - (1.0 / ele->p()); //@@ same as ele->gsfTrack()->p() ?
+  match_seed_dPhi_      = ele->deltaPhiSeedClusterTrackAtCalo();
+  match_seed_dEta_vtx_  = ele->deltaEtaSeedClusterTrackAtVtx();
   match_eclu_EoverPout_ = ele->eEleClusterOverPout();
-
   match_eclu_dEta_ = ele->deltaEtaEleClusterTrackAtCalo();
   match_eclu_dPhi_ = ele->deltaPhiEleClusterTrackAtCalo();
 
   // Fiducial flags //////////
-
   fiducial_isEB_ = ele->isEB();
   fiducial_isEE_ = ele->isEE();
-
-  fiducial_isGap_ = ele->isGap();
   fiducial_isEBEEGap_ = ele->isEBEEGap();
-  fiducial_isEBGap_ = ele->isEBGap();
-  fiducial_isEBEtaGap_ = ele->isEBEtaGap();
-  fiducial_isEBPhiGap_ = ele->isEBPhiGap();
-  fiducial_isEEGap_ = ele->isEEGap();
-  fiducial_isEEDeeGap_ = ele->isEEDeeGap();
-  fiducial_isEERingGap_ = ele->isEERingGap();
 
-  // Shower shape //////////
-  
+  // Further shower shape //////////
   shape_sigmaEtaEta_   = ele->sigmaEtaEta();
   shape_sigmaIetaIeta_ = ele->sigmaIetaIeta();
   shape_sigmaIphiIphi_ = ele->sigmaIphiIphi();
-
   shape_e1x5_    = ele->e1x5();
   shape_e2x5Max_ = ele->e2x5Max();
   shape_e5x5_    = ele->e5x5();
-
   shape_r9_ = ele->r9();
-
   shape_HoverE_    = ele->hcalOverEcal();
   shape_HoverEBc_ = ele->hcalOverEcalBc();
-
   shape_hcalDepth1_    = ele->hcalDepth1OverEcal();
   shape_hcalDepth2_    = ele->hcalDepth2OverEcal();
   shape_hcalDepth1Bc_  = ele->hcalDepth1OverEcalBc();
   shape_hcalDepth2Bc_  = ele->hcalDepth2OverEcalBc();
   shape_nHcalTowersBc_ = ele->hcalTowersBehindClusters().size();
-
   shape_eLeft_ = ele->eLeft();
   shape_eRight_ = ele->eRight();
   shape_eTop_ = ele->eTop();
   shape_eBottom_ = ele->eBottom();
 
-  // full 5x5
-
+  // Further full 5x5 shower shape //////////
   shape_full5x5_sigmaEtaEta_   = ele->full5x5_sigmaEtaEta();
-  shape_full5x5_sigmaIetaIeta_ = ele->full5x5_sigmaIetaIeta();
-  shape_full5x5_sigmaIphiIphi_ = ele->full5x5_sigmaIphiIphi();
-  shape_full5x5_circularity_   = 1. - ele->full5x5_e1x5() / ele->full5x5_e5x5();
-
   shape_full5x5_e1x5_    = ele->full5x5_e1x5();
   shape_full5x5_e2x5Max_ = ele->full5x5_e2x5Max();
   shape_full5x5_e5x5_    = ele->full5x5_e5x5();
-
-  shape_full5x5_r9_ = ele->full5x5_r9();
-
-  shape_full5x5_HoverE_    = ele->full5x5_hcalOverEcal();
   shape_full5x5_HoverEBc_ = ele->full5x5_hcalOverEcalBc();
-
   shape_full5x5_hcalDepth1_    = ele->full5x5_hcalDepth1OverEcal();
   shape_full5x5_hcalDepth2_    = ele->full5x5_hcalDepth2OverEcal();
   shape_full5x5_hcalDepth1Bc_  = ele->full5x5_hcalDepth1OverEcalBc();
   shape_full5x5_hcalDepth2Bc_  = ele->full5x5_hcalDepth2OverEcalBc();
-
   shape_full5x5_eLeft_ = ele->full5x5_eLeft();
   shape_full5x5_eRight_ = ele->full5x5_eRight();
   shape_full5x5_eTop_ = ele->full5x5_eTop();
   shape_full5x5_eBottom_ = ele->full5x5_eBottom();
   
   // Brem fractions and classification //////////
-
-  brem_frac_ = ele->fbrem();
   brem_fracTrk_ = ele->trackFbrem();
-  brem_fracSC_ = ele->superClusterFbrem();
+  brem_fracSC_  = ele->superClusterFbrem();
   brem_N_ = ele->numberOfBrems();
 
   p4kind_ = ele->candidateP4Kind();
@@ -647,18 +561,7 @@ void IDNtuple::fill_supercluster(const reco::GsfElectronPtr ele ) {
   ///sc_cluster_phi_.push_back((cluster)->phi());
   //}
   
-  sc_etaWidth_ = sc->etaWidth();
-  sc_phiWidth_ = sc->phiWidth();
-
-  sc_ps_EoverEraw_ = sc->preshowerEnergy() / sc->rawEnergy();
-
-  sc_E_  = sc->energy();
   sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
-  sc_RawE_ = sc->rawEnergy();
-
-  sc_eta_ = sc->eta();
-  sc_phi_ = sc->phi();
-
   sc_Nclus_ = sc->clustersSize();
   sc_Nxtal_ = sc->size();
 }

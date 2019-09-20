@@ -558,15 +558,15 @@ void IDNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& setup
 
   // Identify signal electrons, from (GEN) MC or data control regions
   std::set<reco::CandidatePtr> signal_electrons;
-  signalElectrons(signal_electrons);
+  signalElectrons(signal_electrons);            // chiara: collezione di gen-particle che siano elettroni da B
 
   // Extract std::vector<reco::TrackPtr> from reco::Tracks, PF candidates, lost tracks
-  extractTrackPtrs();
+  extractTrackPtrs();                           // chiara: puntatori a tutte le tracce reco
 
   // Match "signal" electrons to generalTracks
   std::vector<SigToTrkR2> sig2trk;
   std::vector<SigToTrkR2> other_trk;
-  sigToCandLinks<reco::Track>( signal_electrons, tracks_, sig2trk, other_trk );
+  sigToCandLinks<reco::Track>( signal_electrons, tracks_, sig2trk, other_trk );  // chiara: match reco tracks /  gen-electrons (ordinati in dR)
   if ( verbose_ > 2 ) {
     std::cout << "sig2trk.size(): " << sig2trk.size() << std::endl;
     for ( auto iter : sig2trk ) { std::cout << iter << std::endl; }
@@ -575,9 +575,17 @@ void IDNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& setup
   
   // Populate ElectronChain objects using PF electrons
   pfElectrons( signal_electrons, sig2trk, other_trk );
+  // chiara: 
+  // sig2gsf, other_gsf: generated ele fromB -> gsfTracks     (and remaining -> gsfTracks)
+  // sig2ele, other_ele: generated ele fromB -> gsfElectrons  (and remaining -> gsfElectrons)
+  // trk2gsf: generalTracks -> gsfTracks
+  // trk2ele: generalTracks -> gsfElectrons
+  // gsf2ele: gsfTracks -> gsfElectrons
+  // used by signal and fakes to fill the tree
 
   // Populate ElectronChain objects using low-pT electrons
   lowPtElectrons( signal_electrons, sig2trk, other_trk );
+  // chiara: same as above, with low-pt electrons 
   
   // Print ElectronChain objects
   if ( verbose_ > 0 ) {
@@ -1393,12 +1401,12 @@ void IDNtuplizer::fill( const edm::Event& event,
     }
 
     // PreId
-//    noZS::EcalClusterLazyTools ecal_tools(event, setup, ebRecHits_, eeRecHits_);
-//    ntuple_.fill_preid( *chain.preid_ecal_,
-//			*chain.preid_hcal_,
-//			*beamspotH_,
-//			*rhoH_,
-//			ecal_tools );
+    //    noZS::EcalClusterLazyTools ecal_tools(event, setup, ebRecHits_, eeRecHits_);
+    //    ntuple_.fill_preid( *chain.preid_ecal_,
+    //			*chain.preid_hcal_,
+    //			*beamspotH_,
+    //			*rhoH_,
+    //			ecal_tools );
     
     // GsfTrack info
     if ( validPtr(chain.gsf_) ) {
@@ -1441,7 +1449,7 @@ void IDNtuplizer::fill( const edm::Event& event,
 	  std::cout << "ERROR! Issue matching MVA ID to GsfElectrons!" << std::endl;
 	}
       }
-      
+    
       //@@ dirty hack as is not in Event nor embedded in pat::Electron
       float conv_vtx_fit_prob = -999.;
       //if ( convVtxFitProb.isValid() && convVtxFitProb->size() == gsfElectrons->size() ) {
@@ -1451,7 +1459,7 @@ void IDNtuplizer::fill( const edm::Event& event,
       ntuple_.fill_ele( chain.ele_, mva_value, mva_id, conv_vtx_fit_prob, *rhoH_ );
 
       ntuple_.fill_supercluster(chain.ele_);
-
+    
 
     }
 

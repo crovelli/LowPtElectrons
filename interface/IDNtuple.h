@@ -136,7 +136,6 @@ class IDNtuple {
   float gen_pt_ = IDNtuple::NEG_FLOAT;
   float gen_eta_ = IDNtuple::NEG_FLOAT;
   float gen_phi_ = IDNtuple::NEG_FLOAT;
-  float gen_e_ = IDNtuple::NEG_FLOAT;
   float gen_p_ = IDNtuple::NEG_FLOAT;
   int gen_charge_ = IDNtuple::NEG_INT;
   int gen_pdgid_ = 0;
@@ -213,7 +212,6 @@ class IDNtuple {
   //std::vector<float> gsf_extapolated_phi_;
 
   // GSF electrons: kinematics
-  float ele_pt_ = IDNtuple::NEG_FLOAT;
   float ele_eta_ = IDNtuple::NEG_FLOAT;
   float ele_phi_ = IDNtuple::NEG_FLOAT;
   float ele_p_ = IDNtuple::NEG_FLOAT;
@@ -253,92 +251,54 @@ class IDNtuple {
 
   float eid_brem_frac_ = -666; //@@ IDNtuple::NEG_FLOAT;
 
-
   // Track-Cluster matching //////////
-
-  float match_SC_EoverP_ = -1.;
-
-  float match_SC_dEta_ = -1.;
-  float match_SC_dPhi_ = -1.;
-
-  float match_seed_EoverP_ = -1.;
-  float match_seed_EoverPout_ = -1.;
-
-  float match_seed_dEta_ = -1.;
-  float match_seed_dPhi_ = -1.;
-  float match_seed_dEta_vtx_ = -1.;
-
-  float match_eclu_EoverP_ = -1.;
-  float match_eclu_EoverPout_ = -1.;
-
-  float match_eclu_dEta_ = -1.;
-  float match_eclu_dPhi_ = -1.;
+  float match_seed_EoverP_ = -666.;
+  float match_seed_EoverPout_ = -666.;
+  float match_seed_dPhi_ = -666.;
+  float match_seed_dEta_vtx_ = -666.;
+  float match_eclu_EoverPout_ = -666.;
+  float match_eclu_dEta_ = -666.;
+  float match_eclu_dPhi_ = -666.;
 
   // Fiducial flags (booleans) //////////
+  int fiducial_isEB_ = -666;
+  int fiducial_isEE_ = -666;
+  int fiducial_isEBEEGap_ = -666;
 
-  int fiducial_isEB_ = -1;
-  int fiducial_isEE_ = -1;
-
-  int fiducial_isGap_ = -1;
-  int fiducial_isEBEEGap_ = -1;
-  int fiducial_isEBGap_ = -1;
-  int fiducial_isEBEtaGap_ = -1;
-  int fiducial_isEBPhiGap_ = -1;
-  int fiducial_isEEGap_ = -1;
-  int fiducial_isEEDeeGap_ = -1;
-  int fiducial_isEERingGap_ = -1;
-
-  // Shower shape //////////
-  
-  float shape_sigmaEtaEta_ = -1.;
-  float shape_sigmaIetaIeta_ = -1.;
-  float shape_sigmaIphiIphi_ = -1.;
-
-  float shape_e1x5_ = -1.;
-  float shape_e2x5Max_ = -1.;
-  float shape_e5x5_ = -1.;
-
-  float shape_r9_ = -1.;
-
-  float shape_HoverE_ = -1.;
-  float shape_HoverEBc_ = -1.;
-
-  float shape_hcalDepth1_ = -1.;
-  float shape_hcalDepth2_ = -1.;
-  float shape_hcalDepth1Bc_ = -1.;
-  float shape_hcalDepth2Bc_ = -1.;
-  int shape_nHcalTowersBc_ = -1;
-
-  float shape_eLeft_ = -1.;
-  float shape_eRight_ = -1.;
-  float shape_eTop_ = -1.;
-  float shape_eBottom_ = -1.;
+  // Shower shape //////////  
+  float shape_sigmaEtaEta_ = -666.;
+  float shape_sigmaIetaIeta_ = -666.;
+  float shape_sigmaIphiIphi_ = -666.;
+  float shape_e1x5_ = -666.;
+  float shape_e2x5Max_ = -666.;
+  float shape_e5x5_ = -666.;
+  float shape_r9_ = -666.;
+  float shape_HoverE_ = -666.;
+  float shape_HoverEBc_ = -666.;
+  float shape_hcalDepth1_ = -666.;
+  float shape_hcalDepth2_ = -666.;
+  float shape_hcalDepth1Bc_ = -666.;
+  float shape_hcalDepth2Bc_ = -666.;
+  int shape_nHcalTowersBc_ = -666;
+  float shape_eLeft_ = -666.;
+  float shape_eRight_ = -666.;
+  float shape_eTop_ = -666.;
+  float shape_eBottom_ = -666.;
 
   // full 5x5
-
-  float shape_full5x5_sigmaEtaEta_ = -1.;
-  float shape_full5x5_sigmaIetaIeta_ = -1.;
-  float shape_full5x5_sigmaIphiIphi_ = -1.;
-  float shape_full5x5_circularity_ = -1.;
-
-  float shape_full5x5_e1x5_ = -1.;
-  float shape_full5x5_e2x5Max_ = -1.;
-  float shape_full5x5_e5x5_ = -1.;
-
-  float shape_full5x5_r9_ = -1.;
-
-  float shape_full5x5_HoverE_ = -1.;
-  float shape_full5x5_HoverEBc_ = -1.;
-
-  float shape_full5x5_hcalDepth1_ = -1.;
-  float shape_full5x5_hcalDepth2_ = -1.;
-  float shape_full5x5_hcalDepth1Bc_ = -1.;
-  float shape_full5x5_hcalDepth2Bc_ = -1.;
-
-  float shape_full5x5_eLeft_ = -1.;
-  float shape_full5x5_eRight_ = -1.;
-  float shape_full5x5_eTop_ = -1.;
-  float shape_full5x5_eBottom_ = -1.;
+  float shape_full5x5_sigmaEtaEta_ = -666.;
+  float shape_full5x5_e1x5_ = -666.;
+  float shape_full5x5_e2x5Max_ = -666.;
+  float shape_full5x5_e5x5_ = -666.;
+  float shape_full5x5_HoverEBc_ = -666.;
+  float shape_full5x5_hcalDepth1_ = -666.;
+  float shape_full5x5_hcalDepth2_ = -666.;
+  float shape_full5x5_hcalDepth1Bc_ = -666.;
+  float shape_full5x5_hcalDepth2Bc_ = -666.;
+  float shape_full5x5_eLeft_ = -666.;
+  float shape_full5x5_eRight_ = -666.;
+  float shape_full5x5_eTop_ = -666.;
+  float shape_full5x5_eBottom_ = -666.;
   
   // Isolation variables //////////
   // Conversion rejection //////////
@@ -348,33 +308,23 @@ class IDNtuple {
   // ???
   
   // Brem fractions and classification //////////
-
-  float brem_frac_ = -1.;
-  float brem_fracTrk_ = -1.;
-  float brem_fracSC_ = -1.;
-  int brem_N_ = -1;
-  int p4kind_ = -1;
+  float brem_fracTrk_ = -666.;
+  float brem_fracSC_ = -666.;
+  int brem_N_ = -666;
+  int p4kind_ = -666;
 
   // SuperClusters //////////
-  //std::vector<float> sc_cluster_eta_;
-  //std::vector<float> sc_cluster_phi_;
+  float sc_Et_ = -666.;
+  int sc_Nclus_ = -666;
+  int sc_Nxtal_ = -666;
 
-  float sc_etaWidth_ = -1.;
-  float sc_phiWidth_ = -1.;
-
-  float sc_ps_EoverEraw_ = -1.;
-  float sc_E_ = -1.;
-  float sc_Et_ = -1.;
-
-  float sc_eta_ = -1.;
-  float sc_phi_ = -1.;
-
-  float sc_RawE_ = -1.;
-  int sc_Nclus_ = -1;
-  int sc_Nxtal_ = -1;
-
-  float core_shFracHits_ =-1.;
+  float core_shFracHits_ =-666.;
   
+  // Charge
+  int chPix_=0;
+  int chGCP_=0;
+  int chGP_=0;
+  int chGC_=0;  
 };
 
 #endif // LowPtElectrons_LowPtElectrons_IDNtuple
