@@ -28,10 +28,14 @@
 <use name="RecoParticleFlow/PFTracking"/>
 <use name="RecoTracker/TransientTrackingRecHit"/>
 <use name="RecoVertex/KalmanVertexFit"/>
+<use name="Geometry/CaloTopology"/>
+<use name="Geometry/Records"/>
+<use name="RecoEcal/EgammaCoreTools"/>
 <use name="TrackingTools/PatternTools"/>
 <use name="TrackingTools/TrackFitters"/>
 <use name="TrackingTools/TransientTrack"/>
 <use name="TrackingTools/Records"/>
+<use name="EcalReconstruction/EcalTools"/>
 <use name="root"/>
 
 <flags CXXFLAGS="-g"/>  
