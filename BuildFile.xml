@@ -9,6 +9,8 @@
 <use name="FWCore/Framework"/>
 <use name="RecoEcal/EgammaCoreTools"/>
 <use name="RecoEgamma/EgammaElectronProducers"/>
+<use name="Geometry/CaloGeometry"/>
+<use name="Geometry/CaloTopology"/>
 <use name="root"/>
 <export>
   <lib name="1"/>
