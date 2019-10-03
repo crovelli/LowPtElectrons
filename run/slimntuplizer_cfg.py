@@ -56,16 +56,6 @@ process.GlobalTag = GlobalTag(process.GlobalTag, '102X_upgrade2018_realistic_v15
 process.load("Configuration.StandardSequences.MagneticField_cff")
 
 process.load('LowPtElectrons.LowPtElectrons.IDSlimNtuplizer_cfi')
-#process.load("Configuration.Geometry.GeometryReco_cff");
-#process.load("Configuration.Geometry.GeometryDB_cff");
-#process.load("Configuration.StandardSequences.Services_cff")
-#process.load('Configuration.Geometry.GeometryIdeal_cff')
-#process.load("Configuration.StandardSequences.GeometryDB_cff");
-#process.load("Geometry.CaloEventSetup.CaloGeometry_cfi");
-#process.load("Geometry.CaloEventSetup.CaloTopology_cfi");
-#process.load("Configuration.StandardSequences.Reconstruction_cff");
-
-
 
 process.slimntuplizer_seq *= process.slimntuplizer
 
