@@ -161,6 +161,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   // SuperCluster associated to the electron
   tree->Branch("sc_Et",&sc_Et_); 
   tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
+  tree->Branch("sc_goodSeed",&sc_goodSeed_,"sc_goodSeed/O");
 
   // Clusters making the SC
   tree->Branch("sc_cluster_et",  sc_cluster_et_, "sc_cluster_et[sc_Nclus]/F");
@@ -446,6 +447,7 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
   const reco::SuperClusterRef& sc = ele->superCluster();
 
   int clusNum=0;
+  float maxEne=-1;
   for(auto& cluster : sc->clusters()) {
     if (clusNum<NCLUS_MAX) {
       float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) + pow(cluster->z(),2) );
@@ -469,11 +471,14 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
       sc_cluster_eLeft_[clusNum]   = ecalTools_->eLeft(*cluster);
       sc_cluster_eTop_[clusNum]    = ecalTools_->eTop(*cluster);
       sc_cluster_eBottom_[clusNum] = ecalTools_->eBottom(*cluster);
+      if (cluster->energy() > maxEne) maxEne=cluster->energy();
       clusNum++;
     }
   }
-
   sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
   sc_Nclus_ = sc->clustersSize();
+
+  float seedEne = sc->seed()->energy();
+  if ( fabs(seedEne-maxEne)<0.001 ) sc_goodSeed_ = true;
 }
 

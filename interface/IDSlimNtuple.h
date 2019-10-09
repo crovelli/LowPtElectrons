@@ -244,6 +244,7 @@ class IDSlimNtuple {
   // SuperClusters 
   float sc_Et_  = IDSlimNtuple::NEG_FLOAT;
   int sc_Nclus_ = IDSlimNtuple::NEG_INT;
+  bool sc_goodSeed_ = false;
 
   // Clusters 
   float sc_cluster_et_[NCLUS_MAX]    = {IDSlimNtuple::NEG_FLOAT}; 
