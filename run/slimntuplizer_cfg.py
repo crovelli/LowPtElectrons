@@ -2,15 +2,14 @@ import FWCore.ParameterSet.Config as cms
 
 from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('python')
-options.setDefault('maxEvents',1)
+options.setDefault('maxEvents',-1)
 options.register('skipEvents',0,VarParsing.multiplicity.singleton,VarParsing.varType.int,"")
 options.register('useAOD',True,VarParsing.multiplicity.singleton,VarParsing.varType.bool,"")
 options.parseArguments()
 
 process = cms.Process('TEST')
 
-default_file = 'root://xrootd-cms.infn.it//store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/FA5679D9-1BB8-304C-AA78-14398A3346F4.root' if options.useAOD else 'root://xrootd-cms.infn.it//store/mc/RunIIAutumn18MiniAOD/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/MINIAODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/AC0EFF4C-C75F-274E-A561-A19D20DB2668.root'
-#default_file = '/store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/FA5679D9-1BB8-304C-AA78-14398A3346F4.root' if options.useAOD else 'root://xrootd-cms.infn.it//store/mc/RunIIAutumn18MiniAOD/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/MINIAODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/AC0EFF4C-C75F-274E-A561-A19D20DB2668.root'
+default_file = 'root://xrootd-cms.infn.it//store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/F132CDD6-6828-6342-B473-A0EB65F155EC.root','/store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/EED29270-5709-3443-8A22-60C6E2A5577D.root','/store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/E9DD9C50-6140-9846-97EF-EF887FECE7E8.root','/store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/E719E3E5-0EB1-484E-9FB7-3572B2218B8F.root','/store/mc/RunIIAutumn18RECOBParking/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/DDA76EEE-20DC-3742-AB35-57FE0DE82369.root' if options.useAOD else 'root://xrootd-cms.infn.it//store/mc/RunIIAutumn18MiniAOD/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/MINIAODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/70000/AC0EFF4C-C75F-274E-A561-A19D20DB2668.root'
 
 output_file = 'output_fromAOD_slim.root' if options.useAOD else 'output_fromMINIAOD_slim.root'
 
