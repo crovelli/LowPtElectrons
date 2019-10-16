@@ -267,6 +267,9 @@ class IDSlimNtuple {
   float sc_cluster_eLeft_[NCLUS_MAX]   = {IDSlimNtuple::NEG_FLOAT};  
   float sc_cluster_eTop_[NCLUS_MAX]    = {IDSlimNtuple::NEG_FLOAT};  
   float sc_cluster_eBottom_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};  
+  float sc_cluster_eMaxOver2x2_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
+  float sc_cluster_eMaxOver3x3_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
+  float sc_cluster_eMaxOver1x3_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
 };
 
 #endif // LowPtElectrons_LowPtElectrons_IDSlimNtuple

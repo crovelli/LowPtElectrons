@@ -184,6 +184,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("sc_cluster_eLeft",   sc_cluster_eLeft_,   "sc_cluster_eLeft[sc_Nclus]/F");
   tree->Branch("sc_cluster_eTop",    sc_cluster_eTop_,    "sc_cluster_eTop[sc_Nclus]/F");
   tree->Branch("sc_cluster_eBottom", sc_cluster_eBottom_, "sc_cluster_eBottom[sc_Nclus]/F");
+  tree->Branch("sc_cluster_eMaxOver2x2", sc_cluster_eMaxOver2x2_, "sc_cluster_eMaxOver2x2[sc_Nclus]/F");
+  tree->Branch("sc_cluster_eMaxOver3x3", sc_cluster_eMaxOver3x3_, "sc_cluster_eMaxOver3x3[sc_Nclus]/F");
+  tree->Branch("sc_cluster_eMaxOver1x3", sc_cluster_eMaxOver1x3_, "sc_cluster_eMaxOver1x3[sc_Nclus]/F");
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -471,6 +474,9 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
       sc_cluster_eLeft_[clusNum]   = ecalTools_->eLeft(*cluster);
       sc_cluster_eTop_[clusNum]    = ecalTools_->eTop(*cluster);
       sc_cluster_eBottom_[clusNum] = ecalTools_->eBottom(*cluster);
+      sc_cluster_eMaxOver2x2_[clusNum] = ecalTools_->eMax(*cluster)/ecalTools_->e2x2(*cluster);
+      sc_cluster_eMaxOver3x3_[clusNum] = ecalTools_->eMax(*cluster)/ecalTools_->e3x3(*cluster);
+      sc_cluster_eMaxOver1x3_[clusNum] = ecalTools_->eMax(*cluster)/ecalTools_->e1x3(*cluster);
       if (cluster->energy() > maxEne) maxEne=cluster->energy();
       clusNum++;
     }
