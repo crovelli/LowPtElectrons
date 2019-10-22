@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-slimntuplizer = cms.EDAnalyzer(
+ntuplizer = cms.EDAnalyzer(
     "IDSlimNtuplizer",
     verbose = cms.int32(0),
     checkFromB = cms.bool(True),
