@@ -73,6 +73,7 @@ class IDSlimNtuple {
 		 const double rho );
 
   void fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalClusterLazyTools *ecalTools_);
+  void fill_supercluster_miniAOD(const reco::GsfElectronPtr ele); 
 
  public:
 
@@ -80,6 +81,7 @@ class IDSlimNtuple {
   unsigned int run_ = 0;
   unsigned int lumi_ = 0;
   unsigned long long evt_ = 0;
+  float weight_ = 1.;   
   float rho_ = IDSlimNtuple::NEG_FLOAT;
 
   // Data sample
@@ -88,8 +90,13 @@ class IDSlimNtuple {
 
   // Labels
   bool is_e_ = false;
+  bool is_e_not_matched_ = false;  
   bool is_other_ = false;             
   bool is_egamma_ = false;
+  bool has_trk_  = true;
+  bool has_seed_ = true;
+  bool has_gsf_  = true;
+  bool has_ele_  = true;
 
   // GEN electrons
   float gen_dR_  = IDSlimNtuple::NEG_FLOAT;
@@ -101,6 +108,7 @@ class IDSlimNtuple {
   int gen_pdgid_  = IDSlimNtuple::NEG_INT;
   int gen_mom_pdgid_ = IDSlimNtuple::NEG_INT;
   int gen_gran_pdgid_ = IDSlimNtuple::NEG_INT;
+  int gen_tag_side_ = IDSlimNtuple::NEG_INT;  
 
   // RECO steps
   float gsf_dr_ = IDSlimNtuple::NEG_FLOAT;
@@ -129,6 +137,11 @@ class IDSlimNtuple {
   float gsf_dxy_err_ = IDSlimNtuple::NEG_FLOAT;
   float gsf_dz_ = IDSlimNtuple::NEG_FLOAT;
   float gsf_dz_err_ = IDSlimNtuple::NEG_FLOAT;
+
+  // GSF pos at ECAL
+  float gsf_x_ = IDSlimNtuple::NEG_FLOAT;     
+  float gsf_y_ = IDSlimNtuple::NEG_FLOAT;      
+  float gsf_z_ = IDSlimNtuple::NEG_FLOAT;     
 
   // GSF tracks: tangents
   int gsf_ntangents_ = 0; //@@ IDSlimNtuple::NEG_INT;
@@ -169,6 +182,7 @@ class IDSlimNtuple {
 
   // GSF electrons: kinematics
   float ele_p_   = IDSlimNtuple::NEG_FLOAT;
+  float ele_pt_  = IDSlimNtuple::NEG_FLOAT;
   float ele_eta_ = IDSlimNtuple::NEG_FLOAT;
   float ele_phi_ = IDSlimNtuple::NEG_FLOAT;
   int p4kind_    = IDSlimNtuple::NEG_INT;
@@ -270,6 +284,31 @@ class IDSlimNtuple {
   float sc_cluster_eMaxOver2x2_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
   float sc_cluster_eMaxOver3x3_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
   float sc_cluster_eMaxOver1x3_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
+
+  // When running on miniaod, only 3 highest ET clusters only
+  float sc_clus1_et_=0;
+  float sc_clus1_E_=0;
+  float sc_clus1_eta_=0;
+  float sc_clus1_phi_=0;
+  int sc_clus1_nxtal_=0;
+  float sc_clus1_dphi_=0;
+  float sc_clus1_deta_=0;
+  //
+  float sc_clus2_et_=0;
+  float sc_clus2_E_=0;
+  float sc_clus2_eta_=0;
+  float sc_clus2_phi_=0;
+  int sc_clus2_nxtal_=0;
+  float sc_clus2_dphi_=0;
+  float sc_clus2_deta_=0;
+  //
+  float sc_clus3_et_=0;
+  float sc_clus3_E_=0;
+  float sc_clus3_eta_=0;
+  float sc_clus3_phi_=0;
+  int sc_clus3_nxtal_=0;
+  float sc_clus3_dphi_=0;
+  float sc_clus3_deta_=0;
 };
 
 #endif // LowPtElectrons_LowPtElectrons_IDSlimNtuple

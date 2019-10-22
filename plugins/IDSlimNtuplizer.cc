@@ -98,9 +98,11 @@ private:
   IDSlimNtuple ntuple_;
   int verbose_;
   bool check_from_B_;
+  double prescale_; 
   int isAOD_;
   bool isMC_;
   double minTrackPt_;   
+  bool tag_side_muon;
   
   // Generic collections
   const edm::EDGetTokenT<double> rho_;
@@ -163,6 +165,7 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     ntuple_(),
     verbose_(cfg.getParameter<int>("verbose")),
     check_from_B_(cfg.getParameter<bool>("checkFromB")),
+    prescale_(cfg.getParameter<double>("prescale")),  
     isAOD_(-1),
     isMC_(true),
     minTrackPt_(cfg.getParameter<double>("minTrackPt")),
@@ -231,6 +234,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   // Gen level electrons from B                       
   std::set<reco::GenParticlePtr> signal_electrons;
   if (isMC_) signalElectrons(signal_electrons);          
+  if (!tag_side_muon) return;
 
   // Loop over low-pT electrons                  
   for( size_t electronlooper = 0; electronlooper < gsfElectronsH_->size(); electronlooper++ ) {
@@ -242,12 +246,11 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     ntuple_.fill_evt( event.id() );
     ntuple_.set_rho( *rhoH_ );
     ntuple_.is_egamma_ = false;
-  
+    ntuple_.weight_ = 1.;
   
     // Low pT electrons
     const reco::GsfElectronPtr ele(gsfElectronsH_, electronlooper);
     
-
     // filter candidates: there must be a trk, a gsf track and a SC linked to the electron (should be always the case). 
     // Ele, trk and gsf_trk must have pT>0.5
     // trk must be high purity
@@ -266,28 +269,9 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     TVector3 eleTV3(0,0,0);
     eleTV3.SetPtEtaPhi(ele->pt(), ele->eta(), ele->phi());
 
-    // ---------------------------------
-    // Electron ID: dirty hack as ID is not in Event nor embedded in pat::Electron
-    float mva_value = -999.;
-    int mva_id = -999;
-    if ( mvaValueLowPtH_.isValid() && 
-	 mvaValueLowPtH_->size() == gsfElectronsH_->size() ) {
-      mva_value = mvaValueLowPtH_->get( ele.key() );
-    } else {
-      std::cout << "ERROR! Issue matching MVA output to GsfElectrons!" << std::endl;
-    }
-
-    // Fill ele info 
-    ntuple_.fill_ele( ele, mva_value, mva_id, -999, *rhoH_ );
-
-
-    // ---------------------------------
-    // Supercluster linked to electron
-    ntuple_.fill_supercluster(ele, ecalTools_);
-
     
     // ---------------------------------
-    // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.3 )
+    // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.05 )
     float dRGenMin=999.;
     reco::GenParticlePtr theGenParticle;
     for ( auto sig : signal_electrons ) {      
@@ -299,18 +283,45 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	dRGenMin=dR;
       }
     }
-    if (dRGenMin<0.3) {
+    if (dRGenMin<0.05) {
       ntuple_.fill_gen( theGenParticle ); 
       ntuple_.gen_dR_ = dRGenMin;
       ntuple_.is_e_ = true;
       ntuple_.is_other_ = false;
+      ntuple_.gen_tag_side_=tag_side_muon;
     } else { 
       ntuple_.fill_gen_default(); 
       ntuple_.gen_dR_ = dRGenMin;
       ntuple_.is_e_ = false;
       ntuple_.is_other_ = true;
+      ntuple_.gen_tag_side_=tag_side_muon;
     }
 
+    // prescale fake electrons 
+    if (dRGenMin>=0.05) {
+      if ( gRandom->Rndm() < prescale_  ) continue;
+      ntuple_.weight_ = prescale_;
+    }  
+
+    // ---------------------------------
+    // Electron ID: dirty hack as ID is not in Event nor embedded in pat::Electron
+    float mva_value = -999.;
+    int mva_id = -999;
+    if ( mvaValueLowPtH_.isValid() && 
+	 mvaValueLowPtH_->size() == gsfElectronsH_->size() ) {
+      mva_value = mvaValueLowPtH_->get( ele.key() );
+    } else {
+      std::cout << "ERROR! Issue matching MVA output to GsfElectrons!" << std::endl;
+    }
+
+    // ---------------------------------
+    // Fill ele info 
+    ntuple_.fill_ele( ele, mva_value, mva_id, -999, *rhoH_ );
+
+    // ---------------------------------
+    // Supercluster linked to electron
+    if(isAOD_) ntuple_.fill_supercluster(ele, ecalTools_);
+    ntuple_.fill_supercluster_miniAOD(ele);  
 
     // ---------------------------------
     // GSF track linked to electron
@@ -463,7 +474,7 @@ void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
 				     float muon_pt, float muon_eta ) {   
   
   electrons_from_B.clear();
-  bool tag_side_muon = false;
+  tag_side_muon = false;
   
   for ( size_t idx = 0; idx < genParticlesH_->size(); idx++ ) {
     

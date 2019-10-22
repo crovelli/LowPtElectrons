@@ -3,6 +3,11 @@
 #include "LowPtElectrons/LowPtElectrons/interface/IDSlimNtuple.h"
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
+#include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "DataFormats/Math/interface/LorentzVector.h"
+#include "DataFormats/Common/interface/RefToPtr.h"
+#include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
+#include "TMath.h"
 #include "TTree.h"
 #include <iostream>
 
@@ -18,12 +23,18 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("run",  &run_ , "run/i");
   tree->Branch("lumi", &lumi_, "lumi/i");
   tree->Branch("evt",  &evt_ , "evt/i");  
+  tree->Branch("weight", &weight_, "weight/f"); 
   tree->Branch("rho", &rho_, "rho/f");
   tree->Branch("is_aod", &is_aod_, "is_aod/i");
   tree->Branch("is_mc", &is_mc_, "is_mc/i");
   tree->Branch("is_e", &is_e_, "is_e/O");
+  tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O"); 
   tree->Branch("is_other", &is_other_, "is_other/O");
   tree->Branch("is_egamma", &is_egamma_, "is_egamma/O");
+  tree->Branch("has_trk", &has_trk_, "has_trk/O");
+  tree->Branch("has_seed", &has_seed_, "has_seed/O");
+  tree->Branch("has_gsf", &has_gsf_, "has_gsf/O");
+  tree->Branch("has_ele", &has_ele_, "has_ele/O");
 
   // gen-level particles matched to reco-electron
   tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
@@ -35,6 +46,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
   tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
   tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
+  tree->Branch("gen_tag_side", &gen_tag_side_, "gen_tag_side/I");   
 
   // GSF track associated to electron
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
@@ -56,6 +68,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("gsf_dxy_err",&gsf_dxy_err_, "gsf_dxy_err/f");
   tree->Branch("gsf_dz",  &gsf_dz_, "gsf_dz/f");
   tree->Branch("gsf_dz_err",&gsf_dz_err_, "gsf_dz_err/f");
+  tree->Branch("gsf_x",  &gsf_x_, "gsf_x/f");
+  tree->Branch("gsf_y",  &gsf_y_, "gsf_y/f");
+  tree->Branch("gsf_z",  &gsf_z_, "gsf_z/f");
 
   //tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/I");
   //tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
@@ -86,6 +101,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
 
   // Electron - kinematics
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
+  tree->Branch("ele_pt", &ele_pt_, "ele_pt/f");
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
   tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
   tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
@@ -163,30 +179,57 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
   tree->Branch("sc_goodSeed",&sc_goodSeed_,"sc_goodSeed/O");
 
-  // Clusters making the SC
-  tree->Branch("sc_cluster_et",  sc_cluster_et_, "sc_cluster_et[sc_Nclus]/F");
-  tree->Branch("sc_cluster_E",   sc_cluster_E_,  "sc_cluster_E[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eta", sc_cluster_eta_, "sc_cluster_eta[sc_Nclus]/F");
-  tree->Branch("sc_cluster_phi", sc_cluster_phi_, "sc_cluster_phi[sc_Nclus]/F");
-  tree->Branch("sc_cluster_nxtal", sc_cluster_nxtal_, "sc_cluster_nxtal[sc_Nclus]/I");
-  tree->Branch("sc_cluster_e1x3", sc_cluster_e1x3_, "sc_cluster_e1x3[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e1x5", sc_cluster_e1x5_, "sc_cluster_e1x5[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e2x2", sc_cluster_e2x2_, "sc_cluster_e2x2[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e3x3", sc_cluster_e3x3_, "sc_cluster_e3x3[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e5x5", sc_cluster_e5x5_, "sc_cluster_e5x5[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eMax", sc_cluster_eMax_, "sc_cluster_eMax[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e2nd", sc_cluster_e2nd_, "sc_cluster_e2nd[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e2x5Right",  sc_cluster_e2x5Right_,  "sc_cluster_e2x5Right[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e2x5Left",   sc_cluster_e2x5Left_,   "sc_cluster_e2x5Left[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e2x5Top",    sc_cluster_e2x5Top_,    "sc_cluster_e2x5Top[sc_Nclus]/F");
-  tree->Branch("sc_cluster_e2x5Bottom", sc_cluster_e2x5Bottom_, "sc_cluster_e2x5Bottom[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eRight",  sc_cluster_eRight_,  "sc_cluster_eRight[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eLeft",   sc_cluster_eLeft_,   "sc_cluster_eLeft[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eTop",    sc_cluster_eTop_,    "sc_cluster_eTop[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eBottom", sc_cluster_eBottom_, "sc_cluster_eBottom[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eMaxOver2x2", sc_cluster_eMaxOver2x2_, "sc_cluster_eMaxOver2x2[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eMaxOver3x3", sc_cluster_eMaxOver3x3_, "sc_cluster_eMaxOver3x3[sc_Nclus]/F");
-  tree->Branch("sc_cluster_eMaxOver1x3", sc_cluster_eMaxOver1x3_, "sc_cluster_eMaxOver1x3[sc_Nclus]/F");
+  // Clusters making the SC 
+  bool cluster_in_rootuple=false;     
+  if(cluster_in_rootuple){   
+    tree->Branch("sc_cluster_et",  sc_cluster_et_, "sc_cluster_et[sc_Nclus]/F");
+    tree->Branch("sc_cluster_E",   sc_cluster_E_,  "sc_cluster_E[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eta", sc_cluster_eta_, "sc_cluster_eta[sc_Nclus]/F");
+    tree->Branch("sc_cluster_phi", sc_cluster_phi_, "sc_cluster_phi[sc_Nclus]/F");
+    tree->Branch("sc_cluster_nxtal", sc_cluster_nxtal_, "sc_cluster_nxtal[sc_Nclus]/I");
+    tree->Branch("sc_cluster_e1x3", sc_cluster_e1x3_, "sc_cluster_e1x3[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e1x5", sc_cluster_e1x5_, "sc_cluster_e1x5[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e2x2", sc_cluster_e2x2_, "sc_cluster_e2x2[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e3x3", sc_cluster_e3x3_, "sc_cluster_e3x3[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e5x5", sc_cluster_e5x5_, "sc_cluster_e5x5[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eMax", sc_cluster_eMax_, "sc_cluster_eMax[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e2nd", sc_cluster_e2nd_, "sc_cluster_e2nd[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e2x5Right",  sc_cluster_e2x5Right_,  "sc_cluster_e2x5Right[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e2x5Left",   sc_cluster_e2x5Left_,   "sc_cluster_e2x5Left[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e2x5Top",    sc_cluster_e2x5Top_,    "sc_cluster_e2x5Top[sc_Nclus]/F");
+    tree->Branch("sc_cluster_e2x5Bottom", sc_cluster_e2x5Bottom_, "sc_cluster_e2x5Bottom[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eRight",  sc_cluster_eRight_,  "sc_cluster_eRight[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eLeft",   sc_cluster_eLeft_,   "sc_cluster_eLeft[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eTop",    sc_cluster_eTop_,    "sc_cluster_eTop[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eBottom", sc_cluster_eBottom_, "sc_cluster_eBottom[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eMaxOver2x2", sc_cluster_eMaxOver2x2_, "sc_cluster_eMaxOver2x2[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eMaxOver3x3", sc_cluster_eMaxOver3x3_, "sc_cluster_eMaxOver3x3[sc_Nclus]/F");
+    tree->Branch("sc_cluster_eMaxOver1x3", sc_cluster_eMaxOver1x3_, "sc_cluster_eMaxOver1x3[sc_Nclus]/F");
+  } else {
+    tree->Branch("sc_clus1_et",    &sc_clus1_et_,    "sc_clus1_et/F");
+    tree->Branch("sc_clus1_E",     &sc_clus1_E_,     "sc_clus1_E/F");
+    tree->Branch("sc_clus1_eta",   &sc_clus1_eta_,   "sc_clus1_eta/F");
+    tree->Branch("sc_clus1_phi",   &sc_clus1_phi_,   "sc_clus1_phi/F");
+    tree->Branch("sc_clus1_nxtal", &sc_clus1_nxtal_, "sc_clus1_nxtal/I");
+    tree->Branch("sc_clus1_dphi",  &sc_clus1_dphi_,  "sc_clus1_dphi/F");
+    tree->Branch("sc_clus1_deta",  &sc_clus1_deta_,  "sc_clus1_deta/F");
+    //
+    tree->Branch("sc_clus2_et",    &sc_clus2_et_,   "sc_clus2_et/F");
+    tree->Branch("sc_clus2_E",     &sc_clus2_E_,    "sc_clus2_E/F");
+    tree->Branch("sc_clus2_eta",   &sc_clus2_eta_,  "sc_clus2_eta/F");
+    tree->Branch("sc_clus2_phi",   &sc_clus2_phi_,  "sc_clus2_phi/F");
+    tree->Branch("sc_clus2_nxtal", &sc_clus2_nxtal_, "sc_clus2_nxtal/I");
+    tree->Branch("sc_clus2_dphi",  &sc_clus2_dphi_,  "sc_clus2_dphi/F");
+    tree->Branch("sc_clus2_deta",  &sc_clus2_deta_,  "sc_clus2_deta/F");
+    //
+    tree->Branch("sc_clus3_et",    &sc_clus3_et_,   "sc_clus3_et/F");
+    tree->Branch("sc_clus3_E",     &sc_clus3_E_,    "sc_clus3_E/F");
+    tree->Branch("sc_clus3_eta",   &sc_clus3_eta_,  "sc_clus3_eta/F");
+    tree->Branch("sc_clus3_phi",   &sc_clus3_phi_,  "sc_clus3_phi/F");
+    tree->Branch("sc_clus3_nxtal", &sc_clus3_nxtal_, "sc_clus3_nxtal/I");
+    tree->Branch("sc_clus3_dphi",  &sc_clus3_dphi_,  "sc_clus3_dphi/F");
+    tree->Branch("sc_clus3_deta",  &sc_clus3_deta_,  "sc_clus3_deta/F");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -359,6 +402,7 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
 
     // Kinematics 
     ele_p_   = ele->p();
+    ele_pt_  = ele->pt();
     ele_eta_ = ele->eta();
     ele_phi_ = ele->phi();
 
@@ -488,3 +532,213 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
   if ( fabs(seedEne-maxEne)<0.001 ) sc_goodSeed_ = true;
 }
 
+// FC new method 
+void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
+
+  if ( ele.isNull() ) { return; }
+
+  if ( ele->superCluster().isNull() ) { return; }
+  const reco::SuperClusterRef& sc = ele->superCluster();
+
+  // Propagate 'electron' to ECAL surface
+  double mass_=0.000511*0.000511; // ele mass 
+
+  reco::GsfTrackPtr kfTrackRef = edm::refToPtr(ele->gsfTrack());
+
+  float p2=0;
+  float px=0;
+  float py=0;
+  float pz=0;
+  float vx=0;
+  float vy=0;
+  float vz=0;
+  if ( kfTrackRef->extra().isAvailable() && kfTrackRef->extra().isNonnull() ) {
+    p2=kfTrackRef->outerMomentum().Mag2();
+    px=kfTrackRef->outerMomentum().x();
+    py=kfTrackRef->outerMomentum().y();
+    pz=kfTrackRef->outerMomentum().z();
+    vx=kfTrackRef->outerPosition().x();
+    vy=kfTrackRef->outerPosition().y();
+    vz=kfTrackRef->outerPosition().z();
+  } else {
+    p2=pow( kfTrackRef->p() ,2 );
+    px=kfTrackRef->px();
+    py=kfTrackRef->py();
+    pz=kfTrackRef->pz();
+    vx=kfTrackRef->vx(); // must be in cm
+    vy=kfTrackRef->vy();
+    vz=kfTrackRef->vz();
+  }
+
+
+  float energy = sqrt(mass_ + p2);
+  XYZTLorentzVector mom = XYZTLorentzVector(px,py,pz, energy);
+  XYZTLorentzVector pos = XYZTLorentzVector(vx,vy,vz, 0.);
+
+  //  std::cout<<"ele part: pt/eta/phi"<<kfTrackRef->pt()<<"/"<<kfTrackRef->eta()<<"/"<<kfTrackRef->phi()<<" vtx"<<vx<<"/"<<vy<<"/"<<vz<<" energy="<<energy<<" charge="<< kfTrackRef->charge()<<std::endl;  
+
+  //  math::XYZVector field(field_->inTesla(GlobalPoint(0, 0, 0)));
+  float field_z=3.8;
+
+  BaseParticlePropagator mypart(RawParticle(mom,pos), 0, 0, field_z);
+  mypart.setCharge(kfTrackRef->charge());
+  mypart.propagateToEcalEntrance(true); // true only first half loop , false more than one loop
+  bool reach_ECAL=mypart.getSuccess(); // 0 does not reach ECAL, 1 yes barrel, 2 yes endcaps 
+
+  // ECAL entry point for track
+  // GlobalPoint ecal_pos(mypart.propagated().vertex().x(), mypart.propagated().vertex().y(), mypart.propagated().vertex().z());
+  GlobalPoint ecal_pos(mypart.x(), mypart.y(), mypart.z());
+  // Preshower limit
+  //  bool below_ps = pow(ecal_pos.z(), 2.) > boundary_ * ecal_pos.perp2();
+  // Iterate through ECAL clusters
+
+  gsf_x_=mypart.x();
+  gsf_y_=mypart.y();
+  gsf_z_=mypart.z();
+
+
+  int clusNum=0;
+
+  float maxEne1=-1;
+  float maxEne2=-1;
+  float maxEne3=-1;
+  int i1=-1;
+  int i2=-1;
+  int i3=-1;
+
+  for(auto& cluster : sc->clusters()) {
+    if (cluster->energy() > maxEne1){
+      maxEne1=cluster->energy();
+      i1=clusNum;
+    }
+    clusNum++;
+  }
+  if(sc->clustersSize()>1){
+    clusNum=0;
+    for(auto& cluster : sc->clusters()) {
+      if (clusNum!=i1) {
+	if (cluster->energy() > maxEne2){
+	  maxEne2=cluster->energy();
+	  i2=clusNum;
+	}
+      }
+      clusNum++;
+    }
+  }
+  if(sc->clustersSize()>2){
+    clusNum=0;
+    for(auto& cluster : sc->clusters()) {
+      if (clusNum!=i1 && clusNum!=i2) {
+	if (cluster->energy() > maxEne3){
+	  maxEne3=cluster->energy();
+	  i3=clusNum;
+	}
+      }
+      clusNum++;
+    }
+  }
+
+  sc_clus1_et_    = 0;
+  sc_clus1_E_     = 0;
+  sc_clus1_eta_   = 0;
+  sc_clus1_phi_   = 0;
+  sc_clus1_nxtal_ = 0;
+  sc_clus1_deta_ = -100;
+  sc_clus1_dphi_ = -100;
+  //
+  sc_clus2_et_    = 0;
+  sc_clus2_E_     = 0;
+  sc_clus2_eta_   = 0;
+  sc_clus2_phi_   = 0;
+  sc_clus2_nxtal_ = 0;
+  sc_clus2_deta_ = -100;
+  sc_clus2_dphi_ = -100;
+  //
+  sc_clus3_et_    = 0;
+  sc_clus3_E_     = 0;
+  sc_clus3_eta_   = 0;
+  sc_clus3_phi_   = 0;
+  sc_clus3_nxtal_ = 0;
+  sc_clus3_deta_ = -100;
+  sc_clus3_dphi_ = -100;
+
+
+
+  // trovati i 3 cluster piu` energetici 
+  // riempio i primi 3 cluster in E 
+  // i1 i2 i3 
+  clusNum=0;
+  for(auto& cluster : sc->clusters()) {
+
+    // Correct ecal_pos for shower depth
+    //    double shower_depth = reco::PFCluster::getDepthCorrection(cluster->correctedEnergy(), below_ps, false);
+    //GlobalPoint showerPos = ecal_pos + GlobalVector(mypart.propagated().momentum().x(),
+    //						  mypart.propagated().momentum().y(),
+    //						  mypart.propagated().momentum().z()).unit() * shower_depth;
+
+
+    double pi_=3.1415926535;
+    // Determine dR squared
+    //    float dr2 = reco::deltaR2(cluRef->positionREP(), showerPos);
+    // determine deta and dphi 
+    float deta = std::abs(ecal_pos.eta()-cluster->eta()) ;
+    float dphi = std::abs(ecal_pos.phi()-cluster->phi());
+    if (dphi > pi_)  dphi -= 2 * pi_;
+    if(ecal_pos.phi()-cluster->phi()<0) dphi=-dphi;
+    if(ecal_pos.eta()-cluster->eta()<0) deta=-deta;
+
+    if (clusNum==i1) {
+      float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
+      sc_clus1_et_    = clusterEt;
+      sc_clus1_E_     = cluster->energy();
+      sc_clus1_eta_   = cluster->eta();
+      sc_clus1_phi_   = cluster->phi();
+      sc_clus1_nxtal_ =(int) cluster->size();
+      if(reach_ECAL<=0){
+	//	std::cout<<"did not reach ECAL"<<reach_ECAL<<std::endl; 
+      } else {
+	sc_clus1_deta_ = deta;
+	sc_clus1_dphi_ = dphi;
+	//	std::cout<<"cluster 1 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
+      }
+
+    } else if(clusNum==i2){
+      float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
+      sc_clus2_et_    = clusterEt;
+      sc_clus2_E_     = cluster->energy();
+      sc_clus2_eta_   = cluster->eta();
+      sc_clus2_phi_   = cluster->phi();
+      sc_clus2_nxtal_ = (int) cluster->size();
+  if(reach_ECAL<=0){
+    //std::cout<<"did not reach ECAL"<<reach_ECAL<<std::endl; 
+  } else {
+    sc_clus2_deta_ = deta;
+    sc_clus2_dphi_ = dphi;
+    //std::cout<<"cluster 2 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
+  }
+    } else if(clusNum==i3){
+      float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
+      sc_clus3_et_    = clusterEt;
+      sc_clus3_E_     = cluster->energy();
+      sc_clus3_eta_   = cluster->eta();
+      sc_clus3_phi_   = cluster->phi();
+      sc_clus3_nxtal_ = (int) cluster->size();
+      if(reach_ECAL<=0){
+	//std::cout<<"did not reach ECAL"<<reach_ECAL<<std::endl; 
+      } else {
+      sc_clus3_deta_ = deta;
+      sc_clus3_dphi_ = dphi;
+      //std::cout<<"cluster 3 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
+      }
+    }
+    clusNum++;
+  }
+
+  sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
+  sc_Nclus_ = sc->clustersSize();
+
+  float seedEne = sc->seed()->energy();
+  if ( fabs(seedEne-maxEne1)<0.001 ) sc_goodSeed_ = true;
+}
+
+// end FC
