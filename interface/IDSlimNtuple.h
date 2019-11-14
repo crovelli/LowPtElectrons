@@ -109,6 +109,8 @@ class IDSlimNtuple {
   int gen_mom_pdgid_ = IDSlimNtuple::NEG_INT;
   int gen_gran_pdgid_ = IDSlimNtuple::NEG_INT;
   int gen_tag_side_ = IDSlimNtuple::NEG_INT;  
+  float gen_trk_dr_  = IDSlimNtuple::NEG_FLOAT;
+  float gen_gsf_dr_  = IDSlimNtuple::NEG_FLOAT;
 
   // RECO steps
   float gsf_dr_ = IDSlimNtuple::NEG_FLOAT;
@@ -168,6 +170,7 @@ class IDSlimNtuple {
   int trk_nhits_ = IDSlimNtuple::NEG_INT;
   int trk_missing_inner_hits_ = IDSlimNtuple::NEG_INT;
   float trk_chi2red_   = IDSlimNtuple::NEG_FLOAT;
+  int trk_high_purity_ = IDSlimNtuple::NEG_INT;
 
   // KF tracks: displ
   float trk_dxy_     = IDSlimNtuple::NEG_FLOAT;

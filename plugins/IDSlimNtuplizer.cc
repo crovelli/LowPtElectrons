@@ -251,19 +251,12 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // Low pT electrons
     const reco::GsfElectronPtr ele(gsfElectronsH_, electronlooper);
     
-    // filter candidates: there must be a trk, a gsf track and a SC linked to the electron (should be always the case). 
-    // Ele, trk and gsf_trk must have pT>0.5
-    // trk must be high purity
+    // filter candidates: there must be a trk with pT>0.5
     reco::GsfTrackPtr gsf = edm::refToPtr(ele->gsfTrack());    
     reco::TrackPtr trk;
-    reco::SuperClusterRef sc = ele->superCluster();
     if ( !validPtr(gsf) )     continue;     
     if ( !gsfToTrk(gsf,trk) ) continue;
-    if ( sc.isNull() )        continue; 
-    if ( ele->pt() < minTrackPt_ ) continue;
-    if ( gsf->pt() < minTrackPt_ ) continue;
     if ( trk->pt() < minTrackPt_ ) continue;
-    if (!trk->quality( reco::TrackBase::qualityByName("highPurity") ) ) continue; 
 
     // Work on the electron candidate
     TVector3 eleTV3(0,0,0);
@@ -271,11 +264,11 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
     
     // ---------------------------------
-    // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.05 )
+    // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.1 )
     float dRGenMin=999.;
     reco::GenParticlePtr theGenParticle;
+    TVector3 genTV3(0,0,0);
     for ( auto sig : signal_electrons ) {      
-      TVector3 genTV3(0,0,0);
       genTV3.SetPtEtaPhi(sig->pt(), sig->eta(), sig->phi());
       float dR = eleTV3.DeltaR(genTV3);
       if (dR<dRGenMin) { 
@@ -283,7 +276,8 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	dRGenMin=dR;
       }
     }
-    if (dRGenMin<0.05) {
+    genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
+    if (dRGenMin<0.1) {
       ntuple_.fill_gen( theGenParticle ); 
       ntuple_.gen_dR_ = dRGenMin;
       ntuple_.is_e_ = true;
@@ -298,7 +292,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     }
 
     // prescale fake electrons 
-    if (dRGenMin>=0.05) {
+    if (dRGenMin>=0.1) {
       if ( gRandom->Rndm() < prescale_  ) continue;
       ntuple_.weight_ = prescale_;
     }  
@@ -325,31 +319,41 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
     // ---------------------------------
     // GSF track linked to electron
-    ntuple_.fill_gsf( gsf, *beamspotH_ );
-    TVector3 gsfTV3(0,0,0);
-    gsfTV3.SetPtEtaPhi(gsf->ptMode(), gsf->etaMode(), gsf->phiMode()); 
-    ntuple_.gsf_dr_ = eleTV3.DeltaR(gsfTV3);  
-    float unbiasedSeedBdt_ = (*mvaUnbiasedH_)[gsf];
-    float ptbiasedSeedBdt_ = (*mvaPtbiasedH_)[gsf];
-    ntuple_.fill_bdt( unbiasedSeedBdt_, ptbiasedSeedBdt_ );
-    // check track extra x tangenti
-
+    if(validPtr(gsf) ){
+      ntuple_.fill_gsf( gsf, *beamspotH_ );
+      TVector3 gsfTV3(0,0,0);
+      gsfTV3.SetPtEtaPhi(gsf->ptMode(), gsf->etaMode(), gsf->phiMode()); 
+      ntuple_.gsf_dr_ = eleTV3.DeltaR(gsfTV3);  
+      ntuple_.gen_gsf_dr_ = genTV3.DeltaR(gsfTV3);
+      float unbiasedSeedBdt_ = (*mvaUnbiasedH_)[gsf];
+      float ptbiasedSeedBdt_ = (*mvaPtbiasedH_)[gsf];
+      ntuple_.fill_bdt( unbiasedSeedBdt_, ptbiasedSeedBdt_ );
+      // check track extra x tangenti
+    }
 
     // ---------------------------------
     // KTF track linked to electron
-    ntuple_.fill_trk (trk, *beamspotH_ );   
-    TVector3 trkTV3(0,0,0);
-    trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
-    ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
-    PdgIds::const_iterator pos = pdgids_.find(trk.key());
-    if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
-    if ( isAOD_ == 1 ) { 
-      v_dEdx_.clear();
-      v_dEdx_.push_back(dEdx1H_.product());
-      ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
-    } else 
-      ntuple_.fill_trk_dEdx_default();
-    
+    if (validPtr(gsf)){
+      if(gsfToTrk(gsf,trk)){
+
+	if(validPtr(trk)){
+
+	  ntuple_.fill_trk (trk, *beamspotH_ );   
+	  TVector3 trkTV3(0,0,0);
+	  trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
+	  ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
+	  ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);
+	  PdgIds::const_iterator pos = pdgids_.find(trk.key());
+	  if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
+	  if ( isAOD_ == 1 ) { 
+	    v_dEdx_.clear();
+	    v_dEdx_.push_back(dEdx1H_.product());
+	    ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
+	  } else 
+	    ntuple_.fill_trk_dEdx_default();
+	}
+      }
+    }
 
     tree_->Fill();
 

@@ -47,7 +47,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
   tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
   tree->Branch("gen_tag_side", &gen_tag_side_, "gen_tag_side/I");   
-
+  tree->Branch("gen_trk_dr" , &gen_trk_dr_ , "gen_trk_dr/f" );
+  tree->Branch("gen_gsf_dr" , &gen_gsf_dr_ , "gen_gsf_dr/f" );
+  
   // GSF track associated to electron
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
   tree->Branch("gsf_bdtout1", &seed_unbiased_, "gsf_bdtout1/f");
@@ -98,6 +100,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("trk_dEdx1", &trk_dEdx1_, "trk_dEdx1/f");
   tree->Branch("trk_dEdx1_Nm", &trk_dEdx1_Nm_, "trk_dEdx1_Nm/I");
   tree->Branch("trk_dEdx1_NSm", &trk_dEdx1_NSm_, "trk_dEdx1_NSm/I");
+  tree->Branch("trk_high_purity", &trk_high_purity_, "trk_high_purity/I");
 
   // Electron - kinematics
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
@@ -307,11 +310,12 @@ void IDSlimNtuple::fill_trk( const reco::TrackPtr& trk,
     trk_nhits_ = trk->found();
     trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
     trk_chi2red_ = trk->normalizedChi2();
+    trk_high_purity_=trk->quality( reco::TrackBase::qualityByName("highPurity") ) ;
     // displ
     trk_dxy_ = trk->dxy(spot);
     trk_dxy_err_ = trk->dxyError();
     trk_dz_ = trk->dz(spot.position());
-    trk_dz_err_ = trk->dzError();    
+    trk_dz_err_ = trk->dzError();        
   }
   
 }
@@ -411,6 +415,7 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
     core_shFracHits_ = ele->shFracInnerHits();
     ele_p_atvtx_  = sqrt(ele->trackMomentumAtVtx().mag2());
     ele_p_atcalo_ = sqrt(ele->trackMomentumAtCalo().mag2());
+
     // Fiducial flags 
     fiducial_isEB_ = ele->isEB();
     fiducial_isEE_ = ele->isEE();
@@ -536,7 +541,7 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
 void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 
   if ( ele.isNull() ) { return; }
-
+  
   if ( ele->superCluster().isNull() ) { return; }
   const reco::SuperClusterRef& sc = ele->superCluster();
 
@@ -569,7 +574,6 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
     vy=kfTrackRef->vy();
     vz=kfTrackRef->vz();
   }
-
 
   float energy = sqrt(mass_ + p2);
   XYZTLorentzVector mom = XYZTLorentzVector(px,py,pz, energy);
@@ -638,30 +642,29 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
     }
   }
 
-  sc_clus1_et_    = 0;
-  sc_clus1_E_     = 0;
-  sc_clus1_eta_   = 0;
-  sc_clus1_phi_   = 0;
-  sc_clus1_nxtal_ = 0;
-  sc_clus1_deta_ = -100;
-  sc_clus1_dphi_ = -100;
+  sc_clus1_et_    = -999.;
+  sc_clus1_E_     = -999.;
+  sc_clus1_eta_   = -999.;
+  sc_clus1_phi_   = -999.;
+  sc_clus1_nxtal_ = -999;
+  sc_clus1_deta_  = -999.;
+  sc_clus1_dphi_  = -999.;
   //
-  sc_clus2_et_    = 0;
-  sc_clus2_E_     = 0;
-  sc_clus2_eta_   = 0;
-  sc_clus2_phi_   = 0;
-  sc_clus2_nxtal_ = 0;
-  sc_clus2_deta_ = -100;
-  sc_clus2_dphi_ = -100;
+  sc_clus2_et_    = -999.;
+  sc_clus2_E_     = -999.;
+  sc_clus2_eta_   = -999.;
+  sc_clus2_phi_   = -999.;
+  sc_clus2_nxtal_ = -999;
+  sc_clus2_deta_  = -999.;
+  sc_clus2_dphi_  = -999.;
   //
-  sc_clus3_et_    = 0;
-  sc_clus3_E_     = 0;
-  sc_clus3_eta_   = 0;
-  sc_clus3_phi_   = 0;
-  sc_clus3_nxtal_ = 0;
-  sc_clus3_deta_ = -100;
-  sc_clus3_dphi_ = -100;
-
+  sc_clus3_et_    = -999.;
+  sc_clus3_E_     = -999.;
+  sc_clus3_eta_   = -999.;
+  sc_clus3_phi_   = -999.;
+  sc_clus3_nxtal_ = -999;
+  sc_clus3_deta_  = -999.;
+  sc_clus3_dphi_  = -999.;
 
 
   // trovati i 3 cluster piu` energetici 
@@ -694,46 +697,41 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
       sc_clus1_eta_   = cluster->eta();
       sc_clus1_phi_   = cluster->phi();
       sc_clus1_nxtal_ =(int) cluster->size();
-      if(reach_ECAL<=0){
-	//	std::cout<<"did not reach ECAL"<<reach_ECAL<<std::endl; 
-      } else {
+      if(reach_ECAL>0){
 	sc_clus1_deta_ = deta;
 	sc_clus1_dphi_ = dphi;
 	//	std::cout<<"cluster 1 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
       }
 
-    } else if(clusNum==i2){
+    } else if (clusNum==i2){
       float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
       sc_clus2_et_    = clusterEt;
       sc_clus2_E_     = cluster->energy();
       sc_clus2_eta_   = cluster->eta();
       sc_clus2_phi_   = cluster->phi();
       sc_clus2_nxtal_ = (int) cluster->size();
-  if(reach_ECAL<=0){
-    //std::cout<<"did not reach ECAL"<<reach_ECAL<<std::endl; 
-  } else {
-    sc_clus2_deta_ = deta;
-    sc_clus2_dphi_ = dphi;
-    //std::cout<<"cluster 2 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
-  }
-    } else if(clusNum==i3){
+      if(reach_ECAL>0){
+	sc_clus2_deta_ = deta;
+	sc_clus2_dphi_ = dphi;
+	//std::cout<<"cluster 2 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
+      }
+
+    } else if (clusNum==i3){
       float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
       sc_clus3_et_    = clusterEt;
       sc_clus3_E_     = cluster->energy();
       sc_clus3_eta_   = cluster->eta();
       sc_clus3_phi_   = cluster->phi();
       sc_clus3_nxtal_ = (int) cluster->size();
-      if(reach_ECAL<=0){
-	//std::cout<<"did not reach ECAL"<<reach_ECAL<<std::endl; 
-      } else {
-      sc_clus3_deta_ = deta;
-      sc_clus3_dphi_ = dphi;
-      //std::cout<<"cluster 3 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
+      if(reach_ECAL>0){
+	sc_clus3_deta_ = deta;
+	sc_clus3_dphi_ = dphi;
+	//std::cout<<"cluster 3 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
       }
     }
     clusNum++;
   }
-
+  
   sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
   sc_Nclus_ = sc->clustersSize();
 
