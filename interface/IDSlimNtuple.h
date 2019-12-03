@@ -75,7 +75,12 @@ class IDSlimNtuple {
   void fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalClusterLazyTools *ecalTools_);
   void fill_supercluster_miniAOD(const reco::GsfElectronPtr ele); 
 
+  template < typename T> bool validPtr( edm::Ptr<T>& ptr);
+
  public:
+
+  // To reduce ntuples size
+  bool largeNtuple = false;
 
   // Event
   unsigned int run_ = 0;
@@ -258,10 +263,21 @@ class IDSlimNtuple {
   float brem_fracSC_  = IDSlimNtuple::NEG_FLOAT;
   int brem_N_         = IDSlimNtuple::NEG_INT;
 
+  // Electron, isolation
+  float ele_sumPhotonEt_;
+  float ele_sumChargedHadronPt_;
+  float ele_sumNeutralHadronEt_;
+
   // SuperClusters 
   float sc_Et_  = IDSlimNtuple::NEG_FLOAT;
   int sc_Nclus_ = IDSlimNtuple::NEG_INT;
+  int sc_Nclus_deta01_ = IDSlimNtuple::NEG_INT;
+  int sc_Nclus_deta02_ = IDSlimNtuple::NEG_INT;
+  int sc_Nclus_deta03_ = IDSlimNtuple::NEG_INT;  
   bool sc_goodSeed_ = false;
+  float sc_E_ps_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_E_ps1_= IDSlimNtuple::NEG_FLOAT;
+  float sc_E_ps2_= IDSlimNtuple::NEG_FLOAT;
 
   // Clusters 
   float sc_cluster_et_[NCLUS_MAX]    = {IDSlimNtuple::NEG_FLOAT}; 
@@ -289,29 +305,38 @@ class IDSlimNtuple {
   float sc_cluster_eMaxOver1x3_[NCLUS_MAX] = {IDSlimNtuple::NEG_FLOAT};
 
   // When running on miniaod, only 3 highest ET clusters only
-  float sc_clus1_et_=0;
-  float sc_clus1_E_=0;
-  float sc_clus1_eta_=0;
-  float sc_clus1_phi_=0;
-  int sc_clus1_nxtal_=0;
-  float sc_clus1_dphi_=0;
-  float sc_clus1_deta_=0;
+  float sc_clus1_et_     = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_E_      = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_E_ov_p_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_E_ov_E_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_eta_    = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_phi_    = IDSlimNtuple::NEG_FLOAT;
+  int sc_clus1_nxtal_    = IDSlimNtuple::NEG_INT;
+  float sc_clus1_dphi_   = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_deta_   = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus1_ntrk_deta01_ = IDSlimNtuple::NEG_FLOAT;
   //
-  float sc_clus2_et_=0;
-  float sc_clus2_E_=0;
-  float sc_clus2_eta_=0;
-  float sc_clus2_phi_=0;
-  int sc_clus2_nxtal_=0;
-  float sc_clus2_dphi_=0;
-  float sc_clus2_deta_=0;
+  float sc_clus2_et_     = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_E_      = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_E_ov_p_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_E_ov_E_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_eta_    = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_phi_    = IDSlimNtuple::NEG_FLOAT;
+  int sc_clus2_nxtal_    = IDSlimNtuple::NEG_INT;
+  float sc_clus2_dphi_   = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_deta_   = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus2_ntrk_deta01_ =IDSlimNtuple::NEG_FLOAT;
   //
-  float sc_clus3_et_=0;
-  float sc_clus3_E_=0;
-  float sc_clus3_eta_=0;
-  float sc_clus3_phi_=0;
-  int sc_clus3_nxtal_=0;
-  float sc_clus3_dphi_=0;
-  float sc_clus3_deta_=0;
+  float sc_clus3_et_     = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_E_      = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_E_ov_p_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_E_ov_E_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_eta_    = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_phi_    = IDSlimNtuple::NEG_FLOAT;
+  int sc_clus3_nxtal_    = IDSlimNtuple::NEG_INT;
+  float sc_clus3_dphi_   = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_deta_   = IDSlimNtuple::NEG_FLOAT;
+  float sc_clus3_ntrk_deta01_ = IDSlimNtuple::NEG_FLOAT;
 };
 
 #endif // LowPtElectrons_LowPtElectrons_IDSlimNtuple
