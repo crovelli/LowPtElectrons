@@ -38,6 +38,7 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
   tree->Branch("ele_dr", &ele_dr_, "ele_dr/f");
   
+  tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
   tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
@@ -109,6 +110,7 @@ void IDNtuple::link_tree( TTree *tree ) {
   //tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
   
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
+  tree->Branch("ele_pt", &ele_pt_, "ele_pt/f");
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
   tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
 
@@ -441,6 +443,7 @@ void IDNtuple::fill_ele( const reco::GsfElectronPtr ele,
 
     // Kinematics 
     ele_p_ = ele->p();
+    ele_pt_ = ele->pt();
     ele_eta_ = ele->eta();
     ele_phi_ = ele->phi();
     
