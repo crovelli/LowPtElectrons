@@ -20,13 +20,8 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   std::cout<<"I am running IDSlimNtuple::link_tree"<<std::endl; 
 
   // general
-  tree->Branch("run",  &run_ , "run/i");
-  tree->Branch("lumi", &lumi_, "lumi/i");
   tree->Branch("evt",  &evt_ , "evt/i");  
   tree->Branch("weight", &weight_, "weight/f"); 
-  tree->Branch("rho", &rho_, "rho/f");
-  tree->Branch("is_aod", &is_aod_, "is_aod/i");
-  tree->Branch("is_mc", &is_mc_, "is_mc/i");
   tree->Branch("is_e", &is_e_, "is_e/O");
   tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O"); 
   tree->Branch("is_other", &is_other_, "is_other/O");
@@ -35,98 +30,106 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("has_seed", &has_seed_, "has_seed/O");
   tree->Branch("has_gsf", &has_gsf_, "has_gsf/O");
   tree->Branch("has_ele", &has_ele_, "has_ele/O");
+  if (largeNtuple) {
+    tree->Branch("run",  &run_ , "run/i");
+    tree->Branch("lumi", &lumi_, "lumi/i");
+    tree->Branch("is_aod", &is_aod_, "is_aod/i");
+    tree->Branch("is_mc", &is_mc_, "is_mc/i");
+    tree->Branch("rho", &rho_, "rho/f");
+  }
 
   // gen-level particles matched to reco-electron
-  tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
-  tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
-  tree->Branch("gen_p", &gen_p_, "gen_p/f");
-  tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
-  tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
-  tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
-  tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
   tree->Branch("gen_tag_side", &gen_tag_side_, "gen_tag_side/I");   
-  tree->Branch("gen_trk_dr" , &gen_trk_dr_ , "gen_trk_dr/f" );
-  tree->Branch("gen_gsf_dr" , &gen_gsf_dr_ , "gen_gsf_dr/f" );
-  
+  tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
+  if (largeNtuple) {
+    tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
+    tree->Branch("gen_p", &gen_p_, "gen_p/f");
+    tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
+    tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
+    tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
+    tree->Branch("gen_gran_pdgid", &gen_gran_pdgid_, "gen_gran_pdgid/I");
+    tree->Branch("gen_trk_dr" , &gen_trk_dr_ , "gen_trk_dr/f" );
+    tree->Branch("gen_gsf_dr" , &gen_gsf_dr_ , "gen_gsf_dr/f" );
+  }
+
   // GSF track associated to electron
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
-  tree->Branch("gsf_bdtout1", &seed_unbiased_, "gsf_bdtout1/f");
-  tree->Branch("gsf_bdtout2", &seed_ptbiased_, "gsf_bdtout2/f");
   tree->Branch("gsf_pt", &gsf_pt_, "gsf_pt/f");
-  tree->Branch("gsf_eta", &gsf_eta_, "gsf_eta/f");
-  tree->Branch("gsf_phi", &gsf_phi_, "gsf_phi/f");
-  tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
-  tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
-  tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
-  tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
-  tree->Branch("gsf_mode_pt", &gsf_mode_pt_, "gsf_mode_pt/f");
-  tree->Branch("gsf_mode_eta", &gsf_mode_eta_, "gsf_mode_eta/f");
-  tree->Branch("gsf_mode_phi", &gsf_mode_phi_, "gsf_mode_phi/f");
+  tree->Branch("gsf_bdtout1", &seed_unbiased_, "gsf_bdtout1/f");
   tree->Branch("gsf_mode_p", &gsf_mode_p_, "gsf_mode_p/f");
-  tree->Branch("gsf_missing_inner_hits", &gsf_missing_inner_hits_, "gsf_missing_inner_hits/I");
-  tree->Branch("gsf_dxy",  &gsf_dxy_, "gsf_dxy/f");
-  tree->Branch("gsf_dxy_err",&gsf_dxy_err_, "gsf_dxy_err/f");
-  tree->Branch("gsf_dz",  &gsf_dz_, "gsf_dz/f");
-  tree->Branch("gsf_dz_err",&gsf_dz_err_, "gsf_dz_err/f");
-  tree->Branch("gsf_x",  &gsf_x_, "gsf_x/f");
-  tree->Branch("gsf_y",  &gsf_y_, "gsf_y/f");
-  tree->Branch("gsf_z",  &gsf_z_, "gsf_z/f");
-
-  //tree->Branch("gsf_ntangents", &gsf_ntangents_, "gsf_ntangents/I");
-  //tree->Branch("gsf_hit_dpt", gsf_hit_dpt_, "gsf_hit_dpt[gsf_ntangents]/f");
-  //tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
-  //tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
-  //tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
+  tree->Branch("gsf_eta", &gsf_eta_, "gsf_eta/f");
+  if (largeNtuple) {
+    tree->Branch("gsf_bdtout2", &seed_ptbiased_, "gsf_bdtout2/f");
+    tree->Branch("gsf_phi", &gsf_phi_, "gsf_phi/f");
+    tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
+    tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
+    tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
+    tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
+    tree->Branch("gsf_mode_pt", &gsf_mode_pt_, "gsf_mode_pt/f");
+    tree->Branch("gsf_mode_eta", &gsf_mode_eta_, "gsf_mode_eta/f");
+    tree->Branch("gsf_mode_phi", &gsf_mode_phi_, "gsf_mode_phi/f");
+    tree->Branch("gsf_missing_inner_hits", &gsf_missing_inner_hits_, "gsf_missing_inner_hits/I");
+    tree->Branch("gsf_dxy",  &gsf_dxy_, "gsf_dxy/f");
+    tree->Branch("gsf_dxy_err",&gsf_dxy_err_, "gsf_dxy_err/f");
+    tree->Branch("gsf_dz",  &gsf_dz_, "gsf_dz/f");
+    tree->Branch("gsf_dz_err",&gsf_dz_err_, "gsf_dz_err/f");
+    tree->Branch("gsf_x",  &gsf_x_, "gsf_x/f");
+    tree->Branch("gsf_y",  &gsf_y_, "gsf_y/f");
+    tree->Branch("gsf_z",  &gsf_z_, "gsf_z/f");
+  }
 
   // General track associated to electron
   tree->Branch("trk_dr", &trk_dr_, "trk_dr/f");
   tree->Branch("trk_pt", &trk_pt_, "trk_pt/f");
   tree->Branch("trk_eta", &trk_eta_, "trk_eta/f");
-  tree->Branch("trk_phi", &trk_phi_, "trk_phi/f");
-  tree->Branch("trk_p", &trk_p_, "trk_p/f");
-  tree->Branch("trk_charge", &trk_charge_, "trk_charge/I");
-  tree->Branch("trk_inp", &trk_inp_, "trk_inp/f");
-  tree->Branch("trk_outp", &trk_outp_, "trk_outp/f");
-  tree->Branch("pdg_id", &pdg_id_, "pdg_id/I");
-  tree->Branch("trk_nhits", &trk_nhits_, "trk_nhits/I");
-  tree->Branch("trk_missing_inner_hits", &trk_missing_inner_hits_, "trk_missing_inner_hits/I"); 
-  tree->Branch("trk_chi2red", &trk_chi2red_, "trk_chi2red/f");
-  tree->Branch("trk_dxy", &trk_dxy_, "trk_dxy/f");
-  tree->Branch("trk_dxy_err", &trk_dxy_err_, "trk_dxy_err/f");
-  tree->Branch("trk_dz", &trk_dz_, "trk_dz/f");
-  tree->Branch("trk_dz_err", &trk_dz_err_, "trk_dz_err/f");
-  tree->Branch("trk_dEdx1", &trk_dEdx1_, "trk_dEdx1/f");
-  tree->Branch("trk_dEdx1_Nm", &trk_dEdx1_Nm_, "trk_dEdx1_Nm/I");
-  tree->Branch("trk_dEdx1_NSm", &trk_dEdx1_NSm_, "trk_dEdx1_NSm/I");
-  tree->Branch("trk_high_purity", &trk_high_purity_, "trk_high_purity/I");
+  if (largeNtuple) {
+    tree->Branch("trk_phi", &trk_phi_, "trk_phi/f");
+    tree->Branch("trk_p", &trk_p_, "trk_p/f");
+    tree->Branch("trk_charge", &trk_charge_, "trk_charge/I");
+    tree->Branch("trk_inp", &trk_inp_, "trk_inp/f");
+    tree->Branch("trk_outp", &trk_outp_, "trk_outp/f");
+    tree->Branch("pdg_id", &pdg_id_, "pdg_id/I");
+    tree->Branch("trk_nhits", &trk_nhits_, "trk_nhits/I");
+    tree->Branch("trk_missing_inner_hits", &trk_missing_inner_hits_, "trk_missing_inner_hits/I"); 
+    tree->Branch("trk_chi2red", &trk_chi2red_, "trk_chi2red/f");
+    tree->Branch("trk_dxy", &trk_dxy_, "trk_dxy/f");
+    tree->Branch("trk_dxy_err", &trk_dxy_err_, "trk_dxy_err/f");
+    tree->Branch("trk_dz", &trk_dz_, "trk_dz/f");
+    tree->Branch("trk_dz_err", &trk_dz_err_, "trk_dz_err/f");
+    tree->Branch("trk_dEdx1", &trk_dEdx1_, "trk_dEdx1/f");
+    tree->Branch("trk_dEdx1_Nm", &trk_dEdx1_Nm_, "trk_dEdx1_Nm/I");
+    tree->Branch("trk_dEdx1_NSm", &trk_dEdx1_NSm_, "trk_dEdx1_NSm/I");
+    tree->Branch("trk_high_purity", &trk_high_purity_, "trk_high_purity/I");
+  }
 
   // Electron - kinematics
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
   tree->Branch("ele_pt", &ele_pt_, "ele_pt/f");
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
-  tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
-  tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
   tree->Branch("core_shFracHits",&core_shFracHits_,"core_shFracHits/f");
-  tree->Branch("ele_p_atvtx",&ele_p_atvtx_,"ele_p_atvtx/F"); 
-  tree->Branch("ele_p_atcalo",&ele_p_atcalo_,"ele_p_atcalo/F"); 
-
   tree->Branch("fiducial_isEB",&fiducial_isEB_,"fiducial_isEB/I");
   tree->Branch("fiducial_isEE",&fiducial_isEE_,"fiducial_isEE/I"); 
   tree->Branch("fiducial_isEBEEGap",&fiducial_isEBEEGap_,"fiducial_isEBEEGap/I"); 
+  if (largeNtuple) {
+    tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
+    tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
+    tree->Branch("ele_p_atvtx",&ele_p_atvtx_,"ele_p_atvtx/F"); 
+    tree->Branch("ele_p_atcalo",&ele_p_atcalo_,"ele_p_atcalo/F"); 
+  }
 
   // Electron - charge
-  tree->Branch("chPix",&chPix_,"chPix/I");
-  tree->Branch("chGCP",&chGCP_,"chGCP/I");
-  tree->Branch("chGP",&chGP_,"chGP/I");
-  tree->Branch("chGC",&chGC_,"chGC/I");
+  if (largeNtuple) {
+    tree->Branch("chPix",&chPix_,"chPix/I");
+    tree->Branch("chGCP",&chGCP_,"chGCP/I");
+    tree->Branch("chGP",&chGP_,"chGP/I");
+    tree->Branch("chGC",&chGC_,"chGC/I");
+  }
 
   // Electron - id
   tree->Branch("ele_mva_value", &ele_mva_value_, "ele_mva_value/f");
   tree->Branch("ele_mva_id", &ele_mva_id_, "ele_mva_id/I");
-  tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
-  tree->Branch("eid_rho", &eid_rho_, "eid_rho/f");
   tree->Branch("eid_ele_pt", &eid_ele_pt_, "eid_ele_pt/f");
   tree->Branch("eid_sc_eta", &eid_sc_eta_, "eid_sc_eta/f");
   tree->Branch("eid_shape_full5x5_sigmaIetaIeta", &eid_shape_full5x5_sigmaIetaIeta_, "eid_shape_full5x5_sigmaIetaIeta/f");
@@ -148,29 +151,42 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("eid_match_seed_dEta", &eid_match_seed_dEta_, "eid_match_seed_dEta/f");
   tree->Branch("eid_sc_E", &eid_sc_E_,   "eid_sc_E/f");
   tree->Branch("eid_trk_p", &eid_trk_p_, "eid_trk_p/f");
+  tree->Branch("eid_rho", &eid_rho_, "eid_rho/f");
+  if (largeNtuple) {
+    tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
+  }
+
+  // Electron - isolation
+  tree->Branch("ele_sumPhotonEt",        &ele_sumPhotonEt_,        "ele_sumPhotonEt/f");
+  tree->Branch("ele_sumChargedHadronPt", &ele_sumChargedHadronPt_, "ele_sumChargedHadronPt/f");
+  tree->Branch("ele_sumNeutralHadronEt", &ele_sumNeutralHadronEt_, "ele_sumNeutralHadronEt/f");
 
   // Electron - further track-Cluster matching
-  tree->Branch("match_seed_EoverP",&match_seed_EoverP_); 
-  tree->Branch("match_seed_EoverPout",&match_seed_EoverPout_); 
-  tree->Branch("match_seed_dPhi",&match_seed_dPhi_); 
-  tree->Branch("match_seed_dEta_vtx",&match_seed_dEta_vtx_); 
-  tree->Branch("match_eclu_EoverPout",&match_eclu_EoverPout_); 
-  tree->Branch("match_eclu_dEta",&match_eclu_dEta_); 
-  tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
+  if (largeNtuple) {
+    tree->Branch("match_seed_EoverP",&match_seed_EoverP_); 
+    tree->Branch("match_seed_EoverPout",&match_seed_EoverPout_); 
+    tree->Branch("match_seed_dPhi",&match_seed_dPhi_); 
+    tree->Branch("match_seed_dEta_vtx",&match_seed_dEta_vtx_); 
+    tree->Branch("match_eclu_EoverPout",&match_eclu_EoverPout_); 
+    tree->Branch("match_eclu_dEta",&match_eclu_dEta_); 
+    tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
+  }
 
   // Electron - further full 5x5 shower shapes
   tree->Branch("shape_full5x5_e1x5",&shape_full5x5_e1x5_); 
   tree->Branch("shape_full5x5_e2x5Max",&shape_full5x5_e2x5Max_); 
   tree->Branch("shape_full5x5_e5x5",&shape_full5x5_e5x5_);
-  tree->Branch("shape_full5x5_HoverEBc",&shape_full5x5_HoverEBc_); 
-  tree->Branch("shape_full5x5_hcalDepth1",&shape_full5x5_hcalDepth1_); 
-  tree->Branch("shape_full5x5_hcalDepth2",&shape_full5x5_hcalDepth2_); 
-  tree->Branch("shape_full5x5_hcalDepth1Bc",&shape_full5x5_hcalDepth1Bc_); 
-  tree->Branch("shape_full5x5_hcalDepth2Bc",&shape_full5x5_hcalDepth2Bc_); 
   tree->Branch("shape_full5x5_eLeft",&shape_full5x5_eLeft_); 
   tree->Branch("shape_full5x5_eRight",&shape_full5x5_eRight_); 
   tree->Branch("shape_full5x5_eTop",&shape_full5x5_eTop_); 
   tree->Branch("shape_full5x5_eBottom",&shape_full5x5_eBottom_); 
+  if (largeNtuple) {
+    tree->Branch("shape_full5x5_HoverEBc",&shape_full5x5_HoverEBc_); 
+    tree->Branch("shape_full5x5_hcalDepth1",&shape_full5x5_hcalDepth1_); 
+    tree->Branch("shape_full5x5_hcalDepth2",&shape_full5x5_hcalDepth2_); 
+    tree->Branch("shape_full5x5_hcalDepth1Bc",&shape_full5x5_hcalDepth1Bc_); 
+    tree->Branch("shape_full5x5_hcalDepth2Bc",&shape_full5x5_hcalDepth2Bc_); 
+  }
 
   // Electron - brem fractions
   tree->Branch("brem_fracTrk",&brem_fracTrk_); 
@@ -178,9 +194,17 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
 
   // SuperCluster associated to the electron
-  tree->Branch("sc_Et",&sc_Et_); 
-  tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
   tree->Branch("sc_goodSeed",&sc_goodSeed_,"sc_goodSeed/O");
+  tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
+  tree->Branch("sc_Nclus_deta01",&sc_Nclus_deta01_,"sc_Nclus_deta01/I"); 
+  tree->Branch("sc_Nclus_deta02",&sc_Nclus_deta02_,"sc_Nclus_deta02/I"); 
+  tree->Branch("sc_Nclus_deta03",&sc_Nclus_deta03_,"sc_Nclus_deta03/I"); 
+  tree->Branch("sc_E_ps",&sc_E_ps_,"sc_E_ps/F");
+  tree->Branch("sc_E_ps1",&sc_E_ps1_,"sc_E_ps1/F");
+  tree->Branch("sc_E_ps2",&sc_E_ps2_,"sc_E_ps2/F");
+  if (largeNtuple) {
+    tree->Branch("sc_Et",&sc_Et_); 
+  }
 
   // Clusters making the SC 
   bool cluster_in_rootuple=false;     
@@ -209,36 +233,53 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
     tree->Branch("sc_cluster_eMaxOver3x3", sc_cluster_eMaxOver3x3_, "sc_cluster_eMaxOver3x3[sc_Nclus]/F");
     tree->Branch("sc_cluster_eMaxOver1x3", sc_cluster_eMaxOver1x3_, "sc_cluster_eMaxOver1x3[sc_Nclus]/F");
   } else {
-    tree->Branch("sc_clus1_et",    &sc_clus1_et_,    "sc_clus1_et/F");
-    tree->Branch("sc_clus1_E",     &sc_clus1_E_,     "sc_clus1_E/F");
-    tree->Branch("sc_clus1_eta",   &sc_clus1_eta_,   "sc_clus1_eta/F");
-    tree->Branch("sc_clus1_phi",   &sc_clus1_phi_,   "sc_clus1_phi/F");
-    tree->Branch("sc_clus1_nxtal", &sc_clus1_nxtal_, "sc_clus1_nxtal/I");
-    tree->Branch("sc_clus1_dphi",  &sc_clus1_dphi_,  "sc_clus1_dphi/F");
-    tree->Branch("sc_clus1_deta",  &sc_clus1_deta_,  "sc_clus1_deta/F");
+    tree->Branch("sc_clus1_E",      &sc_clus1_E_,      "sc_clus1_E/F");
+    tree->Branch("sc_clus1_E_ov_p", &sc_clus1_E_ov_p_, "sc_clus1_E_ov_p/F");
+    tree->Branch("sc_clus1_E_ov_E", &sc_clus1_E_ov_E_, "sc_clus1_E_ov_E/F");
+    tree->Branch("sc_clus1_eta",    &sc_clus1_eta_,    "sc_clus1_eta/F");
+    tree->Branch("sc_clus1_phi",    &sc_clus1_phi_,    "sc_clus1_phi/F");
+    tree->Branch("sc_clus1_nxtal",  &sc_clus1_nxtal_,  "sc_clus1_nxtal/I");
+    tree->Branch("sc_clus1_dphi",   &sc_clus1_dphi_,   "sc_clus1_dphi/F");
+    tree->Branch("sc_clus1_deta",   &sc_clus1_deta_,   "sc_clus1_deta/F");
+    tree->Branch("sc_clus1_ntrk_deta01",  &sc_clus1_ntrk_deta01_,  "sc_clus1_ntrk_deta01/F");
+    if (largeNtuple) {
+      tree->Branch("sc_clus1_et",     &sc_clus1_et_,     "sc_clus1_et/F");
+    }
     //
-    tree->Branch("sc_clus2_et",    &sc_clus2_et_,   "sc_clus2_et/F");
-    tree->Branch("sc_clus2_E",     &sc_clus2_E_,    "sc_clus2_E/F");
-    tree->Branch("sc_clus2_eta",   &sc_clus2_eta_,  "sc_clus2_eta/F");
-    tree->Branch("sc_clus2_phi",   &sc_clus2_phi_,  "sc_clus2_phi/F");
-    tree->Branch("sc_clus2_nxtal", &sc_clus2_nxtal_, "sc_clus2_nxtal/I");
-    tree->Branch("sc_clus2_dphi",  &sc_clus2_dphi_,  "sc_clus2_dphi/F");
-    tree->Branch("sc_clus2_deta",  &sc_clus2_deta_,  "sc_clus2_deta/F");
+    tree->Branch("sc_clus2_E",      &sc_clus2_E_,    "sc_clus2_E/F");
+    tree->Branch("sc_clus2_E_ov_p", &sc_clus2_E_ov_p_,     "sc_clus2_E_ov_p/F");
+    tree->Branch("sc_clus2_E_ov_E", &sc_clus2_E_ov_E_,     "sc_clus2_E_ov_E/F");
+    tree->Branch("sc_clus2_eta",    &sc_clus2_eta_,  "sc_clus2_eta/F");
+    tree->Branch("sc_clus2_phi",    &sc_clus2_phi_,  "sc_clus2_phi/F");
+    tree->Branch("sc_clus2_nxtal",  &sc_clus2_nxtal_, "sc_clus2_nxtal/I");
+    tree->Branch("sc_clus2_dphi",   &sc_clus2_dphi_,  "sc_clus2_dphi/F");
+    tree->Branch("sc_clus2_deta",   &sc_clus2_deta_,  "sc_clus2_deta/F");
+    tree->Branch("sc_clus2_ntrk_deta01",  &sc_clus2_ntrk_deta01_,  "sc_clus2_ntrk_deta01/F");
+    if (largeNtuple) {
+      tree->Branch("sc_clus2_et",     &sc_clus2_et_,   "sc_clus2_et/F");
+    }
     //
-    tree->Branch("sc_clus3_et",    &sc_clus3_et_,   "sc_clus3_et/F");
-    tree->Branch("sc_clus3_E",     &sc_clus3_E_,    "sc_clus3_E/F");
-    tree->Branch("sc_clus3_eta",   &sc_clus3_eta_,  "sc_clus3_eta/F");
-    tree->Branch("sc_clus3_phi",   &sc_clus3_phi_,  "sc_clus3_phi/F");
-    tree->Branch("sc_clus3_nxtal", &sc_clus3_nxtal_, "sc_clus3_nxtal/I");
-    tree->Branch("sc_clus3_dphi",  &sc_clus3_dphi_,  "sc_clus3_dphi/F");
-    tree->Branch("sc_clus3_deta",  &sc_clus3_deta_,  "sc_clus3_deta/F");
+    tree->Branch("sc_clus3_E",      &sc_clus3_E_,    "sc_clus3_E/F");
+    tree->Branch("sc_clus3_E_ov_p", &sc_clus3_E_ov_p_,     "sc_clus3_E_ov_p/F");
+    tree->Branch("sc_clus3_E_ov_E", &sc_clus3_E_ov_E_,     "sc_clus3_E_ov_E/F");
+    tree->Branch("sc_clus3_eta",    &sc_clus3_eta_,  "sc_clus3_eta/F");
+    tree->Branch("sc_clus3_phi",    &sc_clus3_phi_,  "sc_clus3_phi/F");
+    tree->Branch("sc_clus3_nxtal",  &sc_clus3_nxtal_, "sc_clus3_nxtal/I");
+    tree->Branch("sc_clus3_dphi",   &sc_clus3_dphi_,  "sc_clus3_dphi/F");
+    tree->Branch("sc_clus3_deta",   &sc_clus3_deta_,  "sc_clus3_deta/F");
+    tree->Branch("sc_clus3_ntrk_deta01",  &sc_clus3_ntrk_deta01_,  "sc_clus3_ntrk_deta01/F");
+    if (largeNtuple) {
+      tree->Branch("sc_clus3_et",     &sc_clus3_et_,   "sc_clus3_et/F");
+    }
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 void IDSlimNtuple::fill_evt( const edm::EventID& id ) {  
-  run_  = id.run();
-  lumi_ = id.luminosityBlock();
+  if (largeNtuple) { 
+    run_  = id.run();
+    lumi_ = id.luminosityBlock();
+  }
   evt_  = id.event();
 }
 
@@ -247,75 +288,85 @@ void IDSlimNtuple::fill_gen( const reco::GenParticlePtr genp ) {
 
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
-  gen_phi_ = genp->phi();
-  gen_p_ = genp->p();
-  gen_charge_ = genp->charge();
-  gen_pdgid_ = genp->pdgId();
-  if ( genp->mother(0) )
-    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
-  else 
-    gen_mom_pdgid_ = 0;
-  if ( (genp->mother(0))->mother(0) )
-    gen_gran_pdgid_ = ( *(*genp->mother(0)).mother(0)).pdgId();
-  else 
-    gen_gran_pdgid_ = 0;
+  if (largeNtuple) {   
+    gen_phi_ = genp->phi();
+    gen_p_ = genp->p();
+    gen_charge_ = genp->charge();
+    gen_pdgid_ = genp->pdgId();
+    if ( genp->mother(0) )
+      gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
+    else 
+      gen_mom_pdgid_ = 0;
+    if ( (genp->mother(0))->mother(0) )
+      gen_gran_pdgid_ = ( *(*genp->mother(0)).mother(0)).pdgId();
+    else 
+      gen_gran_pdgid_ = 0;
+  }
 }
 
 void IDSlimNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {  
 
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
-  gen_phi_ = genp->phi();
-  gen_p_ = genp->p();
-  gen_charge_ = genp->charge();
-  gen_pdgid_ = genp->pdgId();
-  if ( genp->mother(0) )
-    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
-  else 
-    gen_mom_pdgid_ = 0;
-  if ( (genp->mother(0))->mother(0) )
-    gen_gran_pdgid_ = ( *(*genp->mother(0)).mother(0)).pdgId();
-  else 
-    gen_gran_pdgid_ = 0;
+  if (largeNtuple) {  
+    gen_phi_ = genp->phi();
+    gen_p_ = genp->p();
+    gen_charge_ = genp->charge();
+    gen_pdgid_ = genp->pdgId();
+    if ( genp->mother(0) )
+      gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
+    else 
+      gen_mom_pdgid_ = 0;
+    if ( (genp->mother(0))->mother(0) )
+      gen_gran_pdgid_ = ( *(*genp->mother(0)).mother(0)).pdgId();
+    else 
+      gen_gran_pdgid_ = 0;
+  }
 }
 
 void IDSlimNtuple::fill_gen_default() {
 
   gen_pt_  = -999.;
   gen_eta_ = -999.;
-  gen_phi_ = -999.;
-  gen_p_   = -999.;
-  gen_charge_ = -999; 
-  gen_pdgid_  = -999;
-  gen_mom_pdgid_  = -999; 
-  gen_gran_pdgid_ = -999;
+  if (largeNtuple) {  
+    gen_phi_ = -999.;
+    gen_p_   = -999.;
+    gen_charge_ = -999; 
+    gen_pdgid_  = -999;
+    gen_mom_pdgid_  = -999; 
+    gen_gran_pdgid_ = -999;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 void IDSlimNtuple::fill_trk( const reco::TrackPtr& trk,
 			 const reco::BeamSpot& spot ) {       
-  
-  if ( trk.isNonnull() ) {
+
+  if ( trk.isNonnull() ) {   // should never happen
     // kine
     trk_pt_ = trk->pt();
     trk_eta_ = trk->eta();
-    trk_phi_ = trk->phi();
-    trk_p_ = trk->p();
-    trk_charge_ = trk->charge();
-    if ( trk->extra().isAvailable() && trk->extra().isNonnull() ) {
-      trk_inp_ = sqrt( trk->innerMomentum().mag2() );
-      trk_outp_ = sqrt( trk->outerMomentum().mag2() );
-    }
-    // quality
-    trk_nhits_ = trk->found();
-    trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
-    trk_chi2red_ = trk->normalizedChi2();
-    trk_high_purity_=trk->quality( reco::TrackBase::qualityByName("highPurity") ) ;
-    // displ
-    trk_dxy_ = trk->dxy(spot);
-    trk_dxy_err_ = trk->dxyError();
-    trk_dz_ = trk->dz(spot.position());
-    trk_dz_err_ = trk->dzError();        
+    
+    if (largeNtuple) {
+      trk_phi_ = trk->phi();
+      trk_p_ = trk->p();
+      trk_charge_ = trk->charge();
+      if ( trk->extra().isAvailable() && trk->extra().isNonnull() ) {
+	trk_inp_ = sqrt( trk->innerMomentum().mag2() );
+	trk_outp_ = sqrt( trk->outerMomentum().mag2() );
+      }
+      // quality
+      trk_nhits_ = trk->found();
+      trk_missing_inner_hits_ = trk->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
+      trk_chi2red_ = trk->normalizedChi2();
+      trk_high_purity_=trk->quality( reco::TrackBase::qualityByName("highPurity") ) ;
+      // displ
+      trk_dxy_ = trk->dxy(spot);
+      trk_dxy_err_ = trk->dxyError();
+      trk_dz_ = trk->dz(spot.position());
+      trk_dz_err_ = trk->dzError();        
+    } 
+
   }
   
 }
@@ -323,28 +374,35 @@ void IDSlimNtuple::fill_trk( const reco::TrackPtr& trk,
 void IDSlimNtuple::fill_trk_dEdx( const reco::TrackPtr& trk,
 				  std::vector<const edm::ValueMap<reco::DeDxData>*>& v_dEdx ) {
 
-  if ( trk.isNonnull() ) {
-    const edm::ValueMap<reco::DeDxData>& dEdxTrack = *(v_dEdx[0]);
-    const reco::DeDxData& dedx = dEdxTrack[trk];
-    trk_dEdx1_=dedx.dEdx();
-    trk_dEdx1_Nm_=dedx.numberOfMeasurements();
-    trk_dEdx1_NSm_=dedx.numberOfSaturatedMeasurements();
+  if ( trk.isNonnull() ) {    // should never happen    
+
+    if (largeNtuple) {
+      const edm::ValueMap<reco::DeDxData>& dEdxTrack = *(v_dEdx[0]);
+      const reco::DeDxData& dedx = dEdxTrack[trk];
+      trk_dEdx1_=dedx.dEdx();
+      trk_dEdx1_Nm_=dedx.numberOfMeasurements();
+      trk_dEdx1_NSm_=dedx.numberOfSaturatedMeasurements();
+    }
   }
 
 }
 
 void IDSlimNtuple::fill_trk_dEdx_default( ) {
 
-  trk_dEdx1_     = -999.;
-  trk_dEdx1_Nm_  = -999;
-  trk_dEdx1_NSm_ = -999;
+  if (largeNtuple) {
+    trk_dEdx1_     = -999.;
+    trk_dEdx1_Nm_  = -999;
+    trk_dEdx1_NSm_ = -999;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 void IDSlimNtuple::fill_bdt( double seed_unbiased, 
 			 double seed_ptbiased ) {          
   seed_unbiased_ = seed_unbiased;
-  seed_ptbiased_ = seed_ptbiased;
+  if (largeNtuple) { 
+    seed_ptbiased_ = seed_ptbiased;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -358,39 +416,38 @@ void IDSlimNtuple::fill_gsf( const reco::GsfTrackPtr gsf,
     // Kinematics
     gsf_pt_ = gsf->pt();
     gsf_eta_ = gsf->eta();
-    gsf_phi_ = gsf->phi();
-    gsf_p_ = gsf->p();
-    gsf_charge_ = gsf->charge();
-    if ( gsf->extra().isAvailable() && gsf->extra().isNonnull() ) {
-      gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
-      gsf_outp_ = sqrt(gsf->outerMomentum().mag2());
+    if (largeNtuple) {  
+      gsf_phi_ = gsf->phi();
+      gsf_p_ = gsf->p();
+      gsf_charge_ = gsf->charge();
+      if ( gsf->extra().isAvailable() && gsf->extra().isNonnull() ) {
+	gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
+	gsf_outp_ = sqrt(gsf->outerMomentum().mag2());
+      } else {
+	gsf_inp_  = -999.;
+	gsf_outp_ = -999.;
+      }
     }
-    
+
     // Kinematics (MODE)
-    gsf_mode_pt_ = gsf->ptMode();
-    gsf_mode_eta_ = gsf->etaMode();
-    gsf_mode_phi_ = gsf->phiMode();
+    if (largeNtuple) {  
+      gsf_mode_pt_ = gsf->ptMode();
+      gsf_mode_eta_ = gsf->etaMode();
+      gsf_mode_phi_ = gsf->phiMode();
+    }
     gsf_mode_p_ = gsf->pMode();
 
     // Quality
-    gsf_missing_inner_hits_ = gsf->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
-
-    // Displacement
-    gsf_dxy_ = gsf->dxy(spot);
-    gsf_dxy_err_ = gsf->dxyError();
-    gsf_dz_ = gsf->dz(spot.position());
-    gsf_dz_err_ = gsf->dzError();
-
-    // Tangents (requires TrackExtra)
-    //    const auto& extra = gsf->gsfExtra(); //@@ Collection does not exist?! 
-    //    if ( extra.isNonnull() ) {
-    //      gsf_ntangents_ = (extra->tangentsSize() > NHITS_MAX) ? NHITS_MAX : extra->tangentsSize();
-    //      for (int idx = 0; idx < gsf_ntangents_; idx++ ) {
-    //	gsf_hit_dpt_[idx] = extra->tangents().at(idx).deltaP().value();
-    //	gsf_hit_dpt_unc_[idx] = extra->tangents().at(idx).deltaP().error();
-    //      }
-    //    }
+    if (largeNtuple) 
+      gsf_missing_inner_hits_ = gsf->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
     
+      // Displacement
+    if (largeNtuple) {
+      gsf_dxy_ = gsf->dxy(spot);
+      gsf_dxy_err_ = gsf->dxyError();
+      gsf_dz_ = gsf->dz(spot.position());
+      gsf_dz_err_ = gsf->dzError();
+    }
   } 
 }
 
@@ -402,19 +459,21 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
 			 const double rho ) {       
 
 
-  if ( ele.isNonnull() ) {  
+  if ( ele.isNonnull() ) {   // should always be the case
 
     // Kinematics 
     ele_p_   = ele->p();
     ele_pt_  = ele->pt();
     ele_eta_ = ele->eta();
-    ele_phi_ = ele->phi();
+    if (largeNtuple) ele_phi_ = ele->phi();
 
     // Momentum
-    p4kind_  = ele->candidateP4Kind();
     core_shFracHits_ = ele->shFracInnerHits();
-    ele_p_atvtx_  = sqrt(ele->trackMomentumAtVtx().mag2());
-    ele_p_atcalo_ = sqrt(ele->trackMomentumAtCalo().mag2());
+    if (largeNtuple) {
+      p4kind_  = ele->candidateP4Kind();
+      ele_p_atvtx_  = sqrt(ele->trackMomentumAtVtx().mag2());
+      ele_p_atcalo_ = sqrt(ele->trackMomentumAtCalo().mag2());
+    }
 
     // Fiducial flags 
     fiducial_isEB_ = ele->isEB();
@@ -422,16 +481,21 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
     fiducial_isEBEEGap_ = ele->isEBEEGap();
 
     // Charge 
-    chPix_ = ele->scPixCharge();
-    chGCP_ = ele->isGsfCtfScPixChargeConsistent();
-    chGP_  = ele->isGsfScPixChargeConsistent();
-    chGC_  = ele->isGsfCtfChargeConsistent();    
+    if (largeNtuple) {
+      chPix_ = ele->scPixCharge();
+      chGCP_ = ele->isGsfCtfScPixChargeConsistent();
+      chGP_  = ele->isGsfScPixChargeConsistent();
+      chGC_  = ele->isGsfCtfChargeConsistent();    
+    }
 
     // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
     if ( mva_value > -666. ) { ele_mva_value_ = mva_value; }
-    if ( mva_id > -666 ) { ele_mva_id_ = mva_id; }
-    if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
-    
+    if ( mva_id > -666 )     { ele_mva_id_ = mva_id; }
+
+    if (largeNtuple) { 
+      if ( ele_conv_vtx_fit_prob > -666. ) ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; 
+    }
+
     // ElectronID variables
     lowptgsfeleid::Features features;
     features.set(ele,rho);
@@ -461,28 +525,37 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
     eid_sc_E_ = vfeatures[idx++];
     eid_trk_p_ = vfeatures[idx++];
 
+    // Isolation
+    ele_sumPhotonEt_        = ele->pfIsolationVariables().sumPhotonEt;
+    ele_sumChargedHadronPt_ = ele->pfIsolationVariables().sumChargedHadronPt;
+    ele_sumNeutralHadronEt_ = ele->pfIsolationVariables().sumNeutralHadronEt;
+
     // Further track-Cluster matching 
-    match_seed_EoverP_    = ele->eSeedClusterOverP();
-    match_seed_EoverPout_ = ele->eSeedClusterOverPout();
-    match_seed_dPhi_      = ele->deltaPhiSeedClusterTrackAtCalo();
-    match_seed_dEta_vtx_  = ele->deltaEtaSeedClusterTrackAtVtx();
-    match_eclu_EoverPout_ = ele->eEleClusterOverPout();
-    match_eclu_dEta_ = ele->deltaEtaEleClusterTrackAtCalo();
-    match_eclu_dPhi_ = ele->deltaPhiEleClusterTrackAtCalo();
+    if (largeNtuple) {
+      match_seed_EoverP_    = ele->eSeedClusterOverP();
+      match_seed_EoverPout_ = ele->eSeedClusterOverPout();
+      match_seed_dPhi_      = ele->deltaPhiSeedClusterTrackAtCalo();
+      match_seed_dEta_vtx_  = ele->deltaEtaSeedClusterTrackAtVtx();
+      match_eclu_EoverPout_ = ele->eEleClusterOverPout();
+      match_eclu_dEta_ = ele->deltaEtaEleClusterTrackAtCalo();
+      match_eclu_dPhi_ = ele->deltaPhiEleClusterTrackAtCalo();
+    }
 
     // Further full 5x5 shower shape 
     shape_full5x5_e1x5_     = ele->full5x5_e1x5();
     shape_full5x5_e2x5Max_  = ele->full5x5_e2x5Max();
     shape_full5x5_e5x5_     = ele->full5x5_e5x5();
-    shape_full5x5_HoverEBc_ = ele->full5x5_hcalOverEcalBc();
-    shape_full5x5_hcalDepth1_    = ele->full5x5_hcalDepth1OverEcal();
-    shape_full5x5_hcalDepth2_    = ele->full5x5_hcalDepth2OverEcal();
-    shape_full5x5_hcalDepth1Bc_  = ele->full5x5_hcalDepth1OverEcalBc();
-    shape_full5x5_hcalDepth2Bc_  = ele->full5x5_hcalDepth2OverEcalBc();
     shape_full5x5_eLeft_   = ele->full5x5_eLeft();
     shape_full5x5_eRight_  = ele->full5x5_eRight();
     shape_full5x5_eTop_    = ele->full5x5_eTop();
     shape_full5x5_eBottom_ = ele->full5x5_eBottom();
+    if (largeNtuple) {
+      shape_full5x5_HoverEBc_ = ele->full5x5_hcalOverEcalBc();
+      shape_full5x5_hcalDepth1_    = ele->full5x5_hcalDepth1OverEcal();
+      shape_full5x5_hcalDepth2_    = ele->full5x5_hcalDepth2OverEcal();
+      shape_full5x5_hcalDepth1Bc_  = ele->full5x5_hcalDepth1OverEcalBc();
+      shape_full5x5_hcalDepth2Bc_  = ele->full5x5_hcalDepth2OverEcalBc();
+    }
 
     // Brem fractions and classification 
     brem_fracTrk_ = ele->trackFbrem();
@@ -530,9 +603,12 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
       clusNum++;
     }
   }
-  sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
-  sc_Nclus_ = sc->clustersSize();
 
+  if (largeNtuple) {
+    sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
+  }
+
+  sc_Nclus_ = sc->clustersSize();
   float seedEne = sc->seed()->energy();
   if ( fabs(seedEne-maxEne)<0.001 ) sc_goodSeed_ = true;
 }
@@ -540,15 +616,60 @@ void IDSlimNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
 // FC new method 
 void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 
+  // initialization in case of patological events
+  sc_clus1_E_      = -999.;
+  sc_clus1_E_ov_p_ = -999.;
+  sc_clus1_E_ov_E_ = -999.;      
+  sc_clus1_eta_    = -999.;
+  sc_clus1_phi_    = -999.;
+  sc_clus1_nxtal_  = -999;
+  sc_clus1_deta_   = -999.;
+  sc_clus1_dphi_   = -999.;
+  sc_clus2_E_      = -999.;
+  sc_clus2_E_ov_p_ = -999.;
+  sc_clus2_E_ov_E_ = -999.;      
+  sc_clus2_eta_    = -999.;
+  sc_clus2_phi_    = -999.;
+  sc_clus2_nxtal_  = -999;
+  sc_clus2_deta_   = -999.;
+  sc_clus2_dphi_   = -999.;
+  sc_clus3_E_      = -999.;
+  sc_clus3_E_ov_p_ = -999.;
+  sc_clus3_E_ov_E_ = -999.;      
+  sc_clus3_eta_    = -999.;
+  sc_clus3_phi_    = -999.;
+  sc_clus3_nxtal_  = -999;
+  sc_clus3_deta_   = -999.;
+  sc_clus3_dphi_   = -999.;
+  sc_Nclus_deta01_ = -999;
+  sc_Nclus_deta02_ = -999;   
+  sc_Nclus_deta03_ = -999;  
+  sc_Nclus_        = -999;
+  sc_goodSeed_     = false;
+  sc_E_ps_  = -999.; 
+  sc_E_ps1_ = -999.;
+  sc_E_ps2_ = -999.;
+  if (largeNtuple) {  
+    sc_Et_ = -999.;
+    gsf_x_ = -999.;  
+    gsf_y_ = -999.;  
+    gsf_z_ = -999.;  
+    sc_clus1_et_  = -999.;
+    sc_clus2_et_  = -999.;
+    sc_clus3_et_  = -999.;
+  }
+
+  // Analysis
   if ( ele.isNull() ) { return; }
   
   if ( ele->superCluster().isNull() ) { return; }
   const reco::SuperClusterRef& sc = ele->superCluster();
 
+  reco::GsfTrackPtr kfTrackRef = edm::refToPtr(ele->gsfTrack());
+  if (! validPtr(kfTrackRef) ) return;
+
   // Propagate 'electron' to ECAL surface
   double mass_=0.000511*0.000511; // ele mass 
-
-  reco::GsfTrackPtr kfTrackRef = edm::refToPtr(ele->gsfTrack());
 
   float p2=0;
   float px=0;
@@ -578,10 +699,6 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   float energy = sqrt(mass_ + p2);
   XYZTLorentzVector mom = XYZTLorentzVector(px,py,pz, energy);
   XYZTLorentzVector pos = XYZTLorentzVector(vx,vy,vz, 0.);
-
-  //  std::cout<<"ele part: pt/eta/phi"<<kfTrackRef->pt()<<"/"<<kfTrackRef->eta()<<"/"<<kfTrackRef->phi()<<" vtx"<<vx<<"/"<<vy<<"/"<<vz<<" energy="<<energy<<" charge="<< kfTrackRef->charge()<<std::endl;  
-
-  //  math::XYZVector field(field_->inTesla(GlobalPoint(0, 0, 0)));
   float field_z=3.8;
 
   BaseParticlePropagator mypart(RawParticle(mom,pos), 0, 0, field_z);
@@ -595,14 +712,13 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   // Preshower limit
   //  bool below_ps = pow(ecal_pos.z(), 2.) > boundary_ * ecal_pos.perp2();
   // Iterate through ECAL clusters
-
-  gsf_x_=mypart.x();
-  gsf_y_=mypart.y();
-  gsf_z_=mypart.z();
-
-
+  if (largeNtuple) {  
+    gsf_x_=mypart.x();
+    gsf_y_=mypart.y();
+    gsf_z_=mypart.z();
+  }
+  
   int clusNum=0;
-
   float maxEne1=-1;
   float maxEne2=-1;
   float maxEne3=-1;
@@ -610,133 +726,154 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   int i2=-1;
   int i3=-1;
 
-  for(auto& cluster : sc->clusters()) {
-    if (cluster->energy() > maxEne1){
-      maxEne1=cluster->energy();
-      i1=clusNum;
-    }
-    clusNum++;
-  }
-  if(sc->clustersSize()>1){
-    clusNum=0;
-    for(auto& cluster : sc->clusters()) {
-      if (clusNum!=i1) {
-	if (cluster->energy() > maxEne2){
-	  maxEne2=cluster->energy();
-	  i2=clusNum;
+  try{
+    if(sc->clustersSize()>0 && sc->clustersBegin()!=sc->clustersEnd()){
+
+      for(auto& cluster : sc->clusters()) {
+	if (cluster->energy() > maxEne1){
+	  maxEne1=cluster->energy();
+	  i1=clusNum;
+	}
+	clusNum++;
+      }
+      
+      if(sc->clustersSize()>1){
+	clusNum=0;
+	for(auto& cluster : sc->clusters()) {
+	  if (clusNum!=i1) {
+	    if (cluster->energy() > maxEne2){
+	      maxEne2=cluster->energy();
+	      i2=clusNum;
+	    }
+	  }
+	  clusNum++;
 	}
       }
-      clusNum++;
-    }
-  }
-  if(sc->clustersSize()>2){
-    clusNum=0;
-    for(auto& cluster : sc->clusters()) {
-      if (clusNum!=i1 && clusNum!=i2) {
-	if (cluster->energy() > maxEne3){
-	  maxEne3=cluster->energy();
-	  i3=clusNum;
+
+      if(sc->clustersSize()>2){
+	clusNum=0;
+	for(auto& cluster : sc->clusters()) {
+	  if (clusNum!=i1 && clusNum!=i2) {
+	    if (cluster->energy() > maxEne3){
+	      maxEne3=cluster->energy();
+	      i3=clusNum;
+	    }
+	  }
+	  clusNum++;
 	}
       }
-      clusNum++;
     }
+  } catch(...){
+    // std::cout<<"exception caught clusNum="<<clusNum<<" clus size"<<sc->clustersSize()<<" energy="<< sc->energy()<<std::endl;
   }
-
-  sc_clus1_et_    = -999.;
-  sc_clus1_E_     = -999.;
-  sc_clus1_eta_   = -999.;
-  sc_clus1_phi_   = -999.;
-  sc_clus1_nxtal_ = -999;
-  sc_clus1_deta_  = -999.;
-  sc_clus1_dphi_  = -999.;
-  //
-  sc_clus2_et_    = -999.;
-  sc_clus2_E_     = -999.;
-  sc_clus2_eta_   = -999.;
-  sc_clus2_phi_   = -999.;
-  sc_clus2_nxtal_ = -999;
-  sc_clus2_deta_  = -999.;
-  sc_clus2_dphi_  = -999.;
-  //
-  sc_clus3_et_    = -999.;
-  sc_clus3_E_     = -999.;
-  sc_clus3_eta_   = -999.;
-  sc_clus3_phi_   = -999.;
-  sc_clus3_nxtal_ = -999;
-  sc_clus3_deta_  = -999.;
-  sc_clus3_dphi_  = -999.;
-
 
   // trovati i 3 cluster piu` energetici 
   // riempio i primi 3 cluster in E 
   // i1 i2 i3 
   clusNum=0;
-  for(auto& cluster : sc->clusters()) {
 
-    // Correct ecal_pos for shower depth
-    //    double shower_depth = reco::PFCluster::getDepthCorrection(cluster->correctedEnergy(), below_ps, false);
-    //GlobalPoint showerPos = ecal_pos + GlobalVector(mypart.propagated().momentum().x(),
-    //						  mypart.propagated().momentum().y(),
-    //						  mypart.propagated().momentum().z()).unit() * shower_depth;
+  try{
+    if(sc->clustersSize()>0&& sc->clustersBegin()!=sc->clustersEnd()){
 
+      for(auto& cluster : sc->clusters()) {
 
-    double pi_=3.1415926535;
-    // Determine dR squared
-    //    float dr2 = reco::deltaR2(cluRef->positionREP(), showerPos);
-    // determine deta and dphi 
-    float deta = std::abs(ecal_pos.eta()-cluster->eta()) ;
-    float dphi = std::abs(ecal_pos.phi()-cluster->phi());
-    if (dphi > pi_)  dphi -= 2 * pi_;
-    if(ecal_pos.phi()-cluster->phi()<0) dphi=-dphi;
-    if(ecal_pos.eta()-cluster->eta()<0) deta=-deta;
+	double pi_=3.1415926535;
+	float deta = std::abs(ecal_pos.eta()-cluster->eta()) ;
+	float dphi = std::abs(ecal_pos.phi()-cluster->phi());
+	if (dphi > pi_)  dphi -= 2 * pi_;
+	if(ecal_pos.phi()-cluster->phi()<0) dphi=-dphi;
+	if(ecal_pos.eta()-cluster->eta()<0) deta=-deta;
 
-    if (clusNum==i1) {
-      float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
-      sc_clus1_et_    = clusterEt;
-      sc_clus1_E_     = cluster->energy();
-      sc_clus1_eta_   = cluster->eta();
-      sc_clus1_phi_   = cluster->phi();
-      sc_clus1_nxtal_ =(int) cluster->size();
-      if(reach_ECAL>0){
-	sc_clus1_deta_ = deta;
-	sc_clus1_dphi_ = dphi;
-	//	std::cout<<"cluster 1 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
-      }
+	float elePmode = ele->gsfTrack()->pMode();
+	float eleScEne = sc->energy();
+	
+	if (clusNum==i1) {
+	  float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
+	  sc_clus1_E_     = cluster->energy();
+	  if( elePmode>0 ) sc_clus1_E_ov_p_ = cluster->energy()/elePmode;
+	  if( eleScEne>0)  sc_clus1_E_ov_E_ = cluster->energy()/eleScEne;
+	  sc_clus1_eta_   = cluster->eta();
+	  sc_clus1_phi_   = cluster->phi();
+	  sc_clus1_nxtal_ =(int) cluster->size();
+	  if(reach_ECAL>0){
+	    sc_clus1_deta_ = deta;
+	    sc_clus1_dphi_ = dphi;
+	  }
+	  if (largeNtuple) {
+	    sc_clus1_et_  = clusterEt;
+	  }
 
-    } else if (clusNum==i2){
-      float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
-      sc_clus2_et_    = clusterEt;
-      sc_clus2_E_     = cluster->energy();
-      sc_clus2_eta_   = cluster->eta();
-      sc_clus2_phi_   = cluster->phi();
-      sc_clus2_nxtal_ = (int) cluster->size();
-      if(reach_ECAL>0){
-	sc_clus2_deta_ = deta;
-	sc_clus2_dphi_ = dphi;
-	//std::cout<<"cluster 2 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
-      }
-
-    } else if (clusNum==i3){
-      float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
-      sc_clus3_et_    = clusterEt;
-      sc_clus3_E_     = cluster->energy();
-      sc_clus3_eta_   = cluster->eta();
-      sc_clus3_phi_   = cluster->phi();
-      sc_clus3_nxtal_ = (int) cluster->size();
-      if(reach_ECAL>0){
-	sc_clus3_deta_ = deta;
-	sc_clus3_dphi_ = dphi;
-	//std::cout<<"cluster 3 ene="<<cluster->energy()<<" eta="<<cluster->eta()<<" extra_eta="<<ecal_pos.eta()<<" phi="<<cluster->phi()<<" extra_phi="<<ecal_pos.phi()<<std::endl;
+	} else if (clusNum==i2){
+	  float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
+	  sc_clus2_E_     = cluster->energy();
+	  if( elePmode>0 ) sc_clus2_E_ov_p_ = cluster->energy()/elePmode;
+	  if( eleScEne>0)  sc_clus2_E_ov_E_ = cluster->energy()/eleScEne;
+	  sc_clus2_eta_   = cluster->eta();
+	  sc_clus2_phi_   = cluster->phi();
+	  sc_clus2_nxtal_ = (int) cluster->size();
+	  if(reach_ECAL>0){
+	    sc_clus2_deta_ = deta;
+	    sc_clus2_dphi_ = dphi;
+	  }
+	  if (largeNtuple) {
+	    sc_clus2_et_  = clusterEt;
+	  }
+	  
+	} else if (clusNum==i3){
+	  float clusterEt = cluster->energy() * sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) ) / sqrt( pow(cluster->x(),2) + pow(cluster->y(),2) +pow(cluster->z(),2) );
+	  sc_clus3_E_     = cluster->energy();
+	  if( elePmode>0 ) sc_clus3_E_ov_p_ = cluster->energy()/elePmode;
+	  if( eleScEne>0)  sc_clus3_E_ov_E_ = cluster->energy()/eleScEne;
+	  sc_clus3_eta_   = cluster->eta();
+	  sc_clus3_phi_   = cluster->phi();
+	  sc_clus3_nxtal_ = (int) cluster->size();
+	  if(reach_ECAL>0){
+	    sc_clus3_deta_ = deta;
+	    sc_clus3_dphi_ = dphi;
+	  }
+	  if (largeNtuple) {     
+	    sc_clus3_et_  = clusterEt;
+	  }
+	}
+	clusNum++;
       }
     }
-    clusNum++;
+  }catch(...){
+    //
   }
-  
-  sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
+
+  if (largeNtuple) {
+    sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
+  }
   sc_Nclus_ = sc->clustersSize();
 
   float seedEne = sc->seed()->energy();
   if ( fabs(seedEne-maxEne1)<0.001 ) sc_goodSeed_ = true;
+
+  sc_E_ps_=sc->preshowerEnergy();
+  sc_E_ps1_=sc->preshowerEnergyPlane1();
+  sc_E_ps2_=sc->preshowerEnergyPlane2();
+
+  sc_Nclus_deta01_=0;
+  sc_Nclus_deta02_=0;
+  sc_Nclus_deta03_=0;
+  try{
+    if(sc->clustersSize()>0 && sc->clustersBegin()!=sc->clustersEnd()){
+      for(auto& cluster : sc->clusters()) {
+	float deta = std::abs(ecal_pos.eta()-cluster->eta()) ;
+	if(deta<0.1) sc_Nclus_deta01_=sc_Nclus_deta01_+1; 
+	if(deta<0.2) sc_Nclus_deta02_=sc_Nclus_deta02_+1; 
+	if(deta<0.3) sc_Nclus_deta03_=sc_Nclus_deta03_+1; 
+      }
+    }
+  }catch(...){
+    //    std::cout<<"caught an exception"<<std::endl;
+  }
 }
 
 // end FC
+
+template < typename T> 
+bool IDSlimNtuple::validPtr(edm::Ptr<T>& ptr){
+  return (ptr.isNonnull() && ptr.isAvailable() );
+}
