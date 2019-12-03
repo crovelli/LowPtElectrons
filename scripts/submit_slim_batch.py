@@ -3,7 +3,14 @@
 # example: python submit_slim_batch.py -c -N -1 -n 1 -p testslim --cfg=slimntuplizerbatch_cfg.py BuToKJpsiToee.dat
 # -c = just create and do not submit (remove it to submit)
 # this is to write 1 job per file in the dataset (-N = run on all the events in a file; -n = 1job/file)
+#
 # to copy the output on EOS: python submit_slim_batch.py -c -N -1 -n 1 -p testslim --cfg=slimntuplizerbatch_cfg.py --eos=ok BuToKJpsiToee.dat 
+#
+# if files are accessed via Grid, before you need:
+# voms-proxy-init --voms cms --valid 168:00
+# mv /tmp/x509up_u7291 ~/X509_USER_PROXY
+# setenv X509_USER_PROXY ~/X509_USER_PROXY
+# echo $X509_USER_PROXY 
 #
 # BuToKJpsiToee.dat contains the dataset files. To be made with 
 # das_client --query 'file dataset=/BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM' --limit 0 > BuToKJpsiToee.dat
@@ -26,13 +33,13 @@ def makeCondorFile(jobdir, srcFiles, options):
     condor_file = open(condor_file_name,'w')
     condor_file.write('''Universe = vanilla
 Executable = {de}
-use_x509userproxy = $ENV(X509_USER_PROXY)
+use_x509userproxy = true
 Log        = {jd}/$(ProcId).log
 Output     = {jd}/$(ProcId).out
 Error      = {jd}/$(ProcId).error
 getenv      = True
 environment = "LS_SUBCWD={here}"
-request_memory = 4000
+request_memory = 2000
 +MaxRuntime = {rt}\n
 '''.format(de=os.path.abspath(dummy_exec.name), jd=os.path.abspath(jobdir), rt=int(options.runtime*3600), here=os.environ['PWD'] ) )
     if os.environ['USER'] in ['mdunser', 'psilva']:
@@ -60,7 +67,7 @@ def main():
     parser.add_option('-t', '--testnjobs',   action='store',     dest='testnjobs',   help='submit only the first n jobs'                              , default=1000000, type='int')
     parser.add_option('-N', '--neventsjob', action='store',      dest='neventsjob',  help='split the jobs with n events  / batch job'                 , default=200,   type='int')
     parser.add_option('-T', '--eventsperfile', action='store',   dest='eventsperfile',  help='number of events per input file'                        , default=-1,   type='int')
-    parser.add_option('-r', '--runtime',     action='store',     dest='runtime',     help='New runtime for condor resubmission in hours. default None: will take the original one.', default=8        , type=int);
+    parser.add_option('-r', '--runtime',     action='store',     dest='runtime',     help='New runtime for condor resubmission in hours. default None: will take the original one.', default=4        , type=int);
     parser.add_option('--eos',               action='store',     dest='eos',         help='copy the output in the specified EOS path'                 , default='')
     parser.add_option('--cfg',               action='store',     dest='cfg',         help='the cfg to be run'                                         , default='pippo_cfg.py')
     parser.add_option('--scheduler',         action='store',     dest='scheduler',   help='select the batch scheduler (lsf,condor). Default=condor'   , default='condor')
@@ -159,7 +166,7 @@ def main():
             if(opt.download=='pccmsrm'): outputfile.write('ls *.root | xargs -i scp -o BatchMode=yes -o StrictHostKeyChecking=no {} pccmsrm24:'+diskoutputmain+'/{}\n') 
             if(opt.eos!=''): 
                 #outputfile.write('cp '+rootoutputfile+' /eos/cms/store/user/crovelli/LowPtEle/Batch'+opt.eos+'/'+output+'_'+str(ijob)+'.root\n')
-                outputfile.write('cp '+rootoutputfile+' /eos/cms/store/user/crovelli/LowPtEle/Batch/'+output+'_'+str(ijob)+'.root\n')
+                outputfile.write('cp '+rootoutputfile+' /eos/cms/store/user/crovelli/LowPtEle/Batch2/'+output+'_'+str(ijob)+'.root\n')
                 outputfile.write('rm '+rootoutputfile)
             outputfile.close()
             logfile = logdir+output+"_"+str(ijob)+".log"
