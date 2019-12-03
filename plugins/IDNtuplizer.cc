@@ -1458,6 +1458,12 @@ void IDNtuplizer::fill( const edm::Event& event,
       
       ntuple_.fill_ele( chain.ele_, mva_value, mva_id, conv_vtx_fit_prob, *rhoH_ );
 
+      // dR gen-ele
+      if ( validPtr(chain.sig_) ) {
+	float dr2 = reco::deltaR2(ntuple_.gen_eta_,ntuple_.gen_phi_,ntuple_.ele_eta_, ntuple_.ele_phi_);  
+	ntuple_.gen_dR_ = sqrt(dr2);	
+      }
+
       ntuple_.fill_supercluster(chain.ele_);
     
 
