@@ -133,6 +133,7 @@ class IDNtuple {
   float ele_dr_ = IDNtuple::NEG_FLOAT;
 
   // GEN electrons
+  float gen_dR_ = IDNtuple::NEG_FLOAT;
   float gen_pt_ = IDNtuple::NEG_FLOAT;
   float gen_eta_ = IDNtuple::NEG_FLOAT;
   float gen_phi_ = IDNtuple::NEG_FLOAT;
@@ -215,6 +216,7 @@ class IDNtuple {
   float ele_eta_ = IDNtuple::NEG_FLOAT;
   float ele_phi_ = IDNtuple::NEG_FLOAT;
   float ele_p_ = IDNtuple::NEG_FLOAT;
+  float ele_pt_ = IDNtuple::NEG_FLOAT;
 
   // Electrons: IDs
   float ele_mva_value_ = -999.; //@ IDNtuple::NEG_FLOAT;
