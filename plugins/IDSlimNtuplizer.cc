@@ -340,8 +340,8 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
     // prescale fake electrons 
     if (dRGenMin>=0.1) {
-      if ( gRandom->Rndm() < prescale_  ) continue;
-      ntuple_.weight_ = prescale_;
+      if ( gRandom->Rndm() > prescale_  ) continue;
+      ntuple_.weight_ = 1./prescale_;
     }  
 
     // ---------------------------------
@@ -513,8 +513,8 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
     // prescale fake electrons 
     if (dRGenMin>=0.1) {
-      if ( gRandom->Rndm() < prescale_  ) continue;
-      ntuple_.weight_ = prescale_;
+      if ( gRandom->Rndm() > prescale_  ) continue;
+      ntuple_.weight_ = 1./prescale_;
     }  
 
     // ---------------------------------
