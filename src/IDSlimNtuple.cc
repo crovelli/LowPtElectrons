@@ -43,9 +43,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
   tree->Branch("gen_tag_side", &gen_tag_side_, "gen_tag_side/I");   
   tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
+  tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
+  tree->Branch("gen_p",   &gen_p_,   "gen_p/f");
   if (largeNtuple) {
-    tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
-    tree->Branch("gen_p", &gen_p_, "gen_p/f");
     tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
     tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
     tree->Branch("gen_mom_pdgid", &gen_mom_pdgid_, "gen_mom_pdgid/I");
@@ -56,20 +56,20 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
 
   // GSF track associated to electron
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
+  tree->Branch("gsf_p",  &gsf_p_, "gsf_p/f");
   tree->Branch("gsf_pt", &gsf_pt_, "gsf_pt/f");
   tree->Branch("gsf_bdtout1", &seed_unbiased_, "gsf_bdtout1/f");
   tree->Branch("gsf_mode_p", &gsf_mode_p_, "gsf_mode_p/f");
+  tree->Branch("gsf_mode_pt", &gsf_mode_pt_, "gsf_mode_pt/f");
   tree->Branch("gsf_eta", &gsf_eta_, "gsf_eta/f");
+  tree->Branch("gsf_phi", &gsf_phi_, "gsf_phi/f");
+  tree->Branch("gsf_mode_eta", &gsf_mode_eta_, "gsf_mode_eta/f");
+  tree->Branch("gsf_mode_phi", &gsf_mode_phi_, "gsf_mode_phi/f");
   if (largeNtuple) {
     tree->Branch("gsf_bdtout2", &seed_ptbiased_, "gsf_bdtout2/f");
-    tree->Branch("gsf_phi", &gsf_phi_, "gsf_phi/f");
-    tree->Branch("gsf_p", &gsf_p_, "gsf_p/f");
     tree->Branch("gsf_charge", &gsf_charge_, "gsf_charge/I");
     tree->Branch("gsf_inp", &gsf_inp_, "gsf_inp/f");
     tree->Branch("gsf_outp", &gsf_outp_, "gsf_outp/f");
-    tree->Branch("gsf_mode_pt", &gsf_mode_pt_, "gsf_mode_pt/f");
-    tree->Branch("gsf_mode_eta", &gsf_mode_eta_, "gsf_mode_eta/f");
-    tree->Branch("gsf_mode_phi", &gsf_mode_phi_, "gsf_mode_phi/f");
     tree->Branch("gsf_missing_inner_hits", &gsf_missing_inner_hits_, "gsf_missing_inner_hits/I");
     tree->Branch("gsf_dxy",  &gsf_dxy_, "gsf_dxy/f");
     tree->Branch("gsf_dxy_err",&gsf_dxy_err_, "gsf_dxy_err/f");
@@ -82,11 +82,11 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
 
   // General track associated to electron
   tree->Branch("trk_dr", &trk_dr_, "trk_dr/f");
+  tree->Branch("trk_p", &trk_p_, "trk_p/f");
   tree->Branch("trk_pt", &trk_pt_, "trk_pt/f");
   tree->Branch("trk_eta", &trk_eta_, "trk_eta/f");
+  tree->Branch("trk_phi", &trk_phi_, "trk_phi/f");
   if (largeNtuple) {
-    tree->Branch("trk_phi", &trk_phi_, "trk_phi/f");
-    tree->Branch("trk_p", &trk_p_, "trk_p/f");
     tree->Branch("trk_charge", &trk_charge_, "trk_charge/I");
     tree->Branch("trk_inp", &trk_inp_, "trk_inp/f");
     tree->Branch("trk_outp", &trk_outp_, "trk_outp/f");
@@ -108,12 +108,12 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
   tree->Branch("ele_pt", &ele_pt_, "ele_pt/f");
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
+  tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
   tree->Branch("core_shFracHits",&core_shFracHits_,"core_shFracHits/f");
   tree->Branch("fiducial_isEB",&fiducial_isEB_,"fiducial_isEB/I");
   tree->Branch("fiducial_isEE",&fiducial_isEE_,"fiducial_isEE/I"); 
   tree->Branch("fiducial_isEBEEGap",&fiducial_isEBEEGap_,"fiducial_isEBEEGap/I"); 
   if (largeNtuple) {
-    tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
     tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
     tree->Branch("ele_p_atvtx",&ele_p_atvtx_,"ele_p_atvtx/F"); 
     tree->Branch("ele_p_atcalo",&ele_p_atcalo_,"ele_p_atcalo/F"); 
@@ -157,9 +157,11 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   }
 
   // Electron - isolation
-  tree->Branch("ele_sumPhotonEt",        &ele_sumPhotonEt_,        "ele_sumPhotonEt/f");
-  tree->Branch("ele_sumChargedHadronPt", &ele_sumChargedHadronPt_, "ele_sumChargedHadronPt/f");
-  tree->Branch("ele_sumNeutralHadronEt", &ele_sumNeutralHadronEt_, "ele_sumNeutralHadronEt/f");
+  if (largeNtuple) {
+    tree->Branch("ele_sumPhotonEt",        &ele_sumPhotonEt_,        "ele_sumPhotonEt/f");
+    tree->Branch("ele_sumChargedHadronPt", &ele_sumChargedHadronPt_, "ele_sumChargedHadronPt/f");
+    tree->Branch("ele_sumNeutralHadronEt", &ele_sumNeutralHadronEt_, "ele_sumNeutralHadronEt/f");
+  }
 
   // Electron - further track-Cluster matching
   if (largeNtuple) {
@@ -173,14 +175,14 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   }
 
   // Electron - further full 5x5 shower shapes
-  tree->Branch("shape_full5x5_e1x5",&shape_full5x5_e1x5_); 
-  tree->Branch("shape_full5x5_e2x5Max",&shape_full5x5_e2x5Max_); 
-  tree->Branch("shape_full5x5_e5x5",&shape_full5x5_e5x5_);
-  tree->Branch("shape_full5x5_eLeft",&shape_full5x5_eLeft_); 
-  tree->Branch("shape_full5x5_eRight",&shape_full5x5_eRight_); 
-  tree->Branch("shape_full5x5_eTop",&shape_full5x5_eTop_); 
-  tree->Branch("shape_full5x5_eBottom",&shape_full5x5_eBottom_); 
   if (largeNtuple) {
+    tree->Branch("shape_full5x5_e1x5",&shape_full5x5_e1x5_); 
+    tree->Branch("shape_full5x5_e2x5Max",&shape_full5x5_e2x5Max_); 
+    tree->Branch("shape_full5x5_e5x5",&shape_full5x5_e5x5_);
+    tree->Branch("shape_full5x5_eLeft",&shape_full5x5_eLeft_); 
+    tree->Branch("shape_full5x5_eRight",&shape_full5x5_eRight_); 
+    tree->Branch("shape_full5x5_eTop",&shape_full5x5_eTop_); 
+    tree->Branch("shape_full5x5_eBottom",&shape_full5x5_eBottom_); 
     tree->Branch("shape_full5x5_HoverEBc",&shape_full5x5_HoverEBc_); 
     tree->Branch("shape_full5x5_hcalDepth1",&shape_full5x5_hcalDepth1_); 
     tree->Branch("shape_full5x5_hcalDepth2",&shape_full5x5_hcalDepth2_); 
@@ -199,11 +201,11 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("sc_Nclus_deta01",&sc_Nclus_deta01_,"sc_Nclus_deta01/I"); 
   tree->Branch("sc_Nclus_deta02",&sc_Nclus_deta02_,"sc_Nclus_deta02/I"); 
   tree->Branch("sc_Nclus_deta03",&sc_Nclus_deta03_,"sc_Nclus_deta03/I"); 
-  tree->Branch("sc_E_ps",&sc_E_ps_,"sc_E_ps/F");
-  tree->Branch("sc_E_ps1",&sc_E_ps1_,"sc_E_ps1/F");
-  tree->Branch("sc_E_ps2",&sc_E_ps2_,"sc_E_ps2/F");
   if (largeNtuple) {
     tree->Branch("sc_Et",&sc_Et_); 
+    tree->Branch("sc_E_ps",&sc_E_ps_,"sc_E_ps/F");
+    tree->Branch("sc_E_ps1",&sc_E_ps1_,"sc_E_ps1/F");
+    tree->Branch("sc_E_ps2",&sc_E_ps2_,"sc_E_ps2/F");
   }
 
   // Clusters making the SC 
@@ -288,9 +290,9 @@ void IDSlimNtuple::fill_gen( const reco::GenParticlePtr genp ) {
 
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
+  gen_phi_ = genp->phi();
+  gen_p_ = genp->p();
   if (largeNtuple) {   
-    gen_phi_ = genp->phi();
-    gen_p_ = genp->p();
     gen_charge_ = genp->charge();
     gen_pdgid_ = genp->pdgId();
     if ( genp->mother(0) )
@@ -308,9 +310,9 @@ void IDSlimNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
 
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
+  gen_phi_ = genp->phi();
+  gen_p_ = genp->p();
   if (largeNtuple) {  
-    gen_phi_ = genp->phi();
-    gen_p_ = genp->p();
     gen_charge_ = genp->charge();
     gen_pdgid_ = genp->pdgId();
     if ( genp->mother(0) )
@@ -328,9 +330,9 @@ void IDSlimNtuple::fill_gen_default() {
 
   gen_pt_  = -999.;
   gen_eta_ = -999.;
+  gen_phi_ = -999.;
+  gen_p_   = -999.;
   if (largeNtuple) {  
-    gen_phi_ = -999.;
-    gen_p_   = -999.;
     gen_charge_ = -999; 
     gen_pdgid_  = -999;
     gen_mom_pdgid_  = -999; 
@@ -346,10 +348,9 @@ void IDSlimNtuple::fill_trk( const reco::TrackPtr& trk,
     // kine
     trk_pt_ = trk->pt();
     trk_eta_ = trk->eta();
-    
+    trk_phi_ = trk->phi();
+    trk_p_ = trk->p();    
     if (largeNtuple) {
-      trk_phi_ = trk->phi();
-      trk_p_ = trk->p();
       trk_charge_ = trk->charge();
       if ( trk->extra().isAvailable() && trk->extra().isNonnull() ) {
 	trk_inp_ = sqrt( trk->innerMomentum().mag2() );
@@ -416,9 +417,9 @@ void IDSlimNtuple::fill_gsf( const reco::GsfTrackPtr gsf,
     // Kinematics
     gsf_pt_ = gsf->pt();
     gsf_eta_ = gsf->eta();
+    gsf_phi_ = gsf->phi();
+    gsf_p_ = gsf->p();
     if (largeNtuple) {  
-      gsf_phi_ = gsf->phi();
-      gsf_p_ = gsf->p();
       gsf_charge_ = gsf->charge();
       if ( gsf->extra().isAvailable() && gsf->extra().isNonnull() ) {
 	gsf_inp_ = sqrt(gsf->innerMomentum().mag2());
@@ -430,11 +431,9 @@ void IDSlimNtuple::fill_gsf( const reco::GsfTrackPtr gsf,
     }
 
     // Kinematics (MODE)
-    if (largeNtuple) {  
-      gsf_mode_pt_ = gsf->ptMode();
-      gsf_mode_eta_ = gsf->etaMode();
-      gsf_mode_phi_ = gsf->phiMode();
-    }
+    gsf_mode_pt_ = gsf->ptMode();
+    gsf_mode_eta_ = gsf->etaMode();
+    gsf_mode_phi_ = gsf->phiMode();
     gsf_mode_p_ = gsf->pMode();
 
     // Quality
@@ -465,7 +464,7 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
     ele_p_   = ele->p();
     ele_pt_  = ele->pt();
     ele_eta_ = ele->eta();
-    if (largeNtuple) ele_phi_ = ele->phi();
+    ele_phi_ = ele->phi();
 
     // Momentum
     core_shFracHits_ = ele->shFracInnerHits();
@@ -542,14 +541,14 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
     }
 
     // Further full 5x5 shower shape 
-    shape_full5x5_e1x5_     = ele->full5x5_e1x5();
-    shape_full5x5_e2x5Max_  = ele->full5x5_e2x5Max();
-    shape_full5x5_e5x5_     = ele->full5x5_e5x5();
-    shape_full5x5_eLeft_   = ele->full5x5_eLeft();
-    shape_full5x5_eRight_  = ele->full5x5_eRight();
-    shape_full5x5_eTop_    = ele->full5x5_eTop();
-    shape_full5x5_eBottom_ = ele->full5x5_eBottom();
     if (largeNtuple) {
+      shape_full5x5_e1x5_     = ele->full5x5_e1x5();
+      shape_full5x5_e2x5Max_  = ele->full5x5_e2x5Max();
+      shape_full5x5_e5x5_     = ele->full5x5_e5x5();
+      shape_full5x5_eLeft_   = ele->full5x5_eLeft();
+      shape_full5x5_eRight_  = ele->full5x5_eRight();
+      shape_full5x5_eTop_    = ele->full5x5_eTop();
+      shape_full5x5_eBottom_ = ele->full5x5_eBottom();
       shape_full5x5_HoverEBc_ = ele->full5x5_hcalOverEcalBc();
       shape_full5x5_hcalDepth1_    = ele->full5x5_hcalDepth1OverEcal();
       shape_full5x5_hcalDepth2_    = ele->full5x5_hcalDepth2OverEcal();
@@ -646,10 +645,10 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   sc_Nclus_deta03_ = -999;  
   sc_Nclus_        = -999;
   sc_goodSeed_     = false;
-  sc_E_ps_  = -999.; 
-  sc_E_ps1_ = -999.;
-  sc_E_ps2_ = -999.;
   if (largeNtuple) {  
+    sc_E_ps_  = -999.; 
+    sc_E_ps1_ = -999.;
+    sc_E_ps2_ = -999.;
     sc_Et_ = -999.;
     gsf_x_ = -999.;  
     gsf_y_ = -999.;  
@@ -844,15 +843,14 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 
   if (largeNtuple) {
     sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
+    sc_E_ps_=sc->preshowerEnergy();
+    sc_E_ps1_=sc->preshowerEnergyPlane1();
+    sc_E_ps2_=sc->preshowerEnergyPlane2();
   }
   sc_Nclus_ = sc->clustersSize();
 
   float seedEne = sc->seed()->energy();
   if ( fabs(seedEne-maxEne1)<0.001 ) sc_goodSeed_ = true;
-
-  sc_E_ps_=sc->preshowerEnergy();
-  sc_E_ps1_=sc->preshowerEnergyPlane1();
-  sc_E_ps2_=sc->preshowerEnergyPlane2();
 
   sc_Nclus_deta01_=0;
   sc_Nclus_deta02_=0;
