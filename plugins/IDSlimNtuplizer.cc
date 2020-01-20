@@ -272,11 +272,12 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
   // Update all handles - MUST be called every event! 
   readCollections(event,setup);
-  
+
   // Gen level electrons from B                       
   std::set<reco::GenParticlePtr> signal_electrons;
   if (isMC_) signalElectrons(signal_electrons);          
   if (!tag_side_muon) return;
+
 
   // Loop over low-pT electrons                  
   for( size_t electronlooper = 0; electronlooper < gsfElectronsH_->size(); electronlooper++ ) {
@@ -500,6 +501,10 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	dRGenMin=dR;
       }
     }
+
+    // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (fakes)
+    if (dRGenMin>=0.03 && dRGenMin<0.1) continue;
+
     genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
     if (dRGenMin<0.1) {
       ntuple_.fill_gen( theGenParticle ); 
@@ -748,11 +753,11 @@ void IDSlimNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_el
 
 // Gen-level electons from B 
 void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,
-				     float muon_pt, float muon_eta ) {   
+					 float muon_pt, float muon_eta ) {   
   
   electrons_from_B.clear();
   tag_side_muon = false;
-  
+
   for ( size_t idx = 0; idx < genParticlesH_->size(); idx++ ) {
     
     reco::GenParticlePtr gen(genParticlesH_, idx);
@@ -766,6 +771,9 @@ void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
     
     // Last copy of GEN electron 
     bool is_ele = std::abs(gen->pdgId()) == 11 && gen->isLastCopy(); //@@ not a method of Candidate
+
+    //if (gen->mother())
+    //std::cout << "GEN: " << idx << " << id = " << gen->pdgId() << ", motherID = " << gen->mother()->pdgId() << std::endl;
     
     // Does GEN ele comes from B decay?
     bool non_resonant = gen->numberOfMothers() >= 1 && gen->mother() &&   // has mother
