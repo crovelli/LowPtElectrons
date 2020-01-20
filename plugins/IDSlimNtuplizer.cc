@@ -323,6 +323,10 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	dRGenMin=dR;
       }
     }
+
+    // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (fakes)
+    if (dRGenMin>=0.03 && dRGenMin<0.1) continue;
+
     genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
     if (dRGenMin<0.1) {
       ntuple_.fill_gen( theGenParticle ); 

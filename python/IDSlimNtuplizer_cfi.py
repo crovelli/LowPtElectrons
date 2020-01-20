@@ -4,7 +4,7 @@ ntuplizer = cms.EDAnalyzer(
     "IDSlimNtuplizer",
     verbose = cms.int32(0),
     checkFromB = cms.bool(True),
-    prescale = cms.double(0.1),
+    prescale = cms.double(0.15),
     minTrackPt = cms.double(0.5),  
     maxTrackPt = cms.double(15.),  
     maxTrackEta = cms.double(2.4),  
