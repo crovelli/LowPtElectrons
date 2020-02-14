@@ -185,6 +185,7 @@ new_features = [
 seed_additional = ['trk_pass_default_preid', 'preid_bdtout1', 'preid_bdtout2']
 seed_94X_additional = ['preid_trk_ecal_match', 'preid_trkfilter_pass', 'preid_mva_pass']
 #id_additional = ['ele_mvaIdV2', 'ele_lowPtMva', 'ele_pt']
+
 id_additional = ['ele_mva_value', 'ele_mva_id', 'ele_pt'] #@@
 
 labeling = ['is_e', 'is_e_not_matched', 'is_other', # original labels
@@ -250,6 +251,579 @@ cmssw_mva_id = [
    'eid_trk_p',
 ]
 
+# same as Jun18 + gsf_bdtout1
+cmssw_mva_id_base = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+]
+
+# same as Jun18 + gsf_bdtout1 - eta/pT variables
+cmssw_mva_id_baseunbias = [
+   'eid_rho',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   #
+   'gsf_bdtout1',
+]
+
+# same as Jun18 + gsf_bdtout1 + ES energy
+cmssw_mva_idEE_base = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   'sc_E_ps',
+   #
+   'gsf_bdtout1',
+]
+
+cmssw_mva_id_ecal = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+   #
+   'sc_goodSeed',
+   'core_shFracHits',
+   'gsf_dr',
+   'sc_Nclus',
+   #
+   'sc_clus1_nxtal',
+   'sc_clus2_nxtal',
+   'sc_clus3_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus3_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus3_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus3_E',
+   #
+   'shape_full5x5_e1x5',
+   'shape_full5x5_e2x5Max',
+   'shape_full5x5_e5x5',
+   'shape_full5x5_eLeft',
+   'shape_full5x5_eRight',
+   'shape_full5x5_eTop',
+   'shape_full5x5_eBottom'
+]
+
+cmssw_mva_id_ecal2 = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+   #
+   'sc_goodSeed',
+   'core_shFracHits',
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   #
+   'sc_clus1_nxtal',
+   'sc_clus2_nxtal',
+   'sc_clus3_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus3_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus3_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus3_E',
+   #
+   'shape_full5x5_e1x5',
+   'shape_full5x5_e2x5Max',
+   'shape_full5x5_e5x5',
+   'shape_full5x5_eLeft',
+   'shape_full5x5_eRight',
+   'shape_full5x5_eTop',
+   'shape_full5x5_eBottom',
+   #
+   'ele_sumPhotonEt',
+   'ele_sumChargedHadronPt',
+   'ele_sumNeutralHadronEt',
+   #
+   'sc_clus1_E_ov_p',
+   'sc_clus1_E_ov_E',
+   'sc_clus1_ntrk_deta01',
+   'sc_clus2_E_ov_p',
+   'sc_clus2_E_ov_E',
+   'sc_clus2_ntrk_deta01',
+   'sc_clus3_E_ov_p',
+   'sc_clus3_E_ov_E',
+   'sc_clus3_ntrk_deta01'
+]
+
+cmssw_mva_id_ecal3 = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+   #
+   'sc_goodSeed',
+   'core_shFracHits',
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   #
+   'sc_clus1_nxtal',
+   'sc_clus2_nxtal',
+   'sc_clus3_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus3_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus3_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus3_E',
+   #
+   'sc_clus1_E_ov_p',
+   'sc_clus1_E_ov_E',
+   'sc_clus1_ntrk_deta01',
+   'sc_clus2_E_ov_p',
+   'sc_clus2_E_ov_E',
+   'sc_clus2_ntrk_deta01',
+   'sc_clus3_E_ov_p',
+   'sc_clus3_E_ov_E',
+   'sc_clus3_ntrk_deta01'
+]
+
+cmssw_mva_id_ecalvai = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',                  
+   #                             
+   'gsf_bdtout1',
+   #
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   #
+   'sc_clus1_nxtal',
+   'sc_clus2_nxtal',
+   'sc_clus3_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus3_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus3_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus3_E',
+   'sc_clus1_E_ov_p',
+   'sc_clus1_ntrk_deta01',
+   'sc_clus2_E_ov_p',
+   'sc_clus2_ntrk_deta01',
+   'sc_clus3_E_ov_p',
+   'sc_clus3_ntrk_deta01'
+]
+
+cmssw_mva_id_nn = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',     
+   'gsf_mode_p',
+   'sc_goodSeed',
+   'core_shFracHits',
+   #                
+   'gsf_bdtout1',
+   #
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   #
+   'sc_clus1_nxtal',
+   'sc_clus2_nxtal',
+   'sc_clus3_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus3_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus3_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus3_E',
+   'sc_clus1_E_ov_p',
+   'sc_clus1_ntrk_deta01',
+   'sc_clus2_E_ov_p',
+   'sc_clus2_ntrk_deta01',
+   'sc_clus3_E_ov_p',
+   'sc_clus3_ntrk_deta01'
+]
+
+cmssw_mva_id_nnclean = [
+   'eid_rho',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_trk_p',     
+   'gsf_mode_p',
+   #                
+   'gsf_bdtout1',
+   #
+   'gsf_dr',
+   'trk_dr',
+   #
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus3_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus3_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus3_E',
+   'sc_clus1_E_ov_p',
+   'sc_clus2_E_ov_p',
+   'sc_clus3_E_ov_p',
+]
+
+cmssw_mva_id_nnclean2 = [
+   'eid_rho',
+   'eid_sc_eta',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',     
+   'gsf_mode_p',
+   'core_shFracHits',
+   'gsf_bdtout1',
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus1_E_ov_p',
+   'sc_clus2_E_ov_p'
+]
+
+cmssw_mva_id_justecal = [
+   'eid_rho',
+   'eid_ele_pt',
+   'core_shFracHits',
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus1_deta',
+   'sc_clus1_E',
+   'sc_clus1_E_ov_p',
+   'sc_clus1_E_ov_E',
+   'sc_clus1_ntrk_deta01',
+]
+
+cmssw_mva_id_clus1 = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+   # 
+   'sc_goodSeed',
+   'core_shFracHits',
+   'gsf_dr',
+   'sc_Nclus',
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus1_deta',
+   'sc_clus1_E',
+]
+
+cmssw_mva_id_clus12 = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+   # 
+   'sc_goodSeed',
+   'core_shFracHits',
+   'gsf_dr',
+   'sc_Nclus',
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus1_deta',
+   'sc_clus1_E',
+   'sc_clus2_nxtal',
+   'sc_clus2_dphi',
+   'sc_clus2_deta',
+   'sc_clus2_E',
+]
+
+cmssw_mva_id_clus123 = [
+   'eid_rho',
+   'eid_ele_pt',
+   'eid_sc_eta',
+   'eid_shape_full5x5_sigmaIetaIeta',
+   'eid_shape_full5x5_sigmaIphiIphi',
+   'eid_shape_full5x5_circularity',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',
+   #
+   'gsf_bdtout1',
+   # 
+   'sc_goodSeed',
+   'core_shFracHits',
+   'gsf_dr',
+   'sc_Nclus',
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus1_deta',
+   'sc_clus1_E',
+   'sc_clus2_nxtal',
+   'sc_clus2_dphi',
+   'sc_clus2_deta',
+   'sc_clus2_E',
+   'sc_clus3_nxtal',
+   'sc_clus3_dphi',
+   'sc_clus3_deta',
+   'sc_clus3_E',
+]
 
 to_drop = {
    'gsf_phi',
@@ -317,8 +891,49 @@ def get_features(ftype):
       additional = seed_additional
    elif ftype == 'cmssw_mva_id':
       features = cmssw_mva_id
-      additional = id_additional + ['preid_bdtout1','preid_bdtout2',
-                                    'gsf_bdtout1','gsf_bdtout2', ] # 'has_pfele','has_pfgsf',
+      additional = id_additional + ['gsf_bdtout1' ]
+   elif ftype == 'cmssw_mva_id_clus1':
+      features = cmssw_mva_id_clus1
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_clus12':
+      features = cmssw_mva_id_clus12
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_clus123':
+      features = cmssw_mva_id_clus123
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_ecal':
+      features = cmssw_mva_id_ecal
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_ecal2':
+      features = cmssw_mva_id_ecal2
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_ecal3':
+      features = cmssw_mva_id_ecal3
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_ecalvai':
+      features = cmssw_mva_id_ecalvai
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_justecal':
+      features = cmssw_mva_id_justecal
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_base':
+      features = cmssw_mva_id_base
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_nn':
+      features = cmssw_mva_id_nn
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_nnclean':
+      features = cmssw_mva_id_nnclean
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_nnclean2':
+      features = cmssw_mva_id_nnclean2
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_baseunbias':
+      features = cmssw_mva_id_baseunbias
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_idEE_base':
+      features = cmssw_mva_idEE_base
+      additional = id_additional 
    elif ftype == 'cmssw_mva_id_extended':
       features = cmssw_mva_id + ['preid_bdtout1']
       additional = id_additional + ['preid_bdtout1','preid_bdtout2'] # 'has_pfele','has_pfgsf',
