@@ -1,12 +1,9 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
-#tag = '2018Sep20'
-#tag = '2019Feb05'
-#posix = '2019Feb05'
-
-tag = '2019Jun28'
-posix = '2019Jun28'
-target_dataset = 'test'
+#
+tag = '2020Jan30'
+posix = '2020Jan30'
+target_dataset = '2020Jan30'
 
 import socket
 path = ""
@@ -17,7 +14,9 @@ print socket.gethostname()
 
 import os
 from pdb import set_trace
-all_sets = glob(path+'/*_%s_*.root' % posix)
+all_sets = glob(path+'/%s/*/*root' % posix)
+
+# chiara: questa parte non funziona con i nuovi formati di store (non sono divisi per dataset)
 sets = set([os.path.basename(i).split('_')[0].split('Assoc')[0] for i in all_sets])
 sets = sorted(list(sets), key=lambda x: -len(x))
 input_files = {i : [] for i in sets}
@@ -27,25 +26,30 @@ for inf in all_sets:
       if os.path.basename(inf).startswith(name):
          input_files[name].append(inf)
          break
-#input_files['test'] = input_files['BToJPsieeK'][:1]
-#input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019May15/output_1.root'] #@@ new ntuple
-#input_files['test'] = ['/afs/cern.ch/user/b/bainbrid/work/public/6-ntuplizer/CMSSW_10_2_14/src/2-ntuples-from-crab/lowpteleid/crab_lowpteleid/results/output_10.root'] #@@ reverted defaults
 input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
-input_files['debug'] = ['/afs/cern.ch/user/m/mverzett/work/RK94v4/src/LowPtElectrons/LowPtElectrons/run/track_features.root']
+# chiara: questa parte non funziona con i nuovi formati di store (non sono divisi per dataset)
 
-input_files['test'] = ['/eos/cms/store/cmst3/group/bpark/electron_training/2019Jun28/output_3.root']
+# datasets
+input_files['2019Dec16'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch3/BuToKJpsiToee_all_onlyLowPt__genDR0d03.root']
+input_files['2019Dec17'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch3/BuToKJpsiToee_all.root']
+input_files['2020Jan20'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKJpsiToee/BuToKJpsiToeeALL.root']
+input_files['2020Jan23'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKee/BuToKeeALL.root']
+input_files['2020Jan24'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BdToKstaree/BdToKstareeALL.root']
+input_files['2020Jan27'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BsToPhiJPsi_small/BsToPhiJPsi_small.root']
+input_files['2020Jan28'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BsToPhiee_small/BsToPhiee_small.root']
+input_files['2020Jan30'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKJpsiToee/BuToKJpsiToeeALL__normalizedVariables.root']
 
-dataset_names = {
-   'BToKee' : r'B $\to$ K ee',
-   #'BToKstee' : r'B $\to$ K* ee',
-   'BToJPsieeK' : r'B $\to$ K J/$\Psi$(ee)',
-   'BToJPsieeK_0' : r'B $\to$ K J/$\Psi$(ee)',
-   #'BToKstJPsiee' : r'B $\to$ K* J/$\Psi$(ee)',
-}
+#dataset_names = {
+#   'BToKee' : r'B $\to$ K ee',
+#   #'BToKstee' : r'B $\to$ K* ee',
+#   'BToJPsieeK' : r'B $\to$ K J/$\Psi$(ee)',
+#   'BToJPsieeK_0' : r'B $\to$ K J/$\Psi$(ee)',
+#   #'BToKstJPsiee' : r'B $\to$ K* J/$\Psi$(ee)',
+#}
 
 import os
-if not os.path.isdir('plots/%s' % tag):
-   os.mkdir('plots/%s' % tag)
+if not os.path.isdir('/tmp/crovelli/plots/%s' % tag):
+   os.mkdir('/tmp/crovelli/plots/%s' % tag)
 
 #import concurrent.futures
 import multiprocessing
@@ -57,26 +61,11 @@ def get_models_dir():
       cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
       os.environ['CMSSW_BASE'] = cmssw_path
    
-   mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
+   mods = '/tmp/crovelli/models/%s/' % (tag)
    if not os.path.isdir(mods):
       os.makedirs(mods)
+   print mods
    return mods
-
-## def get_data(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}):
-##    thread_pool = concurrent.futures.ThreadPoolExecutor(nthreads)
-##    if dataset not in input_files:
-##       raise ValueError('The dataset %s does not exist, I have %s' % (dataset, ', '.join(input_files.keys())))
-##    infiles = [uproot.open(i) for i in input_files[dataset]]
-##    if columns == 'all':
-##       columns = [i for i in infiles[0]['features/tree'].keys() if i not in exclude]
-##    ret = None
-##    arrays = [i['features/tree'].arrays(columns, executor=thread_pool, blocking=False) for i in infiles]
-##    ret = arrays[0]()   
-##    for arr in arrays[1:]:
-##       tmp = arr()
-##       for column in columns:
-##          ret[column] = np.concatenate((ret[column],tmp[column]))
-##    return ret
 
 def get_data_sync(dataset, columns, nthreads=2*multiprocessing.cpu_count(), exclude={}, path='ntuplizer/tree'):
    if dataset not in input_files:
@@ -112,7 +101,7 @@ apply_weight = np.vectorize(lambda x, y: y.get(x), excluded={2})
 def kmeans_weighter(features, fname):
    kmeans = joblib.load(fname)
    cluster = kmeans.predict(features)
-   str_weights = json.load(open(fname.replace('.plk', '.json')))   
+   str_weights = json.load(open(fname.replace('.pkl', '.json')))   
    weights = {}
    for i in str_weights:
       try:
@@ -121,10 +110,9 @@ def kmeans_weighter(features, fname):
          pass
    return apply_weight(cluster, weights)
 
-def training_selection(df,low=0.,high=15.):
+def training_selection(df,low=0.5,high=15.):
    #'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
-   return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4)
-   #return (df.gen_pt < 0.) | (df.gen_pt > 0.)
+   return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4) & ( (df.gen_dR<=0.03) | (df.gen_dR>=0.1) ) 
 
 import rootpy.plotting as rplt
 import root_numpy
@@ -157,13 +145,12 @@ import pandas as pd
 import numpy as np
 def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):  
    mods = get_models_dir()
-   #features = list(set(features+['trk_pt', 'gsf_pt', 'trk_eta', 'gsf_charge', 'evt', 'gsf_eta']))
-   features = list(set(features+['gen_pt', 'gen_eta', 
-                                 'trk_pt', 'trk_eta', 'trk_charge', 'trk_dr',
-                                 'seed_trk_driven', 'seed_ecal_driven',
-                                 'gsf_pt', 'gsf_eta', 'gsf_dr', 'ele_dr',
-                                 'ele_pt', 'ele_eta', 'ele_dr',
+   features = list(set(features+['gen_pt', 'gen_eta', 'gen_dR',
+                                 'trk_pt', 'trk_eta',
+                                 'gsf_pt', 'gsf_eta', 
+                                 'eid_ele_pt', 'ele_eta', 
                                  'evt', 'weight']))
+
    data_dict = get_data_sync(dataset, features) # path='features/tree')
    if 'is_e_not_matched' not in data_dict:
       data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
@@ -172,7 +159,6 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
       if feat in features:
          multi_dim[feat] = data_dict.pop(feat, None)
    data = pd.DataFrame(data_dict)
-   #data = data.head(10000) #@@
 
    ##FIXME
    ##if 'gsf_ecal_cluster_ematrix' in features:
@@ -218,10 +204,10 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
    ## from sklearn.externals import joblib
    ## reweighter = joblib.load('%s/%s_reweighting.pkl' % (mods, dataset))
    ## weights = reweighter.predict_weights(data[['trk_pt', 'trk_eta']])
-   kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, dataset)
+   kmeans_model = '%s/kmeans_%s_weighter.pkl' % (mods, dataset)
    if not os.path.isfile(kmeans_model):
       print 'I could not find the appropriate model, using the general instead'
-      kmeans_model = '%s/kmeans_%s_weighter.plk' % (mods, tag)
+      kmeans_model = '%s/kmeans_%s_weighter.pkl' % (mods, tag)
    weights = kmeans_weighter(
       data[['log_trkpt', 'trk_eta']],
       kmeans_model
