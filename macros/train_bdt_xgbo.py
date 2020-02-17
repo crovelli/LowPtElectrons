@@ -20,7 +20,8 @@ parser.add_argument(
 )
 
 parser.add_argument(
-   '--recover', action='store_true', 
+   ############'--recover', action='store_true', 
+   '--recover', action='store_true',      # chiara
    help='recover lost best iteration due to bug'
 )
 
@@ -52,7 +53,8 @@ if args.noweight:
 if not os.path.isdir(opti_dir):
    os.makedirs(opti_dir)
 
-plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
+#plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
+plots = '/tmp/crovelli/plots/%s/' % (tag)
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
@@ -72,22 +74,27 @@ data = pre_process_data(
    keep_nonmatch=args.usenomatch
    )
 
+# chiara: aggiungo io
+data = data[np.invert(data.is_egamma)] # low pT electrons
+print "lowpt.shape",data.shape
+# chiara: aggiungo io
+
 if args.noweight:
    data.weight = 1
 
 train, test = train_test_split(data, 10, 8)
 test.to_hdf(
-   '%s/nn_bo_%s_testdata.hdf' % (opti_dir, args.what),
+   '%s/bdt_bo_%s_testdata.hdf' % (opti_dir, args.what),
    'data'
    ) 
 
 train, validation = train_test_split(train, 10, 6)
 train.to_hdf(
-   '%s/nn_bo_%s_traindata.hdf' % (opti_dir, args.what),
+   '%s/bdt_bo_%s_traindata.hdf' % (opti_dir, args.what),
    'data'
    ) 
 validation.to_hdf(
-   '%s/nn_bo_%s_valdata.hdf' % (opti_dir, args.what),
+   '%s/bdt_bo_%s_valdata.hdf' % (opti_dir, args.what),
    'data'
    ) 
 
@@ -158,13 +165,16 @@ bo = BayesianOptimization(
    train_model,
    par_space,
    verbose=1,
-   checkpoints='%s/checkpoints.csv' % opti_dir
+   ####################### checkpoints='%s/checkpoints.csv' % opti_dir    # chiara
 )
-if not bo.npoints_recovered is None:
-   iteration_idx = bo.npoints_recovered
 
-bo.init(5, sampling='lhs')
-bo.maximize(5, 50)
+## chiara
+##if not bo.npoints_recovered is None:
+##   iteration_idx = bo.npoints_recovered
+
+####bo.init(5, sampling='lhs')       ##chiara
+#bo.maximize(5, 50)
+bo.maximize(5, 5)
 
 bo.print_summary()
 with open('%s/bdt_bo.json' % opti_dir, 'w') as j:
