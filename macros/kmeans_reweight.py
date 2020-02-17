@@ -21,11 +21,8 @@ parser.add_argument(
 args = parser.parse_args()
 
 import matplotlib.pyplot as plt
-#import ROOT
 import uproot
 import json
-#import rootpy
-#import json
 import pandas as pd
 from matplotlib import rc
 from pdb import set_trace
@@ -37,31 +34,28 @@ dataset = 'test' if args.test else target_dataset
 if args.dataset:
    dataset = args.dataset
 
-mods = '%s/src/LowPtElectrons/LowPtElectrons/macros/models/%s/' % (os.environ['CMSSW_BASE'], tag)
+mods = '/tmp/crovelli/models/%s/' % (tag)
 if not os.path.isdir(mods):
    os.makedirs(mods)
 
-plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
+plots = '/tmp/crovelli/plots/%s/' % (tag)
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
 print 'Getting dataset "{:s}"...'.format(dataset)
 data = pd.DataFrame(
-   get_data_sync(dataset, ['gen_pt', 'gen_eta', 
+   get_data_sync(dataset, ['gen_pt', 'gen_eta', 'gen_dR',
                            'trk_pt', 'trk_eta', 
                            'evt', 
                            'is_e', 'is_e_not_matched', 'is_other', 'is_egamma'])
 )
 print '...Done'
-data = data[np.invert(data.is_egamma)] # remove EGamma electrons
-data = data[np.invert(data.is_e_not_matched)] #remove non-matched electrons
-#remove things that do not yield tracks
-data.gsf_pt = data.trk_pt #@@
-data.gsf_eta = data.trk_eta #@@
-data = data[(data.trk_pt > 0) & (np.abs(data.trk_eta) < 2.4) & (data.trk_pt < 15)]
+data = data[np.invert(data.is_egamma)]          # remove EGamma electrons
+data = data[np.invert(data.is_e_not_matched)]   # remove non-matched electrons
+mask = training_selection(data)                 # in dataset 
+data = data[mask]
 data['log_trkpt'] = np.log10(data.trk_pt)
 
-# original_weight = HistWeighter('../data/fakesWeights.txt')
 data['original_weight'] = 1. #np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
 
 overall_scale = data.shape[0]/float(data.is_e.sum())
@@ -74,6 +68,7 @@ clusterizer.fit(data[reweight_feats]) #fit(data[data.is_e][reweight_feats])
 global_ratio = float(data.is_e.sum())/np.invert(data.is_e).sum()
 
 data['cluster'] = clusterizer.predict(data[reweight_feats])
+counts = {}
 weights = {}
 for cluster, group in data.groupby('cluster'):
    nbkg = np.invert(group.is_e).sum()
@@ -82,30 +77,32 @@ for cluster, group in data.groupby('cluster'):
    elif not nsig: RuntimeError('cluster %d has no electrons events, reduce the number of bins!' % nsig)
    weight = float(nsig)/nbkg if nbkg > 0 else 1.
    weights[cluster] = weight
+   counts[cluster] = min(nsig,nbkg)
 print "Number of eles: ",data.is_e.sum()
 print "Number of fakes:",np.invert(data.is_e).sum()
 
 from sklearn.externals import joblib
 joblib.dump(
    clusterizer, 
-   '%s/kmeans_%s_weighter.plk' % (mods, dataset), 
+   '%s/kmeans_%s_weighter.pkl' % (mods, dataset), 
    compress=True
 )
+
 weights['features'] = reweight_feats
 with open('%s/kmeans_%s_weighter.json' % (mods, dataset), 'w') as ww:
    json.dump(weights, ww)
 print '...done'
+del weights['features']
 
-#vectorize(excluded={2})
 data['weight'] = np.invert(data.is_e)*apply_weight(data.cluster, weights)+data.is_e
 
 print 'time for plots!'
 # Step size of the mesh. Decrease to increase the quality of the VQ.
-h = .02     # point in the mesh [x_min, x_max]x[y_min, y_max].
+h = .01     # point in the mesh [x_min, x_max]x[y_min, y_max].
 
 # Plot the decision boundary. For that, we will assign a color to each
-x_min, x_max = data.log_trkpt.min() - 1, data.log_trkpt.max() + 1
-y_min, y_max = data.trk_eta.min() - 1  , data.trk_eta.max() + 1
+x_min, x_max = data.log_trkpt.min() - 0.3, data.log_trkpt.max() + 0.3
+y_min, y_max = data.trk_eta.min() - 0.3  , data.trk_eta.max() + 0.3
 xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
 # Obtain labels for each point in mesh. Use last trained model.
@@ -133,7 +130,6 @@ try : plt.savefig('%s/%s_clusters.pdf' % (plots, dataset))
 except : pass
 plt.clf()
 
-#set_trace()
 from matplotlib.colors import LogNorm
 Z = apply_weight(Zlin, weights).reshape(xx.shape)
 plt.figure(figsize=[10, 8])
@@ -156,13 +152,34 @@ try : plt.savefig('%s/%s_clusters_weights.pdf' % (plots, dataset))
 except : pass
 plt.clf()
 
+from matplotlib.colors import LogNorm
+Z = apply_weight(Zlin, counts).reshape(xx.shape)
+plt.figure(figsize=[10, 8])
+plt.imshow(
+   Z, interpolation='nearest',
+   extent=(xx.min(), xx.max(), yy.min(), yy.max()),
+   cmap=plt.cm.seismic,
+   norm=LogNorm(vmin=0.1, vmax=max(counts.values())*10.),
+   aspect='auto', origin='lower')
+plt.title('counts')
+plt.xlim(x_min, x_max)
+plt.ylim(y_min, y_max)
+plt.xlabel(cosmetics.beauty['log_trkpt'])
+plt.ylabel(cosmetics.beauty['trk_eta'])
+plt.colorbar()
+plt.plot()
+try : plt.savefig('%s/%s_clusters_counts.png' % (plots, dataset))
+except : pass
+try : plt.savefig('%s/%s_clusters_weights.pdf' % (plots, dataset))
+except : pass
+plt.clf()
 
 # plot weight distribution
 entries, _, _ = plt.hist(
    data.weight, 
    bins=np.logspace(
       np.log(max(data.weight.min(), 10**-5)), 
-      np.log(data.weight.max()), 
+      np.log(data.weight.max()*2.), 
       100
       ),
    histtype='stepfilled'
@@ -170,8 +187,8 @@ entries, _, _ = plt.hist(
 plt.xlabel('Weight')
 plt.ylabel('Occurrency')
 plt.legend(loc='best')
-plt.ylim(0.5, entries.max()*1.2)
-plt.xlim(max(entries.min(), 10**-4), entries.max()*1.2)
+plt.ylim(0.5, entries.max()*10.)
+plt.xlim(max(data.weight[data.weight>0.].min()*0.5,10**-3), data.weight.max()*2.)
 #plt.xlim(max(data.weights.min(), 10**-4), data.weights.max()*1.2)
 plt.gca().set_xscale('log')
 plt.gca().set_yscale('log')
@@ -191,11 +208,11 @@ for plot in reweight_feats+['trk_pt']:
       ('reweight', data.weight),
       ('original', data.original_weight)]:
       plt.hist(
-         data[data.is_e][plot], bins=50, normed=True,
+         data[data.is_e][plot], bins=100, normed=True,
          histtype='step', label='electrons', range=x_range, weights=weight[data.is_e]
          )
       plt.hist(
-         data[np.invert(data.is_e)][plot], bins=50, normed=True,
+         data[np.invert(data.is_e)][plot], bins=100, normed=True,
          histtype='step', label='background', range=x_range, weights=weight[np.invert(data.is_e)]
          )
       plt.legend(loc='best')
@@ -212,7 +229,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from datasets import train_test_split
 from sklearn.metrics import roc_curve, roc_auc_score
 
-train_bdt, test_bdt = train_test_split(data, 10, 5)
+train_bdt, test_bdt = train_test_split(data.head(1000000), 10, 5)
 pre_separation = GradientBoostingClassifier(
    n_estimators=50, learning_rate=0.1,
    max_depth=4, random_state=42, verbose=1
