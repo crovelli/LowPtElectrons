@@ -1,0 +1,3 @@
+normalizeVar -> to fix variables which are initialized to -999 or have craxy values
+
+shortTrainNNLP -> to keep only low-pT electrons with no PF equivalent
