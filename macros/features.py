@@ -689,6 +689,45 @@ cmssw_mva_id_nnclean2 = [
    'sc_clus2_E_ov_p'
 ]
 
+cmssw_mva_id_nnclean2_dedx = [
+   'eid_rho',
+   'eid_sc_eta',
+   'eid_shape_full5x5_r9',
+   'eid_sc_etaWidth',
+   'eid_sc_phiWidth',
+   'eid_shape_full5x5_HoverE',
+   'eid_trk_nhits',
+   'eid_trk_chi2red',
+   'eid_gsf_chi2red',
+   'eid_brem_frac',
+   'eid_gsf_nhits',
+   'eid_match_SC_EoverP',
+   'eid_match_eclu_EoverP',
+   'eid_match_SC_dEta',
+   'eid_match_SC_dPhi',
+   'eid_match_seed_dEta',
+   'eid_sc_E',
+   'eid_trk_p',     
+   'gsf_mode_p',
+   'core_shFracHits',
+   'gsf_bdtout1',
+   'gsf_dr',
+   'trk_dr',
+   'sc_Nclus',
+   'sc_clus1_nxtal',
+   'sc_clus1_dphi',
+   'sc_clus2_dphi',
+   'sc_clus1_deta',
+   'sc_clus2_deta',
+   'sc_clus1_E',
+   'sc_clus2_E',
+   'sc_clus1_E_ov_p',
+   'sc_clus2_E_ov_p',
+   'trk_dEdx1',
+   'trk_dEdx1_Nm',
+   'trk_dEdx1_NSm'
+]
+
 cmssw_mva_id_justecal = [
    'eid_rho',
    'eid_ele_pt',
@@ -927,6 +966,9 @@ def get_features(ftype):
       additional = id_additional 
    elif ftype == 'cmssw_mva_id_nnclean2':
       features = cmssw_mva_id_nnclean2
+      additional = id_additional 
+   elif ftype == 'cmssw_mva_id_nnclean2_dedx':
+      features = cmssw_mva_id_nnclean2_dedx
       additional = id_additional 
    elif ftype == 'cmssw_mva_id_baseunbias':
       features = cmssw_mva_id_baseunbias
