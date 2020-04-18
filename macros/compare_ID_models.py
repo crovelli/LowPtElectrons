@@ -30,8 +30,7 @@ def get_model(pkl):
 
 # test dataset
 test = pd.read_hdf(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/bdt_cmssw_mva_id_nnclean2___paramMauro/'
-#    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/BDT_base/'
+    '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2___paramRob/'
     '/bdt_cmssw_mva_id_nnclean2_testdata.hdf', key='data')
 test = test[np.invert(test.is_egamma)] 
 test = test[np.invert(abs(test.trk_eta)>=2.4)] 
@@ -41,10 +40,8 @@ print test.size
 
 # default variables
 base = get_model(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/bdt_cmssw_mva_id_nnclean2___paramMauro/'
-    '/2020Jan30__cmssw_mva_id_nnclean2_BDT.pkl')
-    #'/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/BDT_base/'
-    #'/2020Jan30__cmssw_mva_id_base_BDT.pkl')
+    '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2___paramRob/'
+    '/2020Feb24__cmssw_mva_id_nnclean2_BDT.pkl')
 based_features, _ = get_features('cmssw_mva_id_nnclean2')
 test['base_out'] = base.predict_proba(test[based_features].as_matrix())[:,1]
 test['base_out'].loc[np.isnan(test.base_out)] = -999 
@@ -56,24 +53,24 @@ print "ROC done"
 print base_auc
 
 # updated variables
-#ecal = get_model(
-#    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/bdt_cmssw_mva_id_nnclean2/'
-#    '/2020Jan30__cmssw_mva_id_nnclean2_BDT.pkl')
-#ecal_features, _ = get_features('cmssw_mva_id_nnclean2')
-#test['ecal_out'] = ecal.predict_proba(test[ecal_features].as_matrix())[:,1]
-#test['ecal_out'].loc[np.isnan(test.ecal_out)] = -999 
-#ecal_roc = roc_curve(
-#    test.is_e, test.ecal_out
-#)
-#ecal_auc = roc_auc_score(test.is_e, test.ecal_out)
-#print ecal_auc
+ecal = get_model(
+    '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2/'
+    '/2020Feb24__cmssw_mva_id_nnclean2_BDT.pkl')
+ecal_features, _ = get_features('cmssw_mva_id_nnclean2')
+test['ecal_out'] = ecal.predict_proba(test[ecal_features].as_matrix())[:,1]
+test['ecal_out'].loc[np.isnan(test.ecal_out)] = -999 
+ecal_roc = roc_curve(
+    test.is_e, test.ecal_out
+)
+ecal_auc = roc_auc_score(test.is_e, test.ecal_out)
+print ecal_auc
 
 # training version in cmssw
-cmssw_roc = roc_curve(
-     test.is_e, test.ele_mva_value
-    )
-cmssw_auc = roc_auc_score(test.is_e, test.ele_mva_value)
-print cmssw_auc
+#cmssw_roc = roc_curve(
+#     test.is_e, test.ele_mva_value
+#    )
+#cmssw_auc = roc_auc_score(test.is_e, test.ele_mva_value)
+#print cmssw_auc
 
 # plots
 print "Making plots ..."
@@ -94,17 +91,18 @@ plt.plot(base_roc[0][:-1], base_roc[1][:-1],
          linestyle='solid', 
          color='black', 
 #         label='Aug22 variables (AUC: %.3f)' %base_auc)
-         label='Extended set (AUC: %.3f)' %base_auc)
+         label='Aug22 hyperpar (AUC: %.3f)' %base_auc)
+#         label='Extended set (AUC: %.3f)' %base_auc)
 
-#plt.plot(ecal_roc[0][:-1], ecal_roc[1][:-1], 
-#         linestyle='dashed', 
-#         color='red', 
-#         label='Reduced set (AUC: %.3f)' %ecal_auc)
-
-plt.plot(cmssw_roc[0][:-1], cmssw_roc[1][:-1],
+plt.plot(ecal_roc[0][:-1], ecal_roc[1][:-1], 
          linestyle='dashed', 
-         color='red',
-         label='MVA ID V2 (AUC: %.3f)' %cmssw_auc)
+         color='red', 
+         label='Conservative hyperpar (AUC: %.3f)' %ecal_auc)
+
+#plt.plot(cmssw_roc[0][:-1], cmssw_roc[1][:-1],
+#         linestyle='dashed', 
+#         color='red',
+#         label='MVA ID cmssw (AUC: %.3f)' %cmssw_auc)
 
 plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
@@ -132,21 +130,6 @@ plt.legend(loc='best')
 plt.savefig('OUTBase_comparison.png')
 plt.clf()
 
-plt.title('gen dR')
-basesignal2 = test.gen_dR.as_matrix()
-basesignal2 = basesignal2[test.is_e==1]
-basebkg2 = test.gen_dR.as_matrix()
-basebkg2 = basebkg2[test.is_e==0]
-plt.hist(basebkg2,    bins=70, color="skyblue", lw=0, label='bkg',normed=1,alpha=0.5)
-plt.hist(basesignal2, bins=70, color="green",   lw=0, label='signal',normed=1,alpha=0.5)
-plt.show()
-plt.legend(loc='best')
-plt.gca().set_yscale('log')
-plt.xlim(0, 0.3)
-plt.savefig('GenDr_comparison.png')
-plt.clf()
-
-
 # some working points
 print ''
 jmap = {}
@@ -158,12 +141,60 @@ for base_thr, ecal_thr, wpname in [
 #    (0.33 , 1.75, 'M+'),
 #    (-0.97, 1.03, 'L+'),
 #    ]:
-    (1.83 , 1.83, 'T'),
-    (0.60 , 0.60, 'M'),
-    (-0.56, -0.56, 'L'),
+#    (1.83 , 1.83, 'T'),
+#    (0.60 , 0.60, 'M'),
+#    (-0.56, -0.56, 'L'),
+    (5. , 5., 'T1'),
+    (4.8 , 4.8, 'T2'),
+    (4.6 , 4.6, 'T3'),
+    (4.4 , 4.4, 'T4'),
+    (4.2 , 4.2, 'T5'),
+    (4.0 , 4.0, 'T6'),
+    (3.8 , 3.8, 'T7'),
+    (3.6 , 3.6, 'T8'),
+    (3.4 , 3.4, 'T9'),
+    (3.2 , 3.2, 'T10'),
+    (3.0 , 3.0, 'T11'),
+    (2.8 , 2.8, 'T12'),
+    (2.6 , 2.6, 'T13'),
+    (2.4 , 2.4, 'T14'),
+    (2.2 , 2.2, 'T15'),
+    (2.0 , 2.0, 'T16'),
+    (1.9 , 1.9, 'T17'),
+    (1.8 , 1.8, 'T18'),
+    (1.7 , 1.7, 'T19'),
+    (1.6 , 1.6, 'T20'),
+    (1.5 , 1.5, 'T21'),
+    (1.4 , 1.4, 'T22'),
+    (1.3 , 1.3, 'T23'),
+    (1.2 , 1.2, 'T24'),
+    (1.1 , 1.1, 'T25'),
+    (1.0 , 1.0, 'T26'),
+    (0.9 , 0.9, 'T27'),
+    (0.8 , 0.8, 'T28'),
+    (0.7 , 0.7, 'T29'),
+    (0.6 , 0.6, 'T30'),
+    (0.5 , 0.5, 'T31'),
+    (0.4 , 0.4, 'T32'),
+    (0.3 , 0.3, 'T33'),
+    (0.2 , 0.2, 'T34'),
+    (0.1 , 0.1, 'T35'),
+    (0. , 0., 'T36'),
+    (-0.1 , -0.1, 'T37'),
+    (-0.2 , -0.2, 'T38'),
+    (-0.3 , -0.3, 'T39'),
+    (-0.4 , -0.4, 'T40'),
+    (-0.5 , -0.5, 'T41'),
+    (-0.6 , -0.6, 'T42'),
+    (-0.7 , -0.7, 'T43'),
+    (-0.8 , -0.8, 'T44'),
+    (-0.9 , -0.9, 'T45'),
+    (-1. , -1., 'T46'),
     ]:
    print 'WP', wpname
+   print 'base:'
    test['base_pass'] = test.base_out > base_thr
+#   print 'ecal:'
 #   test['ecal_pass'] = test.ecal_out > ecal_thr
     
    eff_base = ((test.base_pass & test.is_e).sum()/float(test.is_e.sum()))
@@ -177,8 +208,3 @@ for base_thr, ecal_thr, wpname in [
 #   print 'eff (ecal): %.3f' % eff_ecal
 #   print 'mistag (ecal): %.3f' % mistag_ecal
 
-#   idx = np.abs(biased_roc[0] - mistag).argmin()
-#   print 'similar mistag: %.2f\t%.4f\t%.2f' % (biased_roc[1][idx], biased_roc[0][idx], biased_roc[2][idx])
-    
-
-# Eff vs eta and pT for some reference WP
