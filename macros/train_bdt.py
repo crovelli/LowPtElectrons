@@ -16,34 +16,36 @@ parser.add_argument(
    '--jobtag', default='', type=str
 )
 parser.add_argument(
-   '--ntrees', default=5000, type=int
+   '--ntrees', default=500, type=int                # chiara: era 100. Io sempre usato 500; Rob 2000
+)
+
+parser.add_argument(
+   '--depth', default=10, type=int                  # chiara: era 4; def = 6; Io ho sempre usato 10; Rob/Mauro: 15
 )
 parser.add_argument(
-   '--depth', default=4, type=int
-)
-parser.add_argument(
-   '--lrate', default=0.1, type=float
+   '--lrate', default=0.1, type=float     
 )
 parser.add_argument(
    '--rstate', default=42, type=int
 )
 parser.add_argument(
-   '--gamma', default=0, type=float
+   '--gamma', default=0., type=float
 )
 parser.add_argument(
-   '--min_child_weight', default=1, type=int
+   '--min_child_weight', default=1.0, type=int
 )
 parser.add_argument(
-   '--subsample', default=1, type=float
+   '--subsample', default=1., type=float
 )
 parser.add_argument(
-   '--colsample_bytree', default=1, type=float
+   '--colsample_bytree', default=1.0, type=float
+)
+
+parser.add_argument(
+   '--reg_alpha', default=0.0, type=float
 )
 parser.add_argument(
-   '--reg_alpha', default=0, type=float
-)
-parser.add_argument(
-   '--reg_lambda', default=1, type=float
+   '--reg_lambda', default=1, type=float          # chiara: default 1, sempre usato nei miei test; mauro 9.99999999862; rob: 2.112612055963768
 )
 parser.add_argument(
    '--nthreads', default=8, type=int
@@ -114,7 +116,7 @@ mods = '%s/bdt_%s' % (get_models_dir(), args.what)
 if not os.path.isdir(mods):
    os.makedirs(mods)
 
-plots = '%s/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (os.environ['CMSSW_BASE'], tag)
+plots = '/tmp/crovelli/plots/%s/' % (tag)
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
@@ -186,6 +188,7 @@ else:
 
 from sklearn.externals import joblib
 import xgboost as xgb
+
 #
 # Train BDTs
 #
@@ -199,15 +202,25 @@ elif not args.load_model :
    print 'Input features:\n',features
 
    clf = xgb.XGBClassifier(
-      #basic stuff
-      max_depth=args.depth, learning_rate=args.lrate, n_estimators=args.ntrees,
-      objective='binary:logitraw',
-      #many different ways of regularization
-      gamma=args.gamma, min_child_weight=args.min_child_weight, max_delta_step=0, 
-      colsample_bytree=args.colsample_bytree, colsample_bylevel=1, subsample=args.subsample,
-      reg_alpha=args.reg_alpha, reg_lambda=args.reg_lambda, 
-      #running settings and weight balancing
-      silent=False, nthread=args.nthreads, scale_pos_weight=1, 
+      # general parameters
+      booster='gbtree',                                # chiara: preso dalla versione di Rob, non nel master (ma e' il default)
+      silent=False,
+      #### nthread=args.nthreads,
+      # booster parameters
+      n_estimators=args.ntrees,                       
+      learning_rate=args.lrate,                        
+      min_child_weight=args.min_child_weight,          #def=1 in xgboost, as here
+      max_depth=args.depth,                            #def in xgboost=6, here is 4
+      gamma=args.gamma,                                #def=0 in xgboost, as here 
+      max_delta_step=0,                                #def=0 in xgboost, as here 
+      subsample=args.subsample,                        #def=1 in xgboost, as here     ===> tizio dice che e' tipico iniziare con 0.8
+      colsample_bytree=args.colsample_bytree,          #def=1 in xgboost, as here     ===> tizio dice che e' tipico iniziare con 0.8    
+      colsample_bylevel=1,                             #def=1; use subsample and colsample_bytree instead
+      reg_lambda=args.reg_lambda,                      #def=1 in xgboost, as here  
+      reg_alpha=args.reg_alpha,                        #def=0 in xgboost, as here
+      scale_pos_weight=1,                              #def=1 in xgboost, as here  
+      # learning task parameters
+      objective='binary:logitraw',       ## chiara ##
    )
    
    early_stop_kwargs = {
@@ -249,6 +262,7 @@ if not args.notraining :
       (validation, 'validation')
       ]:
       training_out = clf.predict_proba(df[features].as_matrix())[:, 1]
+      df['training_out'] = training_out      # chiara: preso dalla versione di Rob, non nel master
       rocs[name] = roc_curve(
          df.is_e.as_matrix().astype(int), 
          training_out)[:2]
@@ -259,7 +273,11 @@ if not args.notraining :
 
 # make plots
 print "Making plots ..."
-plt.figure(figsize=[8, 8])
+plt.figure(figsize=[8, 12])
+ax = plt.subplot(111)  
+box = ax.get_position()   
+ax.set_position([box.x0, box.y0, box.width, box.height*0.666]) 
+
 plt.title('%s training' % args.what.replace("_"," "))
 plt.plot(
    np.arange(0,1,0.01),
@@ -280,7 +298,7 @@ elif 'id' in args.what:
    mva_v2 = roc_curve(validation.is_e, validation.ele_mva_value)[:2]
    mva_v2_auc = roc_auc_score(validation.is_e, validation.ele_mva_value)
    rocs['mva_v2'] = mva_v2
-   plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.2f)'  % mva_v2_auc)
+   plt.plot(*mva_v2, label='MVA ID V2 (AUC: %.3f)'  % mva_v2_auc)
 else:
    pass #raise ValueError()
 
@@ -295,6 +313,7 @@ plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
 plt.legend(loc='best')
 plt.xlim(0., 1)
+
 try : plt.savefig('%s/%s_%s_%s_BDT.png' % (plots, dataset, args.jobtag, args.what))
 except : pass
 try : plt.savefig('%s/%s_%s_%s_BDT.pdf' % (plots, dataset, args.jobtag, args.what))
@@ -306,3 +325,14 @@ except : pass
 try : plt.savefig('%s/%s_%s_%s_log_BDT.pdf' % (plots, dataset, args.jobtag, args.what))
 except : pass
 plt.clf()
+
+# features importance, chiara
+print(clf.feature_importances_)
+# plot
+xgb.plot_importance(clf)
+plt.rcParams['figure.figsize'] = [5, 5]
+plt.show()
+#plt.bar(range(len(clf.feature_importances_)), clf.feature_importances_)
+#plt.show()
+try : plt.savefig('%s/%s_%s_%s_features.png' % (plots, dataset, args.jobtag, args.what))
+except : pass
