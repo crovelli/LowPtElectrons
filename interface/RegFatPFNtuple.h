@@ -1,5 +1,5 @@
-#ifndef LowPtElectrons_LowPtElectrons_RegFatNtuple
-#define LowPtElectrons_LowPtElectrons_RegFatNtuple
+#ifndef LowPtElectrons_LowPtElectrons_RegFatPFNtuple
+#define LowPtElectrons_LowPtElectrons_RegFatPFNtuple
 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
@@ -32,6 +32,9 @@
 
 #include <vector>
 
+
+bool debug=false;
+
 class TTree;
 
 namespace reco { typedef edm::Ptr<GenParticle> GenParticlePtr; }
@@ -49,33 +52,30 @@ namespace edm{
 }
 class CaloTopology;
 
-struct ClustStruct {
-  float clusterRawEnergy,clusterDEtaToSeed,clusterDPhiToSeed,nXtals,eta,phi;
-  static std::string contents(){return "clusterRawEnergy/F:clusterDEtaToSeed:clusterDPhiToSeed:nXtals:eta:phi";}
-  void clear(){clusterRawEnergy=clusterDEtaToSeed=clusterDPhiToSeed=nXtals=eta=phi=0.;}
-  void fill(float iClusterRawEnergy,float iClusterDEtaToSeed,float iClusterDPhiToSeed, float nxtals_ , float eta_, float phi_){
+struct ClustStructPF {
+  float clusterRawEnergy,clusterDEtaToSeed,clusterDPhiToSeed;
+  static std::string contents(){return "clusterRawEnergy/F:clusterDEtaToSeed:clusterDPhiToSeed";}
+  void clear(){clusterRawEnergy=clusterDEtaToSeed=clusterDPhiToSeed=0.;}
+  void fill(float iClusterRawEnergy,float iClusterDEtaToSeed,float iClusterDPhiToSeed){
     clusterRawEnergy = iClusterRawEnergy;
     clusterDEtaToSeed = iClusterDEtaToSeed;
     clusterDPhiToSeed = iClusterDPhiToSeed;
-    nXtals=nxtals_;
-    eta=eta_;
-    phi=phi_;
   }
 };
-struct EleStruct {
+struct EleStructPF {
   float et,energy,energyErr,ecalEnergy,ecalEnergyErr,eta,phi,trkEtaMode,trkPhiMode,trkPMode,trkPModeErr,fbrem,corrMean,corrSigma,hademTow,hademCone,trkPInn,trkPtInn,trkPVtx,trkPOut,trkChi2,trkNDof,ecalDrivenSeed,nrSatCrys,scRawEnergy,scRawESEnergy;
   static std::string contents(){return "et/F:energy:energyErr:ecalEnergy:ecalEnergyErr:eta:phi:trkEtaMode:trkPhiMode:trkPMode:trkPModeErr:fbrem:corrMean:corrSigma:hademTow:hademCone:trkPInn:trkPtInn:trkPVtx:trkPOut:trkChi2:trkNDof:ecalDrivenSeed:nrSatCrys:scRawEnergy:scRawESEnergy";}
   void clear(){et=energy=energyErr=ecalEnergy=ecalEnergyErr=eta=phi=trkEtaMode=trkPhiMode=trkPMode=trkPModeErr=fbrem=corrMean=corrSigma=hademTow=hademCone=trkPInn=trkPtInn=trkPVtx=trkPOut=trkChi2=trkNDof=ecalDrivenSeed=nrSatCrys=scRawEnergy=scRawESEnergy=0.;}
   void fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf );
 };
-struct PFEleStruct {
+struct PFEleStructPF {
   float et,energy,ecalEnergy,trkPMode,trkPtMode,trkP,scRawEnergy,scRawESEnergy;
   static std::string contents(){return "et/F:energy:ecalEnergy:trkPMode:trkPtMode:trkP:scRawEnergy:scRawESEnergy";}
   void clear(){et=energy=ecalEnergy=trkPMode=trkPtMode=trkP=scRawEnergy=scRawESEnergy=0.;}
   void fill(const reco::GsfElectron& ipfele, const  reco::GsfTrack& ipfgsf,  const  reco::Track& ipftrk );
 };
 
-struct EleEnergyStruct {
+struct EleEnergyStructPF {
   float ecalTrk,ecalTrkErr,ecal,ecalErr;
   static std::string contents(){return "ecalTrk/F:ecalTrkErr:ecal:ecalErr";}
   void clear(){ecalTrk=ecalTrkErr=ecal=ecalErr=0.;}
@@ -86,17 +86,17 @@ struct EleEnergyStruct {
 
 
 
-struct SuperClustStruct {
-  float rawEnergy,rawESEnergy,etaWidth,phiWidth,seedClusEnergy,numberOfClusters,numberOfSubClusters,clusterMaxDR,clusterMaxDRDPhi,clusterMaxDRDEta,clusterMaxDRRawEnergy,corrEnergy,scEta,scPhi,seedEta,seedPhi,dEtaSeedSC,dPhiSeedSC,isEB,iEtaOrX,iPhiOrY,iEtaMod5,iPhiMod2,iEtaMod20,iPhiMod20,etaGapCode,phiGapCode,nearbyChanStatus,corrEnergyAlt,rawEnergyAlt,nrClusAlt,scSinTheta,seedSinTheta,nXtals;
-  static std::string contents(){return "rawEnergy/F:rawESEnergy:etaWidth:phiWidth:seedClusEnergy:numberOfClusters:numberOfSubClusters:clusterMaxDR:clusterMaxDRDPhi:clusterMaxDRDEta:clusterMaxDRRawEnergy:corrEnergy:scEta:scPhi:seedEta:seedPhi:dEtaSeedSC:dPhiSeedSC:isEB:iEtaOrX:iPhiOrY:iEtaMod5:iPhiMod2:iEtaMod20:iPhiMod20:etaGapCode:phiGapCode:nearbyChanStatus:corrEnergyAlt:rawEnergyAlt:nrClusAlt:scSinTheta:seedSinTheta:nXtals";}
+struct SuperClustStructPF {
+  float rawEnergy,rawESEnergy,etaWidth,phiWidth,seedClusEnergy,numberOfClusters,numberOfSubClusters,clusterMaxDR,clusterMaxDRDPhi,clusterMaxDRDEta,clusterMaxDRRawEnergy,corrEnergy,scEta,scPhi,seedEta,seedPhi,dEtaSeedSC,dPhiSeedSC,isEB,iEtaOrX,iPhiOrY,iEtaMod5,iPhiMod2,iEtaMod20,iPhiMod20,etaGapCode,phiGapCode,nearbyChanStatus,corrEnergyAlt,rawEnergyAlt,nrClusAlt,scSinTheta,seedSinTheta;
+  static std::string contents(){return "rawEnergy/F:rawESEnergy:etaWidth:phiWidth:seedClusEnergy:numberOfClusters:numberOfSubClusters:clusterMaxDR:clusterMaxDRDPhi:clusterMaxDRDEta:clusterMaxDRRawEnergy:corrEnergy:scEta:scPhi:seedEta:seedPhi:dEtaSeedSC:dPhiSeedSC:isEB:iEtaOrX:iPhiOrY:iEtaMod5:iPhiMod2:iEtaMod20:iPhiMod20:etaGapCode:phiGapCode:nearbyChanStatus:corrEnergyAlt:rawEnergyAlt:nrClusAlt:scSinTheta:seedSinTheta";}
   void clear(){
-    rawEnergy=rawESEnergy=etaWidth=phiWidth=seedClusEnergy=numberOfClusters=numberOfSubClusters=clusterMaxDR=clusterMaxDRDPhi=clusterMaxDRDEta=clusterMaxDRRawEnergy=corrEnergy=scEta=scPhi=seedEta=seedPhi=dEtaSeedSC=dPhiSeedSC=isEB=iEtaOrX=iPhiOrY=iEtaMod5=iPhiMod2=iEtaMod20=iPhiMod20=etaGapCode=phiGapCode=nearbyChanStatus=corrEnergyAlt=rawEnergyAlt=nrClusAlt=scSinTheta=seedSinTheta=nXtals=0.;
+    rawEnergy=rawESEnergy=etaWidth=phiWidth=seedClusEnergy=numberOfClusters=numberOfSubClusters=clusterMaxDR=clusterMaxDRDPhi=clusterMaxDRDEta=clusterMaxDRRawEnergy=corrEnergy=scEta=scPhi=seedEta=seedPhi=dEtaSeedSC=dPhiSeedSC=isEB=iEtaOrX=iPhiOrY=iEtaMod5=iPhiMod2=iEtaMod20=iPhiMod20=etaGapCode=phiGapCode=nearbyChanStatus=corrEnergyAlt=rawEnergyAlt=nrClusAlt=scSinTheta=seedSinTheta=0.;
   }
 
-  void fill(const reco::SuperCluster& sc,const EcalChannelStatus& ecalChanStatus, float nxt);
+  void fill(const reco::SuperCluster& sc,const EcalChannelStatus& ecalChanStatus);
 };
 
-struct ShowerShapeStruct {
+struct ShowerShapeStructPF {
   float e3x3,e5x5,seedClusEnergy,eMax,e2nd,eLeftRightDiffSumRatio,eTopBottomDiffSumRatio,sigmaIEtaIEta,sigmaIEtaIPhi,sigmaIPhiIPhi,e2x5Max,e2x5Top,e2x5Bottom,e2x5Left,e2x5Right,eTop,eBottom,eLeft,eRight;
   static std::string contents(){return "e3x3:e5x5:seedClusEnergy:eMax:e2nd:eLeftRightDiffSumRatio:eTopBottomDiffSumRatio:sigmaIEtaIEta:sigmaIEtaIPhi:sigmaIPhiIPhi:e2x5Max:e2x5Top:e2x5Bottom:e2x5Left:e2x5Right:eTop:eBottom:eLeft:eRight";}
   void clear(){
@@ -111,14 +111,14 @@ struct ShowerShapeStruct {
 
 };
 
-struct EvtStruct {
+struct EvtStructPF {
   int runnr,lumiSec,eventnr;
   static std::string contents(){return "runnr/I:lumiSec:eventnr";}
   void clear(){runnr=lumiSec=eventnr=0;}
   void fill(const edm::Event& event);
 };
 
-struct GenInfoStruct {
+struct GenInfoStructPF {
   float energy,pt,eta,phi,pdgId,status,dR;
   static std::string contents(){return "energy/F:pt:eta:phi:pdgId:status:dR";}
   void clear(){energy=pt=eta=phi=pdgId=status=dR=0;}
@@ -128,14 +128,14 @@ struct GenInfoStruct {
 
 
 template<bool full5x5>
-void ShowerShapeStruct::fill(const reco::CaloCluster& clus,const EcalRecHitCollection& ecalHitsEB,const EcalRecHitCollection& ecalHitsEE,const CaloTopology& topo)
+void ShowerShapeStructPF::fill(const reco::CaloCluster& clus,const EcalRecHitCollection& ecalHitsEB,const EcalRecHitCollection& ecalHitsEE,const CaloTopology& topo)
 {
-  bool debug=false;
+  //  bool debug=false;
   if(debug)std::cout<<"entering fill shower shape"<<std::endl;
 
   const bool isEB = clus.seed().subdetId()==EcalBarrel;
   const EcalRecHitCollection& ecalHits = isEB ? ecalHitsEB : ecalHitsEE;
-  if(debug)std::cout<<"shower shape is eb"<<std::endl;
+  if(debug)std::cout<<"shower shape is eb or ee passed "<<std::endl;
 
   e3x3 = EcalClusterToolsT<full5x5>::e3x3(clus,&ecalHits,&topo);
   e5x5 = EcalClusterToolsT<full5x5>::e5x5(clus,&ecalHits,&topo);
@@ -188,10 +188,10 @@ void ShowerShapeStruct::fill(const reco::CaloCluster& clus,const EcalRecHitColle
 
 
 
-void ShowerShapeStruct::fillShowerShape(const reco::GsfElectron* ele){
+void ShowerShapeStructPF::fillShowerShape(const reco::GsfElectron* ele){
 
-  bool debug=false;
-  if(debug)std::cout<<"entering fill shower shape"<<std::endl;
+  //  bool debug=false;
+  if(debug)std::cout<<"ShowerShapeStructPF::fillShowerShape>> entering fill shower shape"<<std::endl;
 
   if ( ele->superCluster().isNull() ) { return; }
   const reco::SuperClusterRef& sc = ele->superCluster();
@@ -201,42 +201,50 @@ void ShowerShapeStruct::fillShowerShape(const reco::GsfElectron* ele){
   // if(debug)std::cout<<"shower shape is eb"<<std::endl;
 
 
+  if(debug)std::cout<<"ShowerShapeStructPF::fillShowerShape>> fill shower shape 1 "<<std::endl;
 
   e3x3 = ele->full5x5_r9()*sc->rawEnergy();
   e5x5 = ele->full5x5_e5x5();
 
-  
+  if(debug)std::cout<<"ShowerShapeStructPF::fillShowerShape>> fill shower shape 2 "<<std::endl;
+
   /*
+  
   float maxEne1=-1;
   float maxEne2=-1;
   int i1=-1;
   //  int i2=-1;
   int clusNum=0;
 
-  if(sc->clustersSize()>0&& sc->clustersBegin()!=sc->clustersEnd()){
-    for(auto& cluster : sc->clusters()) {
-      if (cluster->energy() > maxEne1){
-	maxEne1=cluster->energy();
-	i1=clusNum;
-      }
-      clusNum++;
-    }
-    if(debug)std::cout<<"fill_supercl mini 3 - i1="<<i1<<"clusNum="<<clusNum<<std::endl;
-    
-    if(sc->clustersSize()>1){
-      clusNum=0;
+  if(debug)std::cout<<"ShowerShapeStructPF::fillShowerShape>> fill shower shape 3 "<<std::endl;
+  try{
+    if(sc->clustersSize()>0&& sc->clustersBegin()!=sc->clustersEnd()){
       for(auto& cluster : sc->clusters()) {
-	if (clusNum!=i1) {
-	  if (cluster->energy() > maxEne2){
-	    maxEne2=cluster->energy();
-	    //    i2=clusNum;
-	  }
+	if (cluster->energy() > maxEne1){
+	  maxEne1=cluster->energy();
+	  i1=clusNum;
 	}
 	clusNum++;
       }
+      if(debug)std::cout<<"fill_supercl mini 3 - i1="<<i1<<"clusNum="<<clusNum<<std::endl;
+      
+      if(sc->clustersSize()>1){
+	clusNum=0;
+	for(auto& cluster : sc->clusters()) {
+	  if (clusNum!=i1) {
+	    if (cluster->energy() > maxEne2){
+	      maxEne2=cluster->energy();
+	      //    i2=clusNum;
+	    }
+	  }
+	  clusNum++;
+	}
+      }
     }
+  } catch (...){
+    std::cout<<"there were no clusters"<<std::endl; 
   }
-  */ 
+  */
 
   eMax=ele->full5x5_showerShape().eMax;
   e2nd =ele->full5x5_showerShape().e2nd;
@@ -273,7 +281,7 @@ void ShowerShapeStruct::fillShowerShape(const reco::GsfElectron* ele){
 
 
 // Small class to provide fillers and hide tree I/O
-class RegFatNtuple {
+class RegFatPFNtuple {
 
  public:
 
@@ -282,10 +290,10 @@ class RegFatNtuple {
   static constexpr int NEG_INT = -999;
   static constexpr float NEG_FLOAT = -999.;
   
-  RegFatNtuple() {}
+  RegFatPFNtuple() {}
   
   void reset() {
-    RegFatNtuple dummy; // create a new object 
+    RegFatPFNtuple dummy; // create a new object 
     *this = dummy; // use assignment to reset
   }
 
@@ -293,29 +301,27 @@ class RegFatNtuple {
   float rho=0;
   float nrPUInt=0;
   float nrPUIntTrue=0;
-  EvtStruct evt;
-  SuperClustStruct sc;
-  ShowerShapeStruct ssFull;
-  ShowerShapeStruct ssFrac;
-  EleStruct ele;
-  ShowerShapeStruct eleSSFull;
-  GenInfoStruct mc;
-  PFEleStruct pfele;
-  ClustStruct clus1;
-  ClustStruct clus2;
-  ClustStruct clus3;
-  std::vector<EleEnergyStruct> eleEnergies;
+  EvtStructPF evt;
+  SuperClustStructPF sc;
+  ShowerShapeStructPF ssFull;
+  ShowerShapeStructPF ssFrac;
+  EleStructPF ele;
+  ShowerShapeStructPF eleSSFull;
+  GenInfoStructPF mc;
+  PFEleStructPF pfele;
+  ClustStructPF clus1;
+  ClustStructPF clus2;
+  ClustStructPF clus3;
+  std::vector<EleEnergyStructPF> eleEnergies;
   void setNrEnergies(unsigned int nrEleEnergies){
     eleEnergies.resize(nrEleEnergies);
   }
   void createBranches(TTree* tree);
   void setBranchAddresses(TTree* tree);
-  void fill(const edm::Event& event,int iNrVert,float iRho,float nrPUInt,float nrTruePUInt,
-	    const EcalRecHitCollection& ecalHitsEB,const EcalRecHitCollection& ecalHitsEE,
-	    const CaloTopology& topo,const EcalChannelStatus& ecalChanStatus,const reco::SuperCluster* iSC,
-	    const reco::GenParticle* iMC,const reco::GsfElectron* iEle,
-	    const  reco::GsfTrack* gsf ,
-	    const reco::GsfElectron* iPFEle, const  reco::GsfTrack* ipfGsf, const  reco::Track* ipfTrk);
+  void fill( const edm::Event& event,int iNrVert,float iRho,float iNrPUInt,float iNrPUIntTrue,
+	     const EcalRecHitCollection& ecalHitsEB,const EcalRecHitCollection& ecalHitsEE,
+	     const CaloTopology& topo,const EcalChannelStatus& ecalChanStatus,const reco::SuperCluster* iSC,
+	     const reco::GenParticle* iMC,const reco::GsfElectron* iEle, const  reco::GsfTrack* gsf);
 
   void clear(){
     nrVert=0;
@@ -377,7 +383,7 @@ class RegFatNtuple {
   unsigned int lumi_ = 0;
   unsigned long long evt_ = 0;
   float weight_ = 1.;   
-  float rho_ = RegFatNtuple::NEG_FLOAT;
+  float rho_ = RegFatPFNtuple::NEG_FLOAT;
 
   // Data sample
   int is_aod_ = -1;
@@ -394,202 +400,202 @@ class RegFatNtuple {
   bool has_ele_  = true;
 
   // GEN electrons
-  float gen_dR_  = RegFatNtuple::NEG_FLOAT;
-  float gen_pt_  = RegFatNtuple::NEG_FLOAT;
-  float gen_eta_ = RegFatNtuple::NEG_FLOAT;
-  float gen_phi_ = RegFatNtuple::NEG_FLOAT;
-  float gen_p_   = RegFatNtuple::NEG_FLOAT;
-  int gen_charge_ = RegFatNtuple::NEG_INT;
-  int gen_pdgid_  = RegFatNtuple::NEG_INT;
-  int gen_mom_pdgid_ = RegFatNtuple::NEG_INT;
-  int gen_gran_pdgid_ = RegFatNtuple::NEG_INT;
-  int gen_tag_side_ = RegFatNtuple::NEG_INT;  
-  float gen_trk_dr_  = RegFatNtuple::NEG_FLOAT;
-  float gen_gsf_dr_  = RegFatNtuple::NEG_FLOAT;
+  float gen_dR_  = RegFatPFNtuple::NEG_FLOAT;
+  float gen_pt_  = RegFatPFNtuple::NEG_FLOAT;
+  float gen_eta_ = RegFatPFNtuple::NEG_FLOAT;
+  float gen_phi_ = RegFatPFNtuple::NEG_FLOAT;
+  float gen_p_   = RegFatPFNtuple::NEG_FLOAT;
+  int gen_charge_ = RegFatPFNtuple::NEG_INT;
+  int gen_pdgid_  = RegFatPFNtuple::NEG_INT;
+  int gen_mom_pdgid_ = RegFatPFNtuple::NEG_INT;
+  int gen_gran_pdgid_ = RegFatPFNtuple::NEG_INT;
+  int gen_tag_side_ = RegFatPFNtuple::NEG_INT;  
+  float gen_trk_dr_  = RegFatPFNtuple::NEG_FLOAT;
+  float gen_gsf_dr_  = RegFatPFNtuple::NEG_FLOAT;
 
   // RECO steps
-  float gsf_dr_ = RegFatNtuple::NEG_FLOAT;
-  float trk_dr_ = RegFatNtuple::NEG_FLOAT;
+  float gsf_dr_ = RegFatPFNtuple::NEG_FLOAT;
+  float trk_dr_ = RegFatPFNtuple::NEG_FLOAT;
 
   // GSF tracks: kine
-  float gsf_pt_   = RegFatNtuple::NEG_FLOAT;
-  float gsf_eta_  = RegFatNtuple::NEG_FLOAT;
-  float gsf_phi_  = RegFatNtuple::NEG_FLOAT;
-  float gsf_p_    = RegFatNtuple::NEG_FLOAT;
-  int gsf_charge_ = RegFatNtuple::NEG_INT;
-  float gsf_inp_  = RegFatNtuple::NEG_FLOAT;
-  float gsf_outp_ = RegFatNtuple::NEG_FLOAT;
+  float gsf_pt_   = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_eta_  = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_phi_  = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_p_    = RegFatPFNtuple::NEG_FLOAT;
+  int gsf_charge_ = RegFatPFNtuple::NEG_INT;
+  float gsf_inp_  = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_outp_ = RegFatPFNtuple::NEG_FLOAT;
 
   // GSF tracks: kine (mode)
-  float gsf_mode_pt_  = RegFatNtuple::NEG_FLOAT;
-  float gsf_mode_eta_ = RegFatNtuple::NEG_FLOAT;
-  float gsf_mode_phi_ = RegFatNtuple::NEG_FLOAT;
-  float gsf_mode_p_   = RegFatNtuple::NEG_FLOAT;
+  float gsf_mode_pt_  = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_mode_eta_ = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_mode_phi_ = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_mode_p_   = RegFatPFNtuple::NEG_FLOAT;
 
   // GSF tracks: quality
-  int gsf_missing_inner_hits_ = RegFatNtuple::NEG_INT;
+  int gsf_missing_inner_hits_ = RegFatPFNtuple::NEG_INT;
 
   // GSF tracks: displacement
-  float gsf_dxy_ = RegFatNtuple::NEG_FLOAT;
-  float gsf_dxy_err_ = RegFatNtuple::NEG_FLOAT;
-  float gsf_dz_ = RegFatNtuple::NEG_FLOAT;
-  float gsf_dz_err_ = RegFatNtuple::NEG_FLOAT;
+  float gsf_dxy_ = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_dxy_err_ = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_dz_ = RegFatPFNtuple::NEG_FLOAT;
+  float gsf_dz_err_ = RegFatPFNtuple::NEG_FLOAT;
 
   // GSF pos at ECAL
-  float gsf_x_ = RegFatNtuple::NEG_FLOAT;     
-  float gsf_y_ = RegFatNtuple::NEG_FLOAT;      
-  float gsf_z_ = RegFatNtuple::NEG_FLOAT;     
+  float gsf_x_ = RegFatPFNtuple::NEG_FLOAT;     
+  float gsf_y_ = RegFatPFNtuple::NEG_FLOAT;      
+  float gsf_z_ = RegFatPFNtuple::NEG_FLOAT;     
 
   // GSF tracks: tangents
-  int gsf_ntangents_ = 0; //@@ RegFatNtuple::NEG_INT;
-  //float gsf_hit_dpt_[NHITS_MAX] = {0}; //@@ {RegFatNtuple::NEG_FLOAT};
-  //float gsf_hit_dpt_unc_[NHITS_MAX] = {0}; //@@ {RegFatNtuple::NEG_FLOAT};
+  int gsf_ntangents_ = 0; //@@ RegFatPFNtuple::NEG_INT;
+  //float gsf_hit_dpt_[NHITS_MAX] = {0}; //@@ {RegFatPFNtuple::NEG_FLOAT};
+  //float gsf_hit_dpt_unc_[NHITS_MAX] = {0}; //@@ {RegFatPFNtuple::NEG_FLOAT};
   //std::vector<float> gsf_extapolated_eta_;
   //std::vector<float> gsf_extapolated_phi_;
 
   // Seed BDT discriminator values at GsfTrack level
-  float seed_unbiased_ = RegFatNtuple::NEG_FLOAT;
-  float seed_ptbiased_ = RegFatNtuple::NEG_FLOAT;
+  float seed_unbiased_ = RegFatPFNtuple::NEG_FLOAT;
+  float seed_ptbiased_ = RegFatPFNtuple::NEG_FLOAT;
 
   // KF tracks: kine
-  float trk_pt_  = RegFatNtuple::NEG_FLOAT;
-  float trk_eta_  = RegFatNtuple::NEG_FLOAT;
-  float trk_phi_  = RegFatNtuple::NEG_FLOAT;
-  float trk_p_    = RegFatNtuple::NEG_INT;
-  int trk_charge_ = RegFatNtuple::NEG_INT;
-  float trk_inp_  = RegFatNtuple::NEG_FLOAT;
-  float trk_outp_ = RegFatNtuple::NEG_FLOAT;
-  int pdg_id_     = RegFatNtuple::NEG_INT;
+  float trk_pt_  = RegFatPFNtuple::NEG_FLOAT;
+  float trk_eta_  = RegFatPFNtuple::NEG_FLOAT;
+  float trk_phi_  = RegFatPFNtuple::NEG_FLOAT;
+  float trk_p_    = RegFatPFNtuple::NEG_INT;
+  int trk_charge_ = RegFatPFNtuple::NEG_INT;
+  float trk_inp_  = RegFatPFNtuple::NEG_FLOAT;
+  float trk_outp_ = RegFatPFNtuple::NEG_FLOAT;
+  int pdg_id_     = RegFatPFNtuple::NEG_INT;
 
   // KF tracks: quality
-  int trk_nhits_ = RegFatNtuple::NEG_INT;
-  int trk_missing_inner_hits_ = RegFatNtuple::NEG_INT;
-  float trk_chi2red_   = RegFatNtuple::NEG_FLOAT;
-  int trk_high_purity_ = RegFatNtuple::NEG_INT;
+  int trk_nhits_ = RegFatPFNtuple::NEG_INT;
+  int trk_missing_inner_hits_ = RegFatPFNtuple::NEG_INT;
+  float trk_chi2red_   = RegFatPFNtuple::NEG_FLOAT;
+  int trk_high_purity_ = RegFatPFNtuple::NEG_INT;
 
   // KF tracks: displ
-  float trk_dxy_     = RegFatNtuple::NEG_FLOAT;
-  float trk_dxy_err_ = RegFatNtuple::NEG_FLOAT;
-  float trk_dz_      = RegFatNtuple::NEG_FLOAT;
-  float trk_dz_err_  = RegFatNtuple::NEG_FLOAT;
+  float trk_dxy_     = RegFatPFNtuple::NEG_FLOAT;
+  float trk_dxy_err_ = RegFatPFNtuple::NEG_FLOAT;
+  float trk_dz_      = RegFatPFNtuple::NEG_FLOAT;
+  float trk_dz_err_  = RegFatPFNtuple::NEG_FLOAT;
 
   // KF tracks: dE/dx
-  float trk_dEdx1_   = RegFatNtuple::NEG_FLOAT;
-  int trk_dEdx1_Nm_  = RegFatNtuple::NEG_INT;
-  int trk_dEdx1_NSm_ = RegFatNtuple::NEG_INT;
+  float trk_dEdx1_   = RegFatPFNtuple::NEG_FLOAT;
+  int trk_dEdx1_Nm_  = RegFatPFNtuple::NEG_INT;
+  int trk_dEdx1_NSm_ = RegFatPFNtuple::NEG_INT;
 
   // GSF electrons: kinematics
-  float ele_p_   = RegFatNtuple::NEG_FLOAT;
-  float ele_pt_  = RegFatNtuple::NEG_FLOAT;
-  float ele_eta_ = RegFatNtuple::NEG_FLOAT;
-  float ele_phi_ = RegFatNtuple::NEG_FLOAT;
-  int p4kind_    = RegFatNtuple::NEG_INT;
-  float core_shFracHits_ = RegFatNtuple::NEG_FLOAT;
-  float ele_p_atvtx_  = RegFatNtuple::NEG_FLOAT;
-  float ele_p_atcalo_ = RegFatNtuple::NEG_FLOAT;
-  int fiducial_isEB_      = RegFatNtuple::NEG_INT;
-  int fiducial_isEE_      = RegFatNtuple::NEG_INT; 
-  int fiducial_isEBEEGap_ = RegFatNtuple::NEG_INT;
+  float ele_p_   = RegFatPFNtuple::NEG_FLOAT;
+  float ele_pt_  = RegFatPFNtuple::NEG_FLOAT;
+  float ele_eta_ = RegFatPFNtuple::NEG_FLOAT;
+  float ele_phi_ = RegFatPFNtuple::NEG_FLOAT;
+  int p4kind_    = RegFatPFNtuple::NEG_INT;
+  float core_shFracHits_ = RegFatPFNtuple::NEG_FLOAT;
+  float ele_p_atvtx_  = RegFatPFNtuple::NEG_FLOAT;
+  float ele_p_atcalo_ = RegFatPFNtuple::NEG_FLOAT;
+  int fiducial_isEB_      = RegFatPFNtuple::NEG_INT;
+  int fiducial_isEE_      = RegFatPFNtuple::NEG_INT; 
+  int fiducial_isEBEEGap_ = RegFatPFNtuple::NEG_INT;
     
   // Electron: Charge
-  int chPix_ = RegFatNtuple::NEG_INT;
-  int chGCP_ = RegFatNtuple::NEG_INT;
-  int chGP_  = RegFatNtuple::NEG_INT;
-  int chGC_  = RegFatNtuple::NEG_INT;  
+  int chPix_ = RegFatPFNtuple::NEG_INT;
+  int chGCP_ = RegFatPFNtuple::NEG_INT;
+  int chGP_  = RegFatPFNtuple::NEG_INT;
+  int chGC_  = RegFatPFNtuple::NEG_INT;  
 
   // Electrons: IDs
-  float ele_mva_value_ = RegFatNtuple::NEG_FLOAT;
-  int ele_mva_id_      = RegFatNtuple::NEG_INT;
-  float ele_conv_vtx_fit_prob_ = RegFatNtuple::NEG_FLOAT;
+  float ele_mva_value_ = RegFatPFNtuple::NEG_FLOAT;
+  int ele_mva_id_      = RegFatPFNtuple::NEG_INT;
+  float ele_conv_vtx_fit_prob_ = RegFatPFNtuple::NEG_FLOAT;
 
-  float eid_rho_    = RegFatNtuple::NEG_FLOAT;
-  float eid_ele_pt_ = RegFatNtuple::NEG_FLOAT;
-  float eid_sc_eta_ = RegFatNtuple::NEG_FLOAT;
-  float eid_shape_full5x5_sigmaIetaIeta_ = RegFatNtuple::NEG_FLOAT;
-  float eid_shape_full5x5_sigmaIphiIphi_ = RegFatNtuple::NEG_FLOAT;
-  float eid_shape_full5x5_circularity_   = RegFatNtuple::NEG_FLOAT;
-  float eid_shape_full5x5_r9_            = RegFatNtuple::NEG_FLOAT;
-  float eid_sc_etaWidth_ = RegFatNtuple::NEG_FLOAT;
-  float eid_sc_phiWidth_ = RegFatNtuple::NEG_FLOAT;
-  float eid_shape_full5x5_HoverE_ = RegFatNtuple::NEG_FLOAT;
-  float eid_trk_nhits_   = RegFatNtuple::NEG_FLOAT;
-  float eid_trk_chi2red_ = RegFatNtuple::NEG_FLOAT;
-  float eid_gsf_chi2red_ = RegFatNtuple::NEG_FLOAT;
-  float eid_brem_frac_   = RegFatNtuple::NEG_FLOAT;
-  float eid_gsf_nhits_   = RegFatNtuple::NEG_FLOAT;
-  float eid_match_SC_EoverP_   = RegFatNtuple::NEG_FLOAT;
-  float eid_match_eclu_EoverP_ = RegFatNtuple::NEG_FLOAT;
-  float eid_match_SC_dEta_   = RegFatNtuple::NEG_FLOAT;
-  float eid_match_SC_dPhi_   = RegFatNtuple::NEG_FLOAT;
-  float eid_match_seed_dEta_ = RegFatNtuple::NEG_FLOAT;
-  float eid_sc_E_  = RegFatNtuple::NEG_FLOAT;
-  float eid_trk_p_ = RegFatNtuple::NEG_FLOAT;
+  float eid_rho_    = RegFatPFNtuple::NEG_FLOAT;
+  float eid_ele_pt_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_sc_eta_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_shape_full5x5_sigmaIetaIeta_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_shape_full5x5_sigmaIphiIphi_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_shape_full5x5_circularity_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_shape_full5x5_r9_            = RegFatPFNtuple::NEG_FLOAT;
+  float eid_sc_etaWidth_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_sc_phiWidth_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_shape_full5x5_HoverE_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_trk_nhits_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_trk_chi2red_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_gsf_chi2red_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_brem_frac_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_gsf_nhits_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_match_SC_EoverP_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_match_eclu_EoverP_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_match_SC_dEta_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_match_SC_dPhi_   = RegFatPFNtuple::NEG_FLOAT;
+  float eid_match_seed_dEta_ = RegFatPFNtuple::NEG_FLOAT;
+  float eid_sc_E_  = RegFatPFNtuple::NEG_FLOAT;
+  float eid_trk_p_ = RegFatPFNtuple::NEG_FLOAT;
 
   // Electron: firther track-Cluster matching
-  float match_seed_EoverP_    = RegFatNtuple::NEG_FLOAT;
-  float match_seed_EoverPout_ = RegFatNtuple::NEG_FLOAT;
-  float match_seed_dPhi_      = RegFatNtuple::NEG_FLOAT;
-  float match_seed_dEta_vtx_  = RegFatNtuple::NEG_FLOAT;
-  float match_eclu_EoverPout_ = RegFatNtuple::NEG_FLOAT;
-  float match_eclu_dEta_      = RegFatNtuple::NEG_FLOAT;
-  float match_eclu_dPhi_      = RegFatNtuple::NEG_FLOAT;
+  float match_seed_EoverP_    = RegFatPFNtuple::NEG_FLOAT;
+  float match_seed_EoverPout_ = RegFatPFNtuple::NEG_FLOAT;
+  float match_seed_dPhi_      = RegFatPFNtuple::NEG_FLOAT;
+  float match_seed_dEta_vtx_  = RegFatPFNtuple::NEG_FLOAT;
+  float match_eclu_EoverPout_ = RegFatPFNtuple::NEG_FLOAT;
+  float match_eclu_dEta_      = RegFatPFNtuple::NEG_FLOAT;
+  float match_eclu_dPhi_      = RegFatPFNtuple::NEG_FLOAT;
 
   // Further full 5x5 shower shape 
-  float shape_full5x5_e1x5_    = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_e2x5Max_ = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_e5x5_    = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_HoverEBc_     = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_hcalDepth1_   = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_hcalDepth2_   = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_hcalDepth1Bc_ = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_hcalDepth2Bc_ = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_eLeft_   = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_eRight_  = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_eTop_    = RegFatNtuple::NEG_FLOAT;
-  float shape_full5x5_eBottom_ = RegFatNtuple::NEG_FLOAT;
+  float shape_full5x5_e1x5_    = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_e2x5Max_ = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_e5x5_    = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_HoverEBc_     = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_hcalDepth1_   = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_hcalDepth2_   = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_hcalDepth1Bc_ = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_hcalDepth2Bc_ = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_eLeft_   = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_eRight_  = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_eTop_    = RegFatPFNtuple::NEG_FLOAT;
+  float shape_full5x5_eBottom_ = RegFatPFNtuple::NEG_FLOAT;
   
   // Electron, brem fractions
-  float brem_fracTrk_ = RegFatNtuple::NEG_FLOAT;
-  float brem_fracSC_  = RegFatNtuple::NEG_FLOAT;
-  int brem_N_         = RegFatNtuple::NEG_INT;
+  float brem_fracTrk_ = RegFatPFNtuple::NEG_FLOAT;
+  float brem_fracSC_  = RegFatPFNtuple::NEG_FLOAT;
+  int brem_N_         = RegFatPFNtuple::NEG_INT;
 
   // SuperClusters 
-  float sc_Et_  = RegFatNtuple::NEG_FLOAT;
-  int sc_Nclus_ = RegFatNtuple::NEG_INT;
-  int sc_Nclus_deta01_ = RegFatNtuple::NEG_INT;
-  int sc_Nclus_deta02_ = RegFatNtuple::NEG_INT;
-  int sc_Nclus_deta03_ = RegFatNtuple::NEG_INT;
+  float sc_Et_  = RegFatPFNtuple::NEG_FLOAT;
+  int sc_Nclus_ = RegFatPFNtuple::NEG_INT;
+  int sc_Nclus_deta01_ = RegFatPFNtuple::NEG_INT;
+  int sc_Nclus_deta02_ = RegFatPFNtuple::NEG_INT;
+  int sc_Nclus_deta03_ = RegFatPFNtuple::NEG_INT;
   bool sc_goodSeed_ = false;
 
-  float sc_E_ps_= RegFatNtuple::NEG_FLOAT;
-  float sc_E_ps1_= RegFatNtuple::NEG_FLOAT;
-  float sc_E_ps2_= RegFatNtuple::NEG_FLOAT;
+  float sc_E_ps_= RegFatPFNtuple::NEG_FLOAT;
+  float sc_E_ps1_= RegFatPFNtuple::NEG_FLOAT;
+  float sc_E_ps2_= RegFatPFNtuple::NEG_FLOAT;
 
 
   // Clusters 
-  float sc_cluster_et_[NCLUS_MAX]    = {RegFatNtuple::NEG_FLOAT}; 
-  float sc_cluster_E_[NCLUS_MAX]     = {RegFatNtuple::NEG_FLOAT}; 
-  float sc_cluster_eta_[NCLUS_MAX]   = {RegFatNtuple::NEG_FLOAT}; 
-  float sc_cluster_phi_[NCLUS_MAX]   = {RegFatNtuple::NEG_FLOAT}; 
-  int   sc_cluster_nxtal_[NCLUS_MAX] = {RegFatNtuple::NEG_INT}; 
-  float sc_cluster_e1x3_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e1x5_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e2x2_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e3x3_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e5x5_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_eMax_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e2nd_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e2x5Right_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e2x5Left_[NCLUS_MAX]   = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e2x5Top_[NCLUS_MAX]    = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_e2x5Bottom_[NCLUS_MAX] = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_eRight_[NCLUS_MAX]  = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_eLeft_[NCLUS_MAX]   = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_eTop_[NCLUS_MAX]    = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_eBottom_[NCLUS_MAX] = {RegFatNtuple::NEG_FLOAT};  
-  float sc_cluster_eMaxOver2x2_[NCLUS_MAX] = {RegFatNtuple::NEG_FLOAT};
-  float sc_cluster_eMaxOver3x3_[NCLUS_MAX] = {RegFatNtuple::NEG_FLOAT};
-  float sc_cluster_eMaxOver1x3_[NCLUS_MAX] = {RegFatNtuple::NEG_FLOAT};
+  float sc_cluster_et_[NCLUS_MAX]    = {RegFatPFNtuple::NEG_FLOAT}; 
+  float sc_cluster_E_[NCLUS_MAX]     = {RegFatPFNtuple::NEG_FLOAT}; 
+  float sc_cluster_eta_[NCLUS_MAX]   = {RegFatPFNtuple::NEG_FLOAT}; 
+  float sc_cluster_phi_[NCLUS_MAX]   = {RegFatPFNtuple::NEG_FLOAT}; 
+  int   sc_cluster_nxtal_[NCLUS_MAX] = {RegFatPFNtuple::NEG_INT}; 
+  float sc_cluster_e1x3_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e1x5_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e2x2_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e3x3_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e5x5_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_eMax_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e2nd_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e2x5Right_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e2x5Left_[NCLUS_MAX]   = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e2x5Top_[NCLUS_MAX]    = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_e2x5Bottom_[NCLUS_MAX] = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_eRight_[NCLUS_MAX]  = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_eLeft_[NCLUS_MAX]   = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_eTop_[NCLUS_MAX]    = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_eBottom_[NCLUS_MAX] = {RegFatPFNtuple::NEG_FLOAT};  
+  float sc_cluster_eMaxOver2x2_[NCLUS_MAX] = {RegFatPFNtuple::NEG_FLOAT};
+  float sc_cluster_eMaxOver3x3_[NCLUS_MAX] = {RegFatPFNtuple::NEG_FLOAT};
+  float sc_cluster_eMaxOver1x3_[NCLUS_MAX] = {RegFatPFNtuple::NEG_FLOAT};
 
   // When running on miniaod, only 3 highest ET clusters only
   float sc_clus1_et_=0;
@@ -627,4 +633,4 @@ class RegFatNtuple {
 
 };
 
-#endif // LowPtElectrons_LowPtElectrons_RegFatNtuple
+#endif // LowPtElectrons_LowPtElectrons_RegFatPFNtuple
