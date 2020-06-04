@@ -1,14 +1,3 @@
-# Low pT electrons
-
-## Recipe to add low pT electrons to RECO data tier
-
-Details can be found [here](LowPtElectrons.md). 
-
-## Recipe to produce ntuples used for BDT training 
-
-This is the version used to produce the 2019Jun28 model and 2019Jul22 ntuples
-
-### Init:
 ```
 cmsrel CMSSW_10_2_15
 cd CMSSW_10_2_15/src
@@ -16,11 +5,12 @@ cmsenv
 git cms-init
 ```
 
-### Get latest code and model for electron ID
+### Get latest code and model for electron ID (Aug07) - and energy regression
 ```
 git cms-addpkg RecoEgamma/EgammaElectronProducers
-git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_LowPtElectronsID
-git clone --branch 102X_LowPtElectrons_2019Jun28 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
+git cms-addpkg RecoEgamma/EgammaTools
+git cms-addpkg RecoEgamma/ElectronIdentification
+git cms-merge-topic crovelli:from-CMSSW_10_2_15_Aug07Id_and_regr
 ```
 
 ### This is required if running on CRAB!
@@ -31,7 +21,8 @@ mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/
 
 ### Install ntuplizer code
 ```
-git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons 
+git clone git@github.com:crovelli/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons 
+git checkout -b regression
 scram b
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
 voms-proxy-init --voms cms
