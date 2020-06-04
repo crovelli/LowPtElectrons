@@ -1,6 +1,6 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtraFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtra.h"
-#include "LowPtElectrons/LowPtElectrons/interface/RegFatNtuple.h"
+#include "LowPtElectrons/LowPtElectrons/interface/RegFatPFNtuple.h"
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
 #include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
 #include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
@@ -32,7 +32,7 @@ using namespace std;
 
 ///////////////////////////////////////
 
-void RegFatNtuple::createBranches(TTree* tree)
+void RegFatPFNtuple::createBranches(TTree* tree)
 {
   tree->Branch("nrVert",&nrVert,"nrVert/I");
   tree->Branch("rho",&rho,"rho/F");
@@ -55,7 +55,7 @@ void RegFatNtuple::createBranches(TTree* tree)
   }
 }
 
-void RegFatNtuple::setBranchAddresses(TTree* tree)
+void RegFatPFNtuple::setBranchAddresses(TTree* tree)
 {
   tree->SetBranchAddress("nrVert",&nrVert);
   tree->SetBranchAddress("rho",&rho);
@@ -78,14 +78,14 @@ void RegFatNtuple::setBranchAddresses(TTree* tree)
   
 }
 
-void EvtStruct::fill(const edm::Event& event)
+void EvtStructPF::fill(const edm::Event& event)
 {
   runnr = event.id().run();
   lumiSec = event.luminosityBlock();
   eventnr = event.id().event();
 }
 
-void GenInfoStruct::fill(const reco::GenParticle& genPart,float iDR)
+void GenInfoStructPF::fill(const reco::GenParticle& genPart,float iDR)
 {
   energy = genPart.energy();
   pt = genPart.pt();
@@ -96,30 +96,33 @@ void GenInfoStruct::fill(const reco::GenParticle& genPart,float iDR)
   dR = iDR;
 }
 
-void RegFatNtuple::fill( const edm::Event& event,int iNrVert,float iRho,float iNrPUInt,float iNrPUIntTrue,
+void RegFatPFNtuple::fill( const edm::Event& event,int iNrVert,float iRho,float iNrPUInt,float iNrPUIntTrue,
 	    const EcalRecHitCollection& ecalHitsEB,const EcalRecHitCollection& ecalHitsEE,
 	    const CaloTopology& topo,const EcalChannelStatus& ecalChanStatus,const reco::SuperCluster* iSC,
-	    const reco::GenParticle* iMC,const reco::GsfElectron* iEle, const  reco::GsfTrack* gsf,
-			  const reco::GsfElectron* ipfEle,
-                          const reco::GsfTrack* ipfGsf, const reco::Track* ipfTrk ){
-
-
-  bool debug =false;
-  if(debug)std::cout<<"RegFatNtuple::fill calling clear()"<<std::endl;
+			   const reco::GenParticle* iMC,const reco::GsfElectron* iEle, const  reco::GsfTrack* gsf)
+{
+  if(debug)std::cout<<"RegFatPFNtuple::fill calling clear()"<<std::endl;
   clear();
-  if(debug)std::cout<<"RegFatNtuple::fill done clear()"<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuple::fill done clear()"<<std::endl;
 
   nrVert = iNrVert;
   rho = iRho;
   nrPUInt = iNrPUInt;
   nrPUIntTrue = iNrPUIntTrue;
   evt.fill(event);
-  if(debug)std::cout<<"RegFatNtuple::fill done fill event"<<std::endl;
-  if(debug)std::cout<<"RegFatNtuple::fill super-cluster energy is "<<iSC->energy()<<std::endl;
-  if(debug)std::cout<<"RegFatNtuple::fill going to fill SC "<<iSC->energy()<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuple::fill done fill event"<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuple::fill super-cluster energy is "<<iSC->energy()<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC "<<iSC->energy()<<std::endl;
 
   if(iSC){
-    /*    auto fillClus = [&iSC](ClustStruct& clus,size_t index){
+    if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC -1 "<<iSC->energy()<<std::endl;
+    sc.fill(*iSC,ecalChanStatus);
+    if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC -2 "<<iSC->energy()<<std::endl;
+    ssFull.fillShowerShape(iEle);
+    // if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC -3 "<<iSC->energy()<<std::endl;
+    // ssFrac.fillShowerShape<false>(iEle,ecalHitsEB,ecalHitsEE);
+    if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC -4"<<iSC->energy()<<std::endl;
+    auto fillClus = [&iSC](ClustStructPF& clus,size_t index){
       if(index<static_cast<size_t>(iSC->clusters().size())){
 	auto iClus = iSC->clusters()[index];
 	clus.fill( iClus->energy(),
@@ -129,116 +132,27 @@ void RegFatNtuple::fill( const edm::Event& event,int iNrVert,float iRho,float iN
 	clus.fill( 0, 0, 0 );
       }
     };  
-    if(debug)std::cout<<"RegFatNtuple::fill going to fill SC -5"<<iSC->energy()<<std::endl;
-    fillClus(clus1,1);  
-    fillClus(clus2,2);  
-    fillClus(clus3,3);  
-    */
-
-    // new fill clusters 
-    // riempio i primi 3 cluster in E                                                                
-    // i1 i2 i3                                                                                      
-    int clusNum=0;
-    float maxEne1=-1;
-    float maxEne2=-1;
-    float maxEne3=-1;
-    int i1=-1;
-    int i2=-1;
-    int i3=-1;
-    float sc_nxtals=0;
-
-    try{
-      if(iSC->clustersSize()>0&& iSC->clustersBegin()!=iSC->clustersEnd()){
-	for(auto& cluster : iSC->clusters()) {
-	  if (cluster->energy() > maxEne1){
-	    maxEne1=cluster->energy();
-	    i1=clusNum;
-	  }
-	  sc_nxtals=sc_nxtals+(float)cluster->size(); // count nxtals 
-	  clusNum++;
-	}
-	if(iSC->clustersSize()>1){
-	  clusNum=0;
-	  for(auto& cluster : iSC->clusters()) {
-	    if (clusNum!=i1) {
-	      if (cluster->energy() > maxEne2){
-		maxEne2=cluster->energy();
-		i2=clusNum;
-	      }
-	    }
-	    clusNum++;
-	  }
-	}
-	if(iSC->clustersSize()>2){
-	  clusNum=0;
-	  for(auto& cluster : iSC->clusters()) {
-	    if (clusNum!=i1 && clusNum!=i2) {
-	      if (cluster->energy() > maxEne3){
-		maxEne3=cluster->energy();
-		i3=clusNum;
-	      }
-	    }
-	    clusNum++;
-	  }
-	}
-      }
-    }catch(...){
-
-    }
-
-    clusNum=0;
-    try{
-
-      if(iSC->clustersSize()>0&& iSC->clustersBegin()!=iSC->clustersEnd()){
-
-	for(auto& cluster : iSC->clusters()) {
-	  float deta= iSC->seed()->eta()-cluster->eta();
-	  float dphi= reco::deltaPhi(iSC->seed()->phi(),cluster->phi());
-	  if (clusNum==i1) {
-	    clus1.fill(cluster->energy(), deta, dphi, (float)cluster->size(),cluster->eta(),cluster->phi());
-	  } else if(clusNum==i2) { 
-	    clus2.fill(cluster->energy(), deta, dphi, (float)cluster->size(),cluster->eta(),cluster->phi());
-	  } else if(clusNum==i3) {
-	    clus3.fill(cluster->energy(), deta, dphi, (float)cluster->size(),cluster->eta(),cluster->phi());
-	  }
-	  clusNum++;
-	}
-
-
-      }
-    }catch(...){
-      //    std::cout<<"caught an exception"<<std::endl;                                             
-    }
-    if(debug)std::cout<<"RegFatNtuple::fill going to fill SC -6"<<iSC->energy()<<std::endl;
-
-    if(debug)std::cout<<"RegFatNtuple::fill going to fill SC -7 "<<iSC->energy()<<std::endl;
-    sc.fill(*iSC,ecalChanStatus,sc_nxtals);
-    if(debug)std::cout<<"RegFatNtuple::fill going to fill SC -8 "<<iSC->energy()<<std::endl;
-    ssFull.fillShowerShape(iEle);
-    // if(debug)std::cout<<"RegFatNtuple::fill going to fill SC -3 "<<iSC->energy()<<std::endl;
-    // ssFrac.fillShowerShape<false>(iEle,ecalHitsEB,ecalHitsEE);
-    if(debug)std::cout<<"RegFatNtuple::fill going to fill SC -4"<<iSC->energy()<<std::endl;
-
-
+    if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC -5"<<iSC->energy()<<std::endl;
+    try{ 
+      fillClus(clus1,1);  
+      fillClus(clus2,2);  
+      fillClus(clus3,3);
+    } catch (...) {
+      if(debug) std::cout<<"there are no clusters"<<std::endl; 
+    }  
+    if(debug)std::cout<<"RegFatPFNtuple::fill going to fill SC -6"<<iSC->energy()<<std::endl;
   }
+  if(debug)std::cout<<"RegFatPFNtuple::fill done fill clus"<<std::endl;
 
-  if(debug)std::cout<<"RegFatNtuple::fill done fill clus"<<std::endl;
-
-  // correct calculation of dR 
-
-  //  if(iMC) mc.fill(*iMC, iSC ? std::sqrt(reco::deltaR2(iSC->eta(),iSC->phi(),iMC->eta(),iMC->phi())) : 999);
-  if(iMC) mc.fill(*iMC, gsf ? std::sqrt(reco::deltaR2(gsf->eta(),gsf->phi(),iMC->eta(),iMC->phi())) : 999);
+  if(iMC) mc.fill(*iMC, iSC ? std::sqrt(reco::deltaR2(iSC->eta(),iSC->phi(),iMC->eta(),iMC->phi())) : 999);
   if(iEle){
-    if(debug)std::cout<<"RegFatNtuple::fill filling ele and gsf trk"<<std::endl;
+    if(debug)std::cout<<"RegFatPFNtuple::fill filling ele and gsf trk"<<std::endl;
     ele.fill(*iEle,*gsf);
-    if(debug)std::cout<<"RegFatNtuple::fill filling ele and gsf trk done... now shower shapes " <<std::endl;
+    if(debug)std::cout<<"RegFatPFNtuple::fill filling ele and gsf trk done... now shower shapes " <<std::endl;
     eleSSFull.fill(iEle->full5x5_showerShape(),*iEle);
-    if(debug)std::cout<<"RegFatNtuple::fill filling shower shapes done "<<std::endl;
+    if(debug)std::cout<<"RegFatPFNtuple::fill filling shower shapes done "<<std::endl;
   }
-  if(ipfEle&&ipfGsf&&ipfTrk){
-    pfele.fill(*ipfEle,*ipfGsf,*ipfTrk);
-  }
-  if(debug)std::cout<<"RegFatNtuple::fill done all"<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuple::fill done all"<<std::endl;
 
   //  if(altEles.size() != eleEnergies.size()){
   //  throw cms::Exception("LogicError") <<" alt electrons && eleEnergies are not equal in size "<<altEles.size()<<" "<<eleEnergies.size();
@@ -275,11 +189,12 @@ int getDeadCrysCode(const DetIdType& id,const EcalChannelStatus& ecalChanStatus)
   return crysCode;
 }
 
-void SuperClustStruct::fill(const reco::SuperCluster& sc,const EcalChannelStatus& ecalChanStatus, float nxt)
+void SuperClustStructPF::fill(const reco::SuperCluster& sc,const EcalChannelStatus& ecalChanStatus)
 {
+  if(debug)std::cout<<"SuperClustStructPF::fill >> SC raw ene="<<sc.rawEnergy()<<std::endl;
   auto& seedClus = *sc.seed(); 
   isEB = seedClus.seed().subdetId()==EcalBarrel;
-  nXtals=nxt;
+  
   rawEnergy = sc.rawEnergy();
   rawESEnergy = sc.preshowerEnergy();
   etaWidth = sc.etaWidth();
@@ -299,6 +214,8 @@ void SuperClustStruct::fill(const reco::SuperCluster& sc,const EcalChannelStatus
   dEtaSeedSC = seedClus.eta() - sc.position().Eta(); //needs this way due to rounding errors
   numberOfClusters = sc.clusters().size();
   numberOfSubClusters = std::max(0,static_cast<int>(sc.clusters().size())-1);
+
+  if(debug)std::cout<<"SuperClustStructPF::fill >> SC basic var done SC raw ene="<<sc.rawEnergy()<<std::endl;
 
   if(isEB){
     EBDetId ebDetId(seedClus.seed());
@@ -337,18 +254,28 @@ void SuperClustStruct::fill(const reco::SuperCluster& sc,const EcalChannelStatus
   clusterMaxDRDEta = 999.;
   clusterMaxDRRawEnergy = 0.;
 
-  float maxDR2 = 0;
-  for(auto& clus : sc.clusters()){
-    if(clus == sc.seed()) continue;
-    float dR2 = reco::deltaR2(seedEta,seedPhi,clus->eta(),clus->phi());
-    if(dR2 > maxDR2 ){
-      maxDR2 = dR2;
-      clusterMaxDR = std::sqrt(dR2);
-      clusterMaxDRDPhi = reco::deltaPhi(clus->phi(),seedPhi);
-      clusterMaxDRDEta = clus->eta()-seedEta;
-      clusterMaxDRRawEnergy = clus->energy();
+  if(debug)std::cout<<"SuperClustStructPF::fill >> SC basic var done rec hits SC raw ene="<<sc.rawEnergy()<<std::endl;
+  if(sc.clusters().size()>0 ){
+    try{
+      float maxDR2 = 0;
+      for(auto& clus : sc.clusters()){
+	if(clus == sc.seed()) continue;
+	float dR2 = reco::deltaR2(seedEta,seedPhi,clus->eta(),clus->phi());
+	if(dR2 > maxDR2 ){
+	  maxDR2 = dR2;
+	  clusterMaxDR = std::sqrt(dR2);
+	  clusterMaxDRDPhi = reco::deltaPhi(clus->phi(),seedPhi);
+	  clusterMaxDRDEta = clus->eta()-seedEta;
+	  clusterMaxDRRawEnergy = clus->energy();
+	}
+      }
+    } catch (...){
+      if(debug) std::cout<<"SuperClustStructPF::fill >> there were no clusters attached to this SC "<<sc.rawEnergy()<<std::endl;
     }
+ 
   }
+  if(debug)std::cout<<"SuperClustStructPF::fill >> SC basic all done SC raw ene="<<sc.rawEnergy()<<std::endl;
+
 
   /*  if(altSC){
     corrEnergyAlt = altSC->energy();
@@ -359,7 +286,7 @@ void SuperClustStruct::fill(const reco::SuperCluster& sc,const EcalChannelStatus
 }
 
 
-void EleStruct::fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf )
+void EleStructPF::fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf )
 {
   et = ele.et();
   energy = ele.energy();
@@ -390,7 +317,7 @@ void EleStruct::fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf )
   scRawESEnergy = ele.superCluster()->preshowerEnergy();
 }
 
-void PFEleStruct::fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf,const  reco::Track& trk )
+void PFEleStructPF::fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf,const  reco::Track& trk )
 {
 
 
@@ -406,7 +333,7 @@ void PFEleStruct::fill(const reco::GsfElectron& ele, const  reco::GsfTrack& gsf,
 }
 
 
-void ShowerShapeStruct::fill(const reco::GsfElectron::ShowerShape& eleSS,const reco::GsfElectron& ele)
+void ShowerShapeStructPF::fill(const reco::GsfElectron::ShowerShape& eleSS,const reco::GsfElectron& ele)
 {
   e3x3 = eleSS.r9*ele.superCluster()->rawEnergy();
   e5x5 = eleSS.e5x5;
@@ -437,9 +364,9 @@ void ShowerShapeStruct::fill(const reco::GsfElectron::ShowerShape& eleSS,const r
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-void RegFatNtuple::link_tree( TTree *tree ) {
+void RegFatPFNtuple::link_tree( TTree *tree ) {
 
-  std::cout<<"I am running RegFatNtuple::link_tree"<<std::endl; 
+  std::cout<<"I am running RegFatPFNtuple::link_tree"<<std::endl; 
   // general
 
   createBranches(tree);
@@ -447,14 +374,14 @@ void RegFatNtuple::link_tree( TTree *tree ) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuple::fill_evt( const edm::EventID& id ) {  
+void RegFatPFNtuple::fill_evt( const edm::EventID& id ) {  
   run_  = id.run();
   lumi_ = id.luminosityBlock();
   evt_  = id.event();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuple::fill_gen( const reco::GenParticlePtr genp ) {
+void RegFatPFNtuple::fill_gen( const reco::GenParticlePtr genp ) {
 
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
@@ -472,7 +399,7 @@ void RegFatNtuple::fill_gen( const reco::GenParticlePtr genp ) {
     gen_gran_pdgid_ = 0;
 }
 
-void RegFatNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {  
+void RegFatPFNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {  
 
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
@@ -490,7 +417,7 @@ void RegFatNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
     gen_gran_pdgid_ = 0;
 }
 
-void RegFatNtuple::fill_gen_default() {
+void RegFatPFNtuple::fill_gen_default() {
 
   gen_pt_  = -999.;
   gen_eta_ = -999.;
@@ -503,7 +430,7 @@ void RegFatNtuple::fill_gen_default() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuple::fill_trk( const reco::TrackPtr& trk,
+void RegFatPFNtuple::fill_trk( const reco::TrackPtr& trk,
 			 const reco::BeamSpot& spot ) {       
   
   if ( trk.isNonnull() ) {
@@ -532,7 +459,7 @@ void RegFatNtuple::fill_trk( const reco::TrackPtr& trk,
   
 }
 
-void RegFatNtuple::fill_trk_dEdx( const reco::TrackPtr& trk,
+void RegFatPFNtuple::fill_trk_dEdx( const reco::TrackPtr& trk,
 				  std::vector<const edm::ValueMap<reco::DeDxData>*>& v_dEdx ) {
 
   if ( trk.isNonnull() ) {
@@ -545,7 +472,7 @@ void RegFatNtuple::fill_trk_dEdx( const reco::TrackPtr& trk,
 
 }
 
-void RegFatNtuple::fill_trk_dEdx_default( ) {
+void RegFatPFNtuple::fill_trk_dEdx_default( ) {
 
   trk_dEdx1_     = -999.;
   trk_dEdx1_Nm_  = -999;
@@ -553,14 +480,14 @@ void RegFatNtuple::fill_trk_dEdx_default( ) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuple::fill_bdt( double seed_unbiased, 
+void RegFatPFNtuple::fill_bdt( double seed_unbiased, 
 			 double seed_ptbiased ) {          
   seed_unbiased_ = seed_unbiased;
   seed_ptbiased_ = seed_ptbiased;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuple::fill_gsf( const reco::GsfTrackPtr gsf, 
+void RegFatPFNtuple::fill_gsf( const reco::GsfTrackPtr gsf, 
 			 const reco::BeamSpot& spot ) {        
 
   if ( gsf.isNull() ) {
@@ -609,7 +536,7 @@ void RegFatNtuple::fill_gsf( const reco::GsfTrackPtr gsf,
 
 
 /////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuple::fill_ele( const reco::GsfElectronPtr ele,
+void RegFatPFNtuple::fill_ele( const reco::GsfElectronPtr ele,
 			 float mva_value,
 			 int mva_id,
 			 float ele_conv_vtx_fit_prob,
@@ -707,7 +634,7 @@ void RegFatNtuple::fill_ele( const reco::GsfElectronPtr ele,
   }    
 }
 
-void RegFatNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalClusterLazyTools *ecalTools_ ) {
+void RegFatPFNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalClusterLazyTools *ecalTools_ ) {
 
   if ( ele.isNull() ) { return; }
 
@@ -754,7 +681,7 @@ void RegFatNtuple::fill_supercluster(const reco::GsfElectronPtr ele, noZS::EcalC
 }
 
 // FC new method 
-void RegFatNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele  ) {
+void RegFatPFNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele  ) {
   bool debug=false; 
   if(debug)std::cout<<"fill_supercl mini"<<std::endl; 
   if ( ele.isNull() ) { return; }
@@ -1035,7 +962,7 @@ void RegFatNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele  ) {
 // end FC
 
 template < typename T> 
-bool RegFatNtuple::validPtr(edm::Ptr<T>& ptr){
+bool RegFatPFNtuple::validPtr(edm::Ptr<T>& ptr){
   return (ptr.isNonnull() && ptr.isAvailable() );
 }
 
