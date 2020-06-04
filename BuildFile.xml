@@ -12,6 +12,7 @@
 <use name="Geometry/CaloGeometry"/>
 <use name="Geometry/CaloTopology"/>
 <use name="FastSimulation/BaseParticlePropagator"/>
+<use name="CommonTools/CandAlgos"/>
 <use name="root"/>
 <export>
   <lib name="1"/>

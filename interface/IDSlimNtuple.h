@@ -267,6 +267,12 @@ class IDSlimNtuple {
   float ele_sumPhotonEt_;
   float ele_sumChargedHadronPt_;
   float ele_sumNeutralHadronEt_;
+  
+  // Energy regression 
+  float pre_ecal_     = IDSlimNtuple::NEG_FLOAT;
+  float pre_ecaltrk_  = IDSlimNtuple::NEG_FLOAT;
+  float post_ecal_    = IDSlimNtuple::NEG_FLOAT;
+  float post_ecaltrk_ = IDSlimNtuple::NEG_FLOAT;
 
   // SuperClusters 
   float sc_Et_  = IDSlimNtuple::NEG_FLOAT;

@@ -174,6 +174,12 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
     tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
   }
 
+  // Electron energy regression                                                                                                                  
+  tree->Branch("pre_ecal",&pre_ecal_);
+  tree->Branch("pre_ecaltrk",&pre_ecaltrk_);
+  tree->Branch("post_ecal",&post_ecal_);
+  tree->Branch("post_ecaltrk",&post_ecaltrk_);
+
   // Electron - further full 5x5 shower shapes
   if (largeNtuple) {
     tree->Branch("shape_full5x5_e1x5",&shape_full5x5_e1x5_); 

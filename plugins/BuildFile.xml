@@ -1,4 +1,5 @@
 <use name="CommonTools/UtilAlgos"/>
+<use name="CommonTools/CandAlgos"/>
 <use name="DataFormats/BeamSpot"/>
 <use name="DataFormats/CaloRecHit"/>
 <use name="DataFormats/Candidate"/>

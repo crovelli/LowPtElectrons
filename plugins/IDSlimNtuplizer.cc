@@ -1,4 +1,5 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "CommonTools/CandAlgos/interface/ModifyObjectValueBase.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/CaloRecHit/interface/CaloClusterFwd.h"
@@ -101,6 +102,10 @@ public:
   bool extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL);
   
 private:
+
+  // Regression stuff
+  std::unique_ptr<ModifyObjectValueBase> regression_;     // Low pt 
+  std::unique_ptr<ModifyObjectValueBase> regressionGsf_;  // Gsf
   
   // Misc  
   edm::Service<TFileService> fs_;
@@ -239,8 +244,6 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     mvaValueLowPt_(consumes< edm::ValueMap<float> >(cfg.getParameter<edm::InputTag>("mvaValueLowPt"))),
     mvaValueLowPtH_(),
     // Egamma collections
-    // eleSeedsEGamma_(consumes< std::vector<reco::ElectronSeed> >(cfg.getParameter<edm::InputTag>("eleSeedsEGamma"))),
-    // eleSeedsEGammaH_(),
     gsfTracksEGamma_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracksEGamma"))),
     gsfTracksEGamma_MAOD_(consumes< std::vector<reco::GsfTrack> >(cfg.getParameter<edm::InputTag>("gsfTracksEGamma_MAOD"))),
     gsfTracksEGammaH_(),
@@ -257,6 +260,33 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     tree_ = fs_->make<TTree>("tree","tree");
     ntuple_.link_tree(tree_);
     std::cout << "Verbosity level: "<< verbose_ << std::endl;
+
+    // Regression stuff - lowPtElectrons
+    if( cfg.existsAs<edm::ParameterSet>("lowPtRegressionConfig") ) {
+      const edm::ParameterSet& iconf = cfg.getParameterSet("lowPtRegressionConfig");
+      const std::string& mname = iconf.getParameter<std::string>("modifierName");
+      ModifyObjectValueBase* plugin =
+        ModifyObjectValueFactory::get()->create(mname,iconf);
+      regression_.reset(plugin);
+      edm::ConsumesCollector sumes = consumesCollector();
+      regression_->setConsumes(sumes);
+    } else {
+      regression_.reset(nullptr);
+    }
+
+    // Regression stuff - GSF electrons
+    if( cfg.existsAs<edm::ParameterSet>("gsfRegressionConfig") ) {
+      const edm::ParameterSet& iconf = cfg.getParameterSet("gsfRegressionConfig");
+      const std::string& mname = iconf.getParameter<std::string>("modifierName");
+      ModifyObjectValueBase* plugin =
+        ModifyObjectValueFactory::get()->create(mname,iconf);
+      regressionGsf_.reset(plugin);
+      edm::ConsumesCollector sumes = consumesCollector();
+      regressionGsf_->setConsumes(sumes);
+    } else {
+      regressionGsf_.reset(nullptr);
+    }
+
   }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -274,6 +304,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   // Slim or Large size
   bool largeNtuple=0;
   bool useEleGun=0;
+  bool useEnergyRegression=1;
   // ----------------------------------------
 
   // Reset ntuple
@@ -281,6 +312,14 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
   // Update all handles - MUST be called every event! 
   readCollections(event,setup);
+
+  // Setup energy regressions for event
+  if (useEnergyRegression) {
+    regression_->setEvent(event);
+    regression_->setEventContent(setup);
+    regressionGsf_->setEvent(event);
+    regressionGsf_->setEventContent(setup);
+  }
 
   // Gen level electrons from B                        
   std::set<reco::GenParticlePtr> signal_electrons;
@@ -378,6 +417,21 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // Fill ele info 
     ntuple_.fill_ele( ele, mva_value, mva_id, -999, *rhoH_ );
 
+    // Regression stuff
+    float pre_ecal     = -999.;
+    float pre_ecaltrk  = -999.;
+    float post_ecal    = -999.;
+    float post_ecaltrk = -999.;
+    if (useEnergyRegression) {
+      reco::GsfElectron newElectron(*ele);
+      pre_ecal = newElectron.correctedEcalEnergy();
+      pre_ecaltrk = newElectron.energy();
+      regression_->modifyObject(newElectron);
+      post_ecal = newElectron.correctedEcalEnergy();
+      post_ecaltrk = newElectron.energy();
+    }
+
+
     // ---------------------------------
     // GSF track linked to electron
     ntuple_.fill_gsf( gsf, *beamspotH_ );
@@ -462,6 +516,24 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	++iptr;
       }
     }
+
+    // correct variables thanks to regression
+    if (useEnergyRegression) {
+      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal; 
+      ntuple_.eid_match_eclu_EoverP_=ntuple_.eid_match_eclu_EoverP_*post_ecal/pre_ecal;
+      ntuple_.eid_sc_E_=ntuple_.eid_sc_E_*post_ecal/pre_ecal;
+      ntuple_.match_seed_EoverP_=ntuple_.match_seed_EoverP_*post_ecal/pre_ecal;
+      ntuple_.match_seed_EoverPout_=ntuple_.match_seed_EoverPout_*post_ecal/pre_ecal;
+      ntuple_.match_eclu_EoverPout_=ntuple_.match_eclu_EoverPout_*post_ecal/pre_ecal;
+      ntuple_.sc_Et_=ntuple_.sc_Et_*post_ecal/pre_ecal;
+      ntuple_.sc_clus1_E_ov_E_=ntuple_.sc_clus1_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.sc_clus2_E_ov_E_=ntuple_.sc_clus2_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.sc_clus3_E_ov_E_=ntuple_.sc_clus3_E_ov_E_*post_ecal/pre_ecal;
+    }
+    ntuple_.pre_ecal_=pre_ecal;
+    ntuple_.pre_ecaltrk_=pre_ecaltrk;
+    ntuple_.post_ecal_=post_ecal;
+    ntuple_.post_ecaltrk_=post_ecaltrk;
 
     tree_->Fill();
 
@@ -555,6 +627,20 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // Fill ele info 
     ntuple_.fill_ele( ele, mva_value, mva_id, -999, *rhoH_ );
 
+    // Regression stuff
+    float pre_ecal     = -999;
+    float pre_ecaltrk  = -999;
+    float post_ecal    = -999;
+    float post_ecaltrk = -999;
+    if (useEnergyRegression) {    
+      reco::GsfElectron newElectron(*ele);
+      pre_ecal = newElectron.correctedEcalEnergy();
+      pre_ecaltrk = newElectron.energy();
+      regressionGsf_->modifyObject(newElectron);
+      post_ecal = newElectron.correctedEcalEnergy();
+      post_ecaltrk = newElectron.energy();
+    }
+
     // ---------------------------------
     // GSF track linked to electron
     ntuple_.fill_gsf( gsf, *beamspotH_ );
@@ -637,6 +723,24 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	++iptr;
       }
     }
+
+    // correct variables thanks to regression
+    if (useEnergyRegression) {    
+      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal; 
+      ntuple_.eid_match_eclu_EoverP_=ntuple_.eid_match_eclu_EoverP_*post_ecal/pre_ecal;
+      ntuple_.eid_sc_E_=ntuple_.eid_sc_E_*post_ecal/pre_ecal;
+      ntuple_.match_seed_EoverP_=ntuple_.match_seed_EoverP_*post_ecal/pre_ecal;
+      ntuple_.match_seed_EoverPout_=ntuple_.match_seed_EoverPout_*post_ecal/pre_ecal;
+      ntuple_.match_eclu_EoverPout_=ntuple_.match_eclu_EoverPout_*post_ecal/pre_ecal;
+      ntuple_.sc_Et_=ntuple_.sc_Et_*post_ecal/pre_ecal;
+      ntuple_.sc_clus1_E_ov_E_=ntuple_.sc_clus1_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.sc_clus2_E_ov_E_=ntuple_.sc_clus2_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.sc_clus3_E_ov_E_=ntuple_.sc_clus3_E_ov_E_*post_ecal/pre_ecal;
+    }
+    ntuple_.pre_ecal_=pre_ecal;
+    ntuple_.pre_ecaltrk_=pre_ecaltrk;
+    ntuple_.post_ecal_=post_ecal;
+    ntuple_.post_ecaltrk_=post_ecaltrk;
 
     tree_->Fill();
 
