@@ -40,7 +40,7 @@
 #include "Geometry/CaloTopology/interface/CaloTopology.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
-#include "LowPtElectrons/LowPtElectrons/interface/RegFatNtuple.h"
+#include "LowPtElectrons/LowPtElectrons/interface/RegFatPFNtuple.h"
 #include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
 
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
@@ -77,12 +77,12 @@ namespace reco{
 
 typedef std::map<unsigned long,int> PdgIds;
 
-class RegFatNtuplizer : public edm::EDAnalyzer {
+class RegFatPFNtuplizer : public edm::EDAnalyzer {
   
 public:
   
-  explicit RegFatNtuplizer( const edm::ParameterSet& );
-  ~RegFatNtuplizer() {}
+  explicit RegFatPFNtuplizer( const edm::ParameterSet& );
+  ~RegFatPFNtuplizer() {}
 
 
   // ---------------------------------------
@@ -145,7 +145,7 @@ private:
 
   // from Sam
   TTree* egRegTree_;
-  RegFatNtuple egRegTreeData_;
+  RegFatPFNtuple egRegTreeData_;
   // TTree* tree_;	
   // IDSlimNtuple ntuple_;
 
@@ -243,7 +243,7 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-RegFatNtuplizer::RegFatNtuplizer( const edm::ParameterSet& cfg ) 
+RegFatPFNtuplizer::RegFatPFNtuplizer( const edm::ParameterSet& cfg ) 
   : egRegTree_(nullptr),
     egRegTreeData_(),
     verbose_(cfg.getParameter<int>("verbose")),
@@ -312,7 +312,7 @@ RegFatNtuplizer::RegFatNtuplizer( const edm::ParameterSet& cfg )
     // puSumH_();
     //scH_();
 
-  std::cout<<"RegFatNtuplizer"<<std::endl;
+  std::cout<<"RegFatPFNtuplizer"<<std::endl;
 
   edm::Service<TFileService> fs;
   fs->file().cd();
@@ -323,7 +323,7 @@ RegFatNtuplizer::RegFatNtuplizer( const edm::ParameterSet& cfg )
 
   }
 
-void RegFatNtuplizer::beginJob()
+void RegFatPFNtuplizer::beginJob()
 {
 }
 
@@ -352,8 +352,8 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void RegFatNtuplizer::beginRun( const edm::Run& run, const edm::EventSetup& es ) { 
-  std::cout<<"RegFatNtuplizer::beginRun"<<std::endl;
+void RegFatPFNtuplizer::beginRun( const edm::Run& run, const edm::EventSetup& es ) { 
+  std::cout<<"RegFatPFNtuplizer::beginRun"<<std::endl;
 
 
 
@@ -361,17 +361,17 @@ void RegFatNtuplizer::beginRun( const edm::Run& run, const edm::EventSetup& es )
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-void RegFatNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& setup ) {
+void RegFatPFNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& setup ) {
 
   bool debug=false; 
   // Reset ntuple
   egRegTreeData_.reset();
-  if(debug)std::cout<<"RegFatNtuplizer::analyze"<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuplizer::analyze"<<std::endl;
 
   // Update all handles - MUST be called every event! 
-  if(debug)std::cout<<"RegFatNtuplizer::analyze>> reading collections..."<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuplizer::analyze>> reading collections..."<<std::endl;
   readCollections(event,setup);
-  if(debug)std::cout<<"RegFatNtuplizer::analyze>> read collections done"<<std::endl;
+  if(debug)std::cout<<"RegFatPFNtuplizer::analyze>> read collections done"<<std::endl;
 
   // Gen level electrons from B                       
   std::set<reco::GenParticlePtr> signal_electrons;
@@ -391,92 +391,56 @@ void RegFatNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     }
   }
 
-  if(debug) std::cout<<"RegFatNtuplizer::analyze>> loop on electrons ..."<<std::endl; 
+  if(debug) std::cout<<"RegFatPFNtuplizer::analyze>> loop on electrons ..."<<std::endl; 
 
-  // Loop over low-pT electrons                  
-  for( size_t electronlooper = 0; electronlooper < gsfElectronsH_->size(); electronlooper++ ) {
 
-    // Low pT electrons
-    const reco::GsfElectronPtr ele(gsfElectronsH_, electronlooper);
-    
+  // Loop over GSF electrons
+  for( size_t electronlooper = 0; electronlooper < gsfElectronsEGammaH_->size(); electronlooper++ ) {
+
+    const reco::GsfElectronPtr ele(gsfElectronsEGammaH_, electronlooper);
+
     // filter candidates: there must be a trk, a gsf track and a SC linked to the electron (should be always the case). 
-    // Ele, trk and gsf_trk must have pT>0.5
-    // trk must be high purity
-    reco::GsfTrackPtr gsf = edm::refToPtr(ele->gsfTrack());    
-    reco::TrackPtr trk;
-    if ( !validPtr(gsf) )     continue;     
-    if ( !gsfToTrk(gsf,trk) ) continue;
-
-    //    if ( ele->pt() < minTrackPt_ ) continue;
-    if ( trk->pt() < minTrackPt_ ) continue;
-    //    if ( gsf->pt() < minTrackPt_ ) continue;
-    //    reco::SuperClusterRef sc = ele->superCluster(); // FC
-    //if ( sc.isNull() )        continue; // FC non sempre viene salvato il SC 
-
-    // Work on the electron candidate
-    TVector3 eleTV3(0,0,0);
-    eleTV3.SetPtEtaPhi(ele->pt(), ele->eta(), ele->phi());
-
-    
-    // ---------------------------------
-    // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.05 )
-    float dRGenMin=999.;
-    reco::GenParticlePtr theGenParticle;
-    TVector3 genTV3(0,0,0);
-    for ( auto sig : signal_electrons ) {      
-      genTV3.SetPtEtaPhi(sig->pt(), sig->eta(), sig->phi());
-      float dR = eleTV3.DeltaR(genTV3);
-      if (dR<dRGenMin) { 
-	theGenParticle = sig;
-	dRGenMin=dR;
-      }
-    }
-    genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
-    if (dRGenMin<0.05) {
-      // fill entry  
-
-      // ---------------------------------
-      // Supercluster linked to electron
-      const reco::SuperClusterRef& scref =  ele->superCluster();
-
-      if(debug) std::cout<<"RegFatNtuplizer::analyze>> found one electron calling fill() ene,SCene="<<ele->energy()<<", "<<scref->energy()<< std::endl; 
-
-      
-
-      // look for a possible match with GSF electrons 
-      int ipfele=-1;
-      float dRPFmin=100.;
-      reco::GsfElectronPtr pfelesel;
-      reco::GsfTrackPtr pfgsfsel;
-      reco::TrackPtr pftrksel;
-
-      // Loop over GSF electrons
-      for( size_t pflooper = 0; pflooper < gsfElectronsEGammaH_->size(); pflooper++ ) {
-	ipfele=ipfele+1; 
-	const reco::GsfElectronPtr ipfele(gsfElectronsEGammaH_, pflooper);
-	// filter candidates: there must be a trk, a gsf track and a SC linked to the electron (should be always the case). 
 	// Ele, trk and gsf_trk must have pT>0.5
 	// trk must be high purity
-	reco::GsfTrackPtr pfgsf = edm::refToPtr(ipfele->gsfTrack());    
+	reco::GsfTrackPtr pfgsf = edm::refToPtr(ele->gsfTrack());    
 	reco::TrackPtr pftrk;
 	if ( !validPtr(pfgsf) )     continue;     
 	if ( !egmToTrk(pfgsf,pftrk) ) continue;
 	if ( !validPtr(pftrk) )     continue;     
 	if ( pftrk->pt() < minTrackPt_ ) continue;
 	
-	// match of PF candidate with the same MC electron as for LowPt
 
-	TVector3 pfeleTV3(0,0,0);
-	pfeleTV3.SetPtEtaPhi(ipfele->pt(), ipfele->eta(), ipfele->phi());
-	float dR = pfeleTV3.DeltaR(genTV3);
-	if(dR<dRPFmin && dR<0.05){
-	  // this is the right match for PF electron 
-	  dRPFmin=dR;
-	  pfelesel=ipfele; 
-	  pfgsfsel=pfgsf; 
-	  pftrksel=pftrk; 
+	if ( pftrk->pt() < minTrackPt_ ) continue;
+
+	// Work on the electron candidate
+	TVector3 eleTV3(0,0,0);
+	eleTV3.SetPtEtaPhi(ele->pt(), ele->eta(), ele->phi());
+
+    
+	// ---------------------------------
+	// Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.05 )
+	float dRGenMin=999.;
+	reco::GenParticlePtr theGenParticle;
+	TVector3 genTV3(0,0,0);
+	for ( auto sig : signal_electrons ) {      
+	  genTV3.SetPtEtaPhi(sig->pt(), sig->eta(), sig->phi());
+	  float dR = eleTV3.DeltaR(genTV3);
+	  if (dR<dRGenMin) { 
+	    theGenParticle = sig;
+	    dRGenMin=dR;
+	  }
 	}
-      }
+	genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
+	if (dRGenMin<0.05) {
+	  // fill entry  
+	  
+	  // ---------------------------------
+	  // Supercluster linked to electron
+	  const reco::SuperClusterRef& scref =  ele->superCluster();
+
+	  if(debug) std::cout<<"RegFatPFNtuplizer::analyze>> found one electron calling fill() ene,SCene="<<ele->energy()<<", "<<scref->energy()<< std::endl; 
+
+      
 
  
 
@@ -484,8 +448,7 @@ void RegFatNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 			  *ebRecHitsH_,*eeRecHitsH_,
 			  *caloTopoHandle,
 			  *chanStatusHandle,
-			  &(*scref),&(*theGenParticle),&(*ele), &(*gsf) ,
-			  &(*pfelesel), &(*pfgsfsel), &(*pftrksel) );
+			  &(*scref),&(*theGenParticle),&(*ele), &(*pfgsf) );
       
  
       egRegTree_->Fill();
@@ -496,14 +459,14 @@ void RegFatNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
 
   } // LowPt electron looper
-  if(debug) std::cout<<"RegFatNtuplizer::analyze>> end loop on Low Pt electrons"<<std::endl; 
+  if(debug) std::cout<<"RegFatPFNtuplizer::analyze>> end loop on Low Pt electrons"<<std::endl; 
 
   // Delete
   deleteCollections();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void RegFatNtuplizer::readCollections( const edm::Event& event, const edm::EventSetup& setup ) {
+void RegFatPFNtuplizer::readCollections( const edm::Event& event, const edm::EventSetup& setup ) {
 
 
   // Low pT electrons (and identify if data or MC and RECO/AOD or MINIAOD)
@@ -623,13 +586,13 @@ void RegFatNtuplizer::readCollections( const edm::Event& event, const edm::Event
 
 }
 
-void RegFatNtuplizer::deleteCollections( ) {
+void RegFatPFNtuplizer::deleteCollections( ) {
 
   delete ecalTools_;
 }
 
 // Gen-level electons from B
-void RegFatNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ) {
+void RegFatPFNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ) {
 
   signal_electrons.clear();
   std::set<reco::GenParticlePtr> electrons_from_B;
@@ -638,7 +601,7 @@ void RegFatNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_el
 }
 
 // Gen-level electons from B 
-void RegFatNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,
+void RegFatPFNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,
 					  float muon_pt, float muon_eta ) {   
 
 
@@ -710,12 +673,12 @@ void RegFatNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T> 
-bool RegFatNtuplizer::validPtr( edm::Ptr<T>& ptr ) {
+bool RegFatPFNtuplizer::validPtr( edm::Ptr<T>& ptr ) {
   return ( ptr.isNonnull() && ptr.isAvailable() );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool RegFatNtuplizer::gsfToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed ) {
+bool RegFatPFNtuplizer::gsfToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed ) {
   if ( !validPtr(gsf) ) {
     if ( verbose_ > 0 ) {
       std::cout << "ERROR! GsfTrackPtr:"
@@ -760,7 +723,7 @@ bool RegFatNtuplizer::gsfToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool RegFatNtuplizer::seedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk ) {
+bool RegFatPFNtuplizer::seedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk ) {
   if ( !validPtr(seed) ) { 
     if ( verbose_ > 0 ) {
       std::cout << "ERROR! ElectronSeedPtr:"
@@ -791,7 +754,7 @@ bool RegFatNtuplizer::seedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& tr
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool RegFatNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {   
+bool RegFatPFNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {   
 
   // Attempt to navigate via Seed (and TrackExtra) to Track
   reco::ElectronSeedPtr seed;
@@ -830,7 +793,7 @@ bool RegFatNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {
 // here methods for EGM electrons
 
 ////////////////////////////////////////////////////////////////////////////////
-bool RegFatNtuplizer::egmToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed ) {
+bool RegFatPFNtuplizer::egmToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed ) {
   if ( !validPtr(gsf) ) {
     if ( verbose_ > 0 ) {
       std::cout << "ERROR! GsfTrackPtr:"
@@ -875,7 +838,7 @@ bool RegFatNtuplizer::egmToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool RegFatNtuplizer::egmSeedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk ) {
+bool RegFatPFNtuplizer::egmSeedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk ) {
   if ( !validPtr(seed) ) { 
     if ( verbose_ > 0 ) {
       std::cout << "ERROR! ElectronSeedPtr:"
@@ -906,7 +869,7 @@ bool RegFatNtuplizer::egmSeedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr&
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool RegFatNtuplizer::egmToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {   
+bool RegFatPFNtuplizer::egmToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {   
   bool debug=false; 
   if(debug)std::cout<<"ele loop - egmToTrk called "<<std::endl; 
 
@@ -957,7 +920,7 @@ bool RegFatNtuplizer::egmToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {
   return false;
 }
 
-bool RegFatNtuplizer::extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL){
+bool RegFatPFNtuplizer::extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL){
 
   // Propagate 'electron' to ECAL surface
   double mass_=0.000511*0.000511; // ele mass 
@@ -1012,4 +975,4 @@ bool RegFatNtuplizer::extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
-DEFINE_FWK_MODULE(RegFatNtuplizer);
+DEFINE_FWK_MODULE(RegFatPFNtuplizer);
