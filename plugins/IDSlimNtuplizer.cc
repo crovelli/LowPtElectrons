@@ -78,10 +78,13 @@ public:
 
   // Wraps other methods to provide a sample of "signal" electrons
   void signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ); 
+  void signalElectronsFromGun( std::set<reco::GenParticlePtr>& signal_electrons ); 
 
   // GEN-based method to provide a sample of "signal" electrons            
   void genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,  
 			  float muon_pt = 7., float muon_eta = 1.5 );
+  void genElectronsFromGun( std::set<reco::GenParticlePtr>& electrons_from_gun);
+
 
   // ---------------------------------------
   // Utility methods
@@ -264,8 +267,14 @@ void IDSlimNtuplizer::beginRun( const edm::Run& run, const edm::EventSetup& es )
 //
 void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& setup ) {
 
+  // ----------------------------------------
+  // To be set by hand 
+  // ----------------------------------------
+  //
   // Slim or Large size
   bool largeNtuple=0;
+  bool useEleGun=0;
+  // ----------------------------------------
 
   // Reset ntuple
   ntuple_.reset();
@@ -273,11 +282,16 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   // Update all handles - MUST be called every event! 
   readCollections(event,setup);
 
-  // Gen level electrons from B                       
+  // Gen level electrons from B                        
   std::set<reco::GenParticlePtr> signal_electrons;
-  if (isMC_) signalElectrons(signal_electrons);          
-  if (!tag_side_muon) return;
-
+  if (!useEleGun) {
+    if (isMC_) signalElectrons(signal_electrons);          
+    if (!tag_side_muon) return;
+  } 
+  // Gen level electrons from particle gun
+  if (useEleGun) {
+    if (isMC_) signalElectronsFromGun(signal_electrons);          
+  }
 
   // Loop over low-pT electrons                  
   for( size_t electronlooper = 0; electronlooper < gsfElectronsH_->size(); electronlooper++ ) {
@@ -821,6 +835,39 @@ void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
 
   // We don't want this for now
   //// if ( !tag_side_muon ) { electrons_from_B.clear(); }
+}
+
+// Gen-level electons from particle gun
+void IDSlimNtuplizer::signalElectronsFromGun( std::set<reco::GenParticlePtr>& signal_electrons ) {
+
+  signal_electrons.clear();
+  std::set<reco::GenParticlePtr> electrons_from_gun;
+  genElectronsFromGun(electrons_from_gun);
+  for ( auto gen : electrons_from_gun ) { signal_electrons.insert(gen); }
+}
+
+// Gen-level electons from B 
+void IDSlimNtuplizer::genElectronsFromGun( std::set<reco::GenParticlePtr>& electrons_from_gun) {
+  
+  electrons_from_gun.clear();
+
+  for ( size_t idx = 0; idx < genParticlesH_->size(); idx++ ) {
+    
+    reco::GenParticlePtr gen(genParticlesH_, idx);
+    if ( !validPtr(gen) ) {
+      std::cout << "ERROR! GenParticlePtr:"
+		<< " gen.isNull(): " << gen.isNull()
+		<< " gen.isAvailable(): " << gen.isAvailable()
+		<< std::endl;
+      continue;
+    }
+
+    // Last copy of GEN electron 
+    bool is_ele = std::abs(gen->pdgId()) == 11 && gen->isLastCopy(); //@@ not a method of Candidate
+    if ( is_ele ) electrons_from_gun.insert(gen);
+    
+  } // genParticles loop
+  
 }
 
 ////////////////////////////////////////////////////////////////////////////////
