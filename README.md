@@ -10,7 +10,7 @@ git cms-init
 git cms-addpkg RecoEgamma/EgammaElectronProducers
 git cms-addpkg RecoEgamma/EgammaTools
 git cms-addpkg RecoEgamma/ElectronIdentification
-git cms-merge-topic crovelli:from-CMSSW_10_2_15_Aug07Id_and_regr
+git cms-merge-topic crovelli:from-CMSSW_10_2_15_Aug07Id_and_June16Regr
 ```
 
 ### Install ntuplizer code
