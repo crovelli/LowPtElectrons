@@ -11,14 +11,14 @@ using namespace std;
 
 void normalizeVar::train() {
 
-  const char *origfname = "/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL.root";
+  const char *origfname = "/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun_withRegression.root";
   
   TFile *origInput = 0;
   origInput = TFile::Open(origfname);
   if (!origInput) return;
   std::cout << "just opened your file" << std::endl;
 
-  TDirectory *dir = (TDirectory*)origInput->Get("/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL.root:/ntuplizer");
+  TDirectory *dir = (TDirectory*)origInput->Get("/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun_withRegression.root:/ntuplizer");
   TTree *fChain ; 
   dir->GetObject("tree",fChain);
   std::cout << "just taken your tree" << std::endl;
@@ -112,6 +112,10 @@ void normalizeVar::train() {
   fChain->SetBranchAddress("sc_clus3_dphi", &sc_clus3_dphi);
   fChain->SetBranchAddress("sc_clus3_deta", &sc_clus3_deta);
   fChain->SetBranchAddress("sc_clus3_ntrk_deta01", &sc_clus3_ntrk_deta01);
+  fChain->SetBranchAddress("pre_ecal",&pre_ecal);
+  fChain->SetBranchAddress("pre_ecaltrk",&pre_ecaltrk);
+  fChain->SetBranchAddress("post_ecal",&post_ecal);
+  fChain->SetBranchAddress("post_ecaltrk",&post_ecaltrk);
   
   // New tree
   TFile *fileNew = TFile::Open("/tmp/simu_shortLP.root","RECREATE");     
@@ -210,6 +214,11 @@ void normalizeVar::train() {
   simu->Branch("sc_clus3_dphi",  &sc_clus3_dphi,  "sc_clus3_dphi/F");
   simu->Branch("sc_clus3_deta",  &sc_clus3_deta,  "sc_clus3_deta/F");
   simu->Branch("sc_clus3_ntrk_deta01",  &sc_clus3_ntrk_deta01,  "sc_clus3_ntrk_deta01/F");
+  simu->Branch("pre_ecal", &pre_ecal, "pre_ecal/F");
+  simu->Branch("pre_ecaltrk", &pre_ecaltrk, "pre_ecaltrk/F");
+  simu->Branch("post_ecal", &post_ecal, "post_ecal/F");
+  simu->Branch("post_ecaltrk", &post_ecaltrk, "post_ecaltrk/F");
+
   simu->Branch("type",   &type,   "type/I");
 
   // Loop over entries
@@ -323,6 +332,16 @@ void normalizeVar::normalize(){
   if(sc_clus1_E_ov_p<0) sc_clus1_E_ov_p=-1;
   if(sc_clus2_E_ov_p<0) sc_clus2_E_ov_p=-1;
   if(sc_clus3_E_ov_p<0) sc_clus3_E_ov_p=-1;
+
+  if(pre_ecal<0) pre_ecal=0;
+  if(pre_ecal>1000) pre_ecal=1000;
+  if(pre_ecaltrk<0) pre_ecaltrk=0;
+  if(pre_ecaltrk>1000) pre_ecaltrk=1000;
+  if(post_ecal<0) post_ecal=0;
+  if(post_ecal>1000) post_ecal=1000;
+  if(post_ecaltrk<0) post_ecaltrk=0;
+  if(post_ecaltrk>1000) post_ecaltrk=1000;
+
 }
 
 int main(int argc, char **argv){

@@ -102,6 +102,10 @@ class normalizeVar{
   Float_t         sc_clus3_dphi;
   Float_t         sc_clus3_deta;
   Float_t         sc_clus3_ntrk_deta01;
+  Float_t         pre_ecal;
+  Float_t         pre_ecaltrk;
+  Float_t         post_ecal;
+  Float_t         post_ecaltrk;
   Int_t type;
 
 };
