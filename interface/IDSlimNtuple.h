@@ -145,11 +145,6 @@ class IDSlimNtuple {
   float gsf_dz_ = IDSlimNtuple::NEG_FLOAT;
   float gsf_dz_err_ = IDSlimNtuple::NEG_FLOAT;
 
-  // GSF pos at ECAL
-  float gsf_x_ = IDSlimNtuple::NEG_FLOAT;     
-  float gsf_y_ = IDSlimNtuple::NEG_FLOAT;      
-  float gsf_z_ = IDSlimNtuple::NEG_FLOAT;     
-
   // GSF tracks: tangents
   int gsf_ntangents_ = 0; //@@ IDSlimNtuple::NEG_INT;
   //float gsf_hit_dpt_[NHITS_MAX] = {0}; //@@ {IDSlimNtuple::NEG_FLOAT};
@@ -267,19 +262,20 @@ class IDSlimNtuple {
   float ele_sumPhotonEt_;
   float ele_sumChargedHadronPt_;
   float ele_sumNeutralHadronEt_;
-  
+
+  /*
   // Energy regression 
   float pre_ecal_     = IDSlimNtuple::NEG_FLOAT;
   float pre_ecaltrk_  = IDSlimNtuple::NEG_FLOAT;
   float post_ecal_    = IDSlimNtuple::NEG_FLOAT;
   float post_ecaltrk_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_raw_energy_= IDSlimNtuple::NEG_FLOAT;
+  float sc_energy_    = IDSlimNtuple::NEG_FLOAT;
+  */
 
   // SuperClusters 
   float sc_Et_  = IDSlimNtuple::NEG_FLOAT;
   int sc_Nclus_ = IDSlimNtuple::NEG_INT;
-  int sc_Nclus_deta01_ = IDSlimNtuple::NEG_INT;
-  int sc_Nclus_deta02_ = IDSlimNtuple::NEG_INT;
-  int sc_Nclus_deta03_ = IDSlimNtuple::NEG_INT;  
   bool sc_goodSeed_ = false;
   float sc_E_ps_ = IDSlimNtuple::NEG_FLOAT;
   float sc_E_ps1_= IDSlimNtuple::NEG_FLOAT;

@@ -1,9 +1,9 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtraFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtra.h"
 #include "LowPtElectrons/LowPtElectrons/interface/IDSlimNtuple.h"
-#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
-#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
-#include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronFeatures.h"
+#include "CommonTools/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "CommonTools/BaseParticlePropagator/interface/RawParticle.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Common/interface/RefToPtr.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
@@ -75,9 +75,6 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
     tree->Branch("gsf_dxy_err",&gsf_dxy_err_, "gsf_dxy_err/f");
     tree->Branch("gsf_dz",  &gsf_dz_, "gsf_dz/f");
     tree->Branch("gsf_dz_err",&gsf_dz_err_, "gsf_dz_err/f");
-    tree->Branch("gsf_x",  &gsf_x_, "gsf_x/f");
-    tree->Branch("gsf_y",  &gsf_y_, "gsf_y/f");
-    tree->Branch("gsf_z",  &gsf_z_, "gsf_z/f");
   }
 
   // General track associated to electron
@@ -174,11 +171,15 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
     tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
   }
 
+  /*
   // Electron energy regression                                                                                                                  
   tree->Branch("pre_ecal",&pre_ecal_);
   tree->Branch("pre_ecaltrk",&pre_ecaltrk_);
   tree->Branch("post_ecal",&post_ecal_);
   tree->Branch("post_ecaltrk",&post_ecaltrk_);
+  tree->Branch("sc_raw_energy",&sc_raw_energy_);
+  tree->Branch("sc_energy",&sc_energy_);
+  */
 
   // Electron - further full 5x5 shower shapes
   if (largeNtuple) {
@@ -204,9 +205,6 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   // SuperCluster associated to the electron
   tree->Branch("sc_goodSeed",&sc_goodSeed_,"sc_goodSeed/O");
   tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
-  tree->Branch("sc_Nclus_deta01",&sc_Nclus_deta01_,"sc_Nclus_deta01/I"); 
-  tree->Branch("sc_Nclus_deta02",&sc_Nclus_deta02_,"sc_Nclus_deta02/I"); 
-  tree->Branch("sc_Nclus_deta03",&sc_Nclus_deta03_,"sc_Nclus_deta03/I"); 
   if (largeNtuple) {
     tree->Branch("sc_Et",&sc_Et_); 
     tree->Branch("sc_E_ps",&sc_E_ps_,"sc_E_ps/F");
@@ -502,9 +500,7 @@ void IDSlimNtuple::fill_ele( const reco::GsfElectronPtr ele,
     }
 
     // ElectronID variables
-    lowptgsfeleid::Features features;
-    features.set(ele,rho);
-    auto vfeatures = features.get();
+    std::vector<float> vfeatures;
     //@@ ORDER IS IMPORTANT!
     size_t idx = 0;
     eid_rho_ = vfeatures[idx++];
@@ -646,9 +642,6 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   sc_clus3_nxtal_  = -999;
   sc_clus3_deta_   = -999.;
   sc_clus3_dphi_   = -999.;
-  sc_Nclus_deta01_ = -999;
-  sc_Nclus_deta02_ = -999;   
-  sc_Nclus_deta03_ = -999;  
   sc_Nclus_        = -999;
   sc_goodSeed_     = false;
   if (largeNtuple) {  
@@ -656,9 +649,6 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
     sc_E_ps1_ = -999.;
     sc_E_ps2_ = -999.;
     sc_Et_ = -999.;
-    gsf_x_ = -999.;  
-    gsf_y_ = -999.;  
-    gsf_z_ = -999.;  
     sc_clus1_et_  = -999.;
     sc_clus2_et_  = -999.;
     sc_clus3_et_  = -999.;
@@ -706,23 +696,15 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   XYZTLorentzVector pos = XYZTLorentzVector(vx,vy,vz, 0.);
   float field_z=3.8;
 
-  BaseParticlePropagator mypart(RawParticle(mom,pos), 0, 0, field_z);
-  mypart.setCharge(kfTrackRef->charge());
+  BaseParticlePropagator mypart(RawParticle(mom, pos, kfTrackRef->charge()), 0, 0, field_z);
   mypart.propagateToEcalEntrance(true); // true only first half loop , false more than one loop
   bool reach_ECAL=mypart.getSuccess(); // 0 does not reach ECAL, 1 yes barrel, 2 yes endcaps 
 
   // ECAL entry point for track
-  // GlobalPoint ecal_pos(mypart.propagated().vertex().x(), mypart.propagated().vertex().y(), mypart.propagated().vertex().z());
-  GlobalPoint ecal_pos(mypart.x(), mypart.y(), mypart.z());
+  GlobalPoint ecal_pos(mypart.particle().vertex().x(), mypart.particle().vertex().y(), mypart.particle().vertex().z());
   // Preshower limit
   //  bool below_ps = pow(ecal_pos.z(), 2.) > boundary_ * ecal_pos.perp2();
   // Iterate through ECAL clusters
-  if (largeNtuple) {  
-    gsf_x_=mypart.x();
-    gsf_y_=mypart.y();
-    gsf_z_=mypart.z();
-  }
-  
   int clusNum=0;
   float maxEne1=-1;
   float maxEne2=-1;
@@ -857,22 +839,6 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 
   float seedEne = sc->seed()->energy();
   if ( fabs(seedEne-maxEne1)<0.001 ) sc_goodSeed_ = true;
-
-  sc_Nclus_deta01_=0;
-  sc_Nclus_deta02_=0;
-  sc_Nclus_deta03_=0;
-  try{
-    if(sc->clustersSize()>0 && sc->clustersBegin()!=sc->clustersEnd()){
-      for(auto& cluster : sc->clusters()) {
-	float deta = std::abs(ecal_pos.eta()-cluster->eta()) ;
-	if(deta<0.1) sc_Nclus_deta01_=sc_Nclus_deta01_+1; 
-	if(deta<0.2) sc_Nclus_deta02_=sc_Nclus_deta02_+1; 
-	if(deta<0.3) sc_Nclus_deta03_=sc_Nclus_deta03_+1; 
-      }
-    }
-  }catch(...){
-    //    std::cout<<"caught an exception"<<std::endl;
-  }
 }
 
 // end FC

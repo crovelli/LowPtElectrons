@@ -41,7 +41,6 @@
 #include "Geometry/CaloTopology/interface/CaloTopology.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
-#include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h" 
 #include "LowPtElectrons/LowPtElectrons/interface/IDSlimNtuple.h"
 #include "TRandom3.h"
 #include "TVector3.h"
@@ -104,8 +103,8 @@ public:
 private:
 
   // Regression stuff
-  std::unique_ptr<ModifyObjectValueBase> regression_;     // Low pt 
-  std::unique_ptr<ModifyObjectValueBase> regressionGsf_;  // Gsf
+  //std::unique_ptr<ModifyObjectValueBase> regression_;     // Low pt 
+  //std::unique_ptr<ModifyObjectValueBase> regressionGsf_;  // Gsf
   
   // Misc  
   edm::Service<TFileService> fs_;
@@ -261,6 +260,7 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     ntuple_.link_tree(tree_);
     std::cout << "Verbosity level: "<< verbose_ << std::endl;
 
+    /*
     // Regression stuff - lowPtElectrons
     if( cfg.existsAs<edm::ParameterSet>("lowPtRegressionConfig") ) {
       const edm::ParameterSet& iconf = cfg.getParameterSet("lowPtRegressionConfig");
@@ -286,6 +286,7 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     } else {
       regressionGsf_.reset(nullptr);
     }
+    */
 
   }
 
@@ -304,7 +305,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   // Slim or Large size
   bool largeNtuple=0;
   bool useEleGun=0;
-  bool useEnergyRegression=1;
+  // bool useEnergyRegression=1;
   // ----------------------------------------
 
   // Reset ntuple
@@ -313,6 +314,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   // Update all handles - MUST be called every event! 
   readCollections(event,setup);
 
+  /*
   // Setup energy regressions for event
   if (useEnergyRegression) {
     regression_->setEvent(event);
@@ -320,6 +322,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     regressionGsf_->setEvent(event);
     regressionGsf_->setEventContent(setup);
   }
+  */
 
   // Gen level electrons from B                        
   std::set<reco::GenParticlePtr> signal_electrons;
@@ -395,12 +398,14 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       ntuple_.is_other_ = true;
       ntuple_.gen_tag_side_=tag_side_muon;
     }
+    
 
     // prescale fake electrons 
     if (dRGenMin>=0.1) {
       if ( gRandom->Rndm() > prescale_  ) continue;
       ntuple_.weight_ = 1./prescale_;
     }  
+
 
     // ---------------------------------
     // Electron ID: dirty hack as ID is not in Event nor embedded in pat::Electron
@@ -417,6 +422,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // Fill ele info 
     ntuple_.fill_ele( ele, mva_value, mva_id, -999, *rhoH_ );
 
+    /*
     // Regression stuff
     float pre_ecal     = -999.;
     float pre_ecaltrk  = -999.;
@@ -430,7 +436,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       post_ecal = newElectron.correctedEcalEnergy();
       post_ecaltrk = newElectron.energy();
     }
-
+    */
 
     // ---------------------------------
     // GSF track linked to electron
@@ -438,7 +444,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     TVector3 gsfTV3(0,0,0);
     gsfTV3.SetPtEtaPhi(gsf->ptMode(), gsf->etaMode(), gsf->phiMode()); 
     ntuple_.gsf_dr_ = eleTV3.DeltaR(gsfTV3);  
-    if (largeNtuple) ntuple_.gen_gsf_dr_ = genTV3.DeltaR(gsfTV3);
+    if (largeNtuple) ntuple_.gen_gsf_dr_ = genTV3.DeltaR(gsfTV3);     
     float unbiasedSeedBdt_ = (*mvaUnbiasedH_)[gsf];
     float ptbiasedSeedBdt_ = (*mvaPtbiasedH_)[gsf];
     ntuple_.fill_bdt( unbiasedSeedBdt_, ptbiasedSeedBdt_ );
@@ -455,7 +461,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
     ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
     if (largeNtuple) { 
-      ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);
+      ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);          
       PdgIds::const_iterator pos = pdgids_.find(trk.key());
       if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
     }
@@ -469,73 +475,61 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       }
     }
 
-    // fill how many tracks there are around first second and third supercluster within dR<0.1 
-    ntuple_.sc_clus1_ntrk_deta01_=0;
-    ntuple_.sc_clus2_ntrk_deta01_=0;
-    ntuple_.sc_clus3_ntrk_deta01_=0;
-    if(ntuple_.sc_clus1_E_>0){
-      size_t iptr=0; 
-      for ( auto& ptr : *packedCandsH_) {
-	if(ptr.bestTrack() == nullptr) { continue;}
-	reco::TrackPtr trkx(ptr.bestTrack(), iptr);
-	// extrapolate track
-	float eta_EC=0;
-	float phi_EC=0;
-	float dRcur1=100;
-	float dRcur2=100;
-	float dRcur3=100;
 
-	if(extrapolate_to_ECAL(trkx,eta_EC, phi_EC)){
-	  if(ntuple_.sc_clus1_E_>0) dRcur1=deltaR(eta_EC,phi_EC,ntuple_.sc_clus1_eta_,ntuple_.sc_clus1_phi_);
-	  if(ntuple_.sc_clus2_E_>0) dRcur2=deltaR(eta_EC,phi_EC,ntuple_.sc_clus2_eta_,ntuple_.sc_clus2_phi_);
-	  if(ntuple_.sc_clus3_E_>0) dRcur3=deltaR(eta_EC,phi_EC,ntuple_.sc_clus3_eta_,ntuple_.sc_clus3_phi_);
-	  if(dRcur1<0.1) ntuple_.sc_clus1_ntrk_deta01_=ntuple_.sc_clus1_ntrk_deta01_+1;
-	  if(dRcur2<0.1) ntuple_.sc_clus2_ntrk_deta01_=ntuple_.sc_clus2_ntrk_deta01_+1;
-	  if(dRcur3<0.1) ntuple_.sc_clus3_ntrk_deta01_=ntuple_.sc_clus3_ntrk_deta01_+1;
-	}
-	++iptr;
-      }
-      for ( auto& ptr : *lostTracksH_) {
-	if(ptr.bestTrack() == nullptr) { continue;}
-	reco::TrackPtr trkx(ptr.bestTrack(), iptr);
-	// extrapolate track
-	float eta_EC=0;
-	float phi_EC=0;
-	float dRcur1=100;
-	float dRcur2=100;
-	float dRcur3=100;
-	
-	if(extrapolate_to_ECAL(trkx,eta_EC, phi_EC)){
-	  if(ntuple_.sc_clus1_E_>0) dRcur1=deltaR(eta_EC,phi_EC,ntuple_.sc_clus1_eta_,ntuple_.sc_clus1_phi_);
-	  if(ntuple_.sc_clus2_E_>0) dRcur2=deltaR(eta_EC,phi_EC,ntuple_.sc_clus2_eta_,ntuple_.sc_clus2_phi_);
-	  if(ntuple_.sc_clus3_E_>0) dRcur3=deltaR(eta_EC,phi_EC,ntuple_.sc_clus3_eta_,ntuple_.sc_clus3_phi_);
-	  if(dRcur1<0.1) ntuple_.sc_clus1_ntrk_deta01_=ntuple_.sc_clus1_ntrk_deta01_+1;
-	  if(dRcur2<0.1) ntuple_.sc_clus2_ntrk_deta01_=ntuple_.sc_clus2_ntrk_deta01_+1;
-	  if(dRcur3<0.1) ntuple_.sc_clus3_ntrk_deta01_=ntuple_.sc_clus3_ntrk_deta01_+1;
-	}
-	++iptr;
-      }
-    }
+    reco::SuperClusterRef scp = ele->superCluster(); 
 
+    /*
     // correct variables thanks to regression
     if (useEnergyRegression) {
-      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal; 
-      ntuple_.eid_match_eclu_EoverP_=ntuple_.eid_match_eclu_EoverP_*post_ecal/pre_ecal;
-      ntuple_.eid_sc_E_=ntuple_.eid_sc_E_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverP_=ntuple_.match_seed_EoverP_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverPout_=ntuple_.match_seed_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.match_eclu_EoverPout_=ntuple_.match_eclu_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.sc_Et_=ntuple_.sc_Et_*post_ecal/pre_ecal;
-      ntuple_.sc_clus1_E_ov_E_=ntuple_.sc_clus1_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus2_E_ov_E_=ntuple_.sc_clus2_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus3_E_ov_E_=ntuple_.sc_clus3_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal;
+      ntuple_.eid_match_eclu_EoverP_=1/post_ecal-1/post_ecaltrk;
     }
     ntuple_.pre_ecal_=pre_ecal;
     ntuple_.pre_ecaltrk_=pre_ecaltrk;
     ntuple_.post_ecal_=post_ecal;
     ntuple_.post_ecaltrk_=post_ecaltrk;
+    ntuple_.sc_raw_energy_=scp->rawEnergy();
+    ntuple_.sc_energy_=scp->energy();
+    */
 
     tree_->Fill();
+
+    /*
+    std::cout << "Dentro Dumper" << std::endl;
+    std::cout << ntuple_.eid_rho_ << " " 
+	      << ntuple_.eid_sc_eta_ << " " 
+	      << ntuple_.eid_shape_full5x5_r9_ << " " 
+	      << ntuple_.eid_sc_etaWidth_ << " " 
+	      << ntuple_.eid_sc_phiWidth_ << " " 
+	      << ntuple_.eid_shape_full5x5_HoverE_ << " " 
+	      << ntuple_.eid_trk_nhits_ << " " 
+	      << ntuple_.eid_trk_chi2red_ << " " 
+	      << ntuple_.eid_gsf_chi2red_ << " " 
+	      << ntuple_.eid_brem_frac_ << " " 
+	      << ntuple_.eid_gsf_nhits_ << " " 
+	      << ntuple_.eid_match_SC_EoverP_ << " " 
+	      << ntuple_.eid_match_eclu_EoverP_ << " " 
+	      << ntuple_.eid_match_SC_dEta_ << " " 
+	      << ntuple_.eid_match_SC_dPhi_ << " " 
+	      << ntuple_.eid_match_seed_dEta_ << " " 
+	      << ntuple_.eid_sc_E_ << " " 
+	      << ntuple_.eid_trk_p_ << " " 
+	      << ntuple_.gsf_mode_p_ << " " 
+	      << ntuple_.core_shFracHits_ << " " 
+	      << ntuple_.seed_unbiased_ << " " 
+	      << ntuple_.gsf_dr_ << " " 
+	      << ntuple_.trk_dr_ << " " 
+	      << ntuple_.sc_Nclus_ << " " 
+	      << ntuple_.sc_clus1_nxtal_ << " " 
+	      << ntuple_.sc_clus1_dphi_ << " " 
+	      << ntuple_.sc_clus2_dphi_ << " " 
+	      << ntuple_.sc_clus1_deta_ << " " 
+	      << ntuple_.sc_clus2_deta_ << " " 
+	      << ntuple_.sc_clus1_E_ << " " 
+	      << ntuple_.sc_clus2_E_ << " " 
+	      << ntuple_.sc_clus1_E_ov_p_ << " " 
+	      << ntuple_.sc_clus2_E_ov_p_ << std::endl;
+    */
 
   } // electron looper
 
@@ -627,6 +621,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // Fill ele info 
     ntuple_.fill_ele( ele, mva_value, mva_id, -999, *rhoH_ );
 
+    /*
     // Regression stuff
     float pre_ecal     = -999;
     float pre_ecaltrk  = -999;
@@ -640,6 +635,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       post_ecal = newElectron.correctedEcalEnergy();
       post_ecaltrk = newElectron.energy();
     }
+    */
 
     // ---------------------------------
     // GSF track linked to electron
@@ -647,7 +643,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     TVector3 gsfTV3(0,0,0);
     gsfTV3.SetPtEtaPhi(gsf->ptMode(), gsf->etaMode(), gsf->phiMode()); 
     ntuple_.gsf_dr_ = eleTV3.DeltaR(gsfTV3);  
-    if (largeNtuple) ntuple_.gen_gsf_dr_ = genTV3.DeltaR(gsfTV3);  
+    if (largeNtuple) ntuple_.gen_gsf_dr_ = genTV3.DeltaR(gsfTV3);          
     ntuple_.fill_bdt( -999.,-999. );
 
     // ---------------------------------
@@ -662,7 +658,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
     ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
     if (largeNtuple) {
-      ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);  
+      ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);              
       PdgIds::const_iterator pos = pdgids_.find(trk.key());
       if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
     }
@@ -676,71 +672,19 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       }
     }
 
-    // fill how many tracks there are around first second and third supercluster within dR<0.1 
-    ntuple_.sc_clus1_ntrk_deta01_=0;
-    ntuple_.sc_clus2_ntrk_deta01_=0;
-    ntuple_.sc_clus3_ntrk_deta01_=0;
-    if(ntuple_.sc_clus1_E_>0){
-      size_t iptr=0; 
-      for ( auto& ptr : *packedCandsH_) {
-	if(ptr.bestTrack() == nullptr) { continue;}
-	reco::TrackPtr trkx(ptr.bestTrack(), iptr);
-	// extrapolate track
-	float eta_EC=0;
-	float phi_EC=0;
-	float dRcur1=100;
-	float dRcur2=100;
-	float dRcur3=100;
+    reco::SuperClusterRef scp = ele->superCluster();  
 
-	if(extrapolate_to_ECAL(trkx,eta_EC, phi_EC)){
-	  if(ntuple_.sc_clus1_E_>0) dRcur1=deltaR(eta_EC,phi_EC,ntuple_.sc_clus1_eta_,ntuple_.sc_clus1_phi_);
-	  if(ntuple_.sc_clus2_E_>0) dRcur2=deltaR(eta_EC,phi_EC,ntuple_.sc_clus2_eta_,ntuple_.sc_clus2_phi_);
-	  if(ntuple_.sc_clus3_E_>0) dRcur3=deltaR(eta_EC,phi_EC,ntuple_.sc_clus3_eta_,ntuple_.sc_clus3_phi_);
-	  if(dRcur1<0.1) ntuple_.sc_clus1_ntrk_deta01_=ntuple_.sc_clus1_ntrk_deta01_+1;
-	  if(dRcur2<0.1) ntuple_.sc_clus2_ntrk_deta01_=ntuple_.sc_clus2_ntrk_deta01_+1;
-	  if(dRcur3<0.1) ntuple_.sc_clus3_ntrk_deta01_=ntuple_.sc_clus3_ntrk_deta01_+1;
-	}
-	++iptr;
-      }
-      for ( auto& ptr : *lostTracksH_) {
-	if(ptr.bestTrack() == nullptr) { continue;}
-	reco::TrackPtr trkx(ptr.bestTrack(), iptr);
-	// extrapolate track
-	float eta_EC=0;
-	float phi_EC=0;
-	float dRcur1=100;
-	float dRcur2=100;
-	float dRcur3=100;
-
-	if(extrapolate_to_ECAL(trkx,eta_EC, phi_EC)){
-	  if(ntuple_.sc_clus1_E_>0) dRcur1=deltaR(eta_EC,phi_EC,ntuple_.sc_clus1_eta_,ntuple_.sc_clus1_phi_);
-	  if(ntuple_.sc_clus2_E_>0) dRcur2=deltaR(eta_EC,phi_EC,ntuple_.sc_clus2_eta_,ntuple_.sc_clus2_phi_);
-	  if(ntuple_.sc_clus3_E_>0) dRcur3=deltaR(eta_EC,phi_EC,ntuple_.sc_clus3_eta_,ntuple_.sc_clus3_phi_);
-	  if(dRcur1<0.1) ntuple_.sc_clus1_ntrk_deta01_=ntuple_.sc_clus1_ntrk_deta01_+1;
-	  if(dRcur2<0.1) ntuple_.sc_clus2_ntrk_deta01_=ntuple_.sc_clus2_ntrk_deta01_+1;
-	  if(dRcur3<0.1) ntuple_.sc_clus3_ntrk_deta01_=ntuple_.sc_clus3_ntrk_deta01_+1;
-	}
-	++iptr;
-      }
-    }
-
+    /*
     // correct variables thanks to regression
     if (useEnergyRegression) {    
-      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal; 
-      ntuple_.eid_match_eclu_EoverP_=ntuple_.eid_match_eclu_EoverP_*post_ecal/pre_ecal;
-      ntuple_.eid_sc_E_=ntuple_.eid_sc_E_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverP_=ntuple_.match_seed_EoverP_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverPout_=ntuple_.match_seed_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.match_eclu_EoverPout_=ntuple_.match_eclu_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.sc_Et_=ntuple_.sc_Et_*post_ecal/pre_ecal;
-      ntuple_.sc_clus1_E_ov_E_=ntuple_.sc_clus1_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus2_E_ov_E_=ntuple_.sc_clus2_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus3_E_ov_E_=ntuple_.sc_clus3_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal;
+      ntuple_.eid_match_eclu_EoverP_=1/post_ecal-1/post_ecaltrk;
     }
     ntuple_.pre_ecal_=pre_ecal;
     ntuple_.pre_ecaltrk_=pre_ecaltrk;
     ntuple_.post_ecal_=post_ecal;
     ntuple_.post_ecaltrk_=post_ecaltrk;
+    */
 
     tree_->Fill();
 
@@ -1212,60 +1156,6 @@ bool IDSlimNtuplizer::egmToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {
   }
 
   return false;
-}
-
-bool IDSlimNtuplizer::extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL){
-
-  // Propagate 'electron' to ECAL surface
-  double mass_=0.000511*0.000511; // ele mass 
-  bool result=false;
-  if (! validPtr(kfTrackRef) ) return result; 
-
-  float p2=0;
-  float px=0;
-  float py=0;
-  float pz=0;
-  float vx=0;
-  float vy=0;
-  float vz=0;
-  if ( kfTrackRef->extra().isAvailable() && kfTrackRef->extra().isNonnull() ) {
-    p2=kfTrackRef->outerMomentum().Mag2();
-    px=kfTrackRef->outerMomentum().x();
-    py=kfTrackRef->outerMomentum().y();
-    pz=kfTrackRef->outerMomentum().z();
-    vx=kfTrackRef->outerPosition().x();
-    vy=kfTrackRef->outerPosition().y();
-    vz=kfTrackRef->outerPosition().z();
-  } else {
-    p2=pow( kfTrackRef->p() ,2 );
-    px=kfTrackRef->px();
-    py=kfTrackRef->py();
-    pz=kfTrackRef->pz();
-    vx=kfTrackRef->vx(); // must be in cm
-    vy=kfTrackRef->vy();
-    vz=kfTrackRef->vz();
-  }
-
-
-  float energy = sqrt(mass_ + p2);
-  XYZTLorentzVector mom = XYZTLorentzVector(px,py,pz, energy);
-  XYZTLorentzVector pos = XYZTLorentzVector(vx,vy,vz, 0.);
-
-  float field_z=3.8;
-
-  BaseParticlePropagator mypart(RawParticle(mom,pos), 0, 0, field_z);
-  mypart.setCharge(kfTrackRef->charge());
-  mypart.propagateToEcalEntrance(true); // true only first half loop , false more than one loop
-  bool reach_ECAL=mypart.getSuccess(); // 0 does not reach ECAL, 1 yes barrel, 2 yes endcaps 
-
-  // ECAL entry point for track
-  GlobalPoint ecal_pos(mypart.x(), mypart.y(), mypart.z());
-
-  eta_ECAL=ecal_pos.eta();
-  phi_ECAL=ecal_pos.phi();
-
-  return reach_ECAL; 
-
 }
 
 
