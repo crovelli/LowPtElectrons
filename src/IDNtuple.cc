@@ -1,47 +1,48 @@
+
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtraFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtra.h"
 #include "LowPtElectrons/LowPtElectrons/interface/IDNtuple.h"
-#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
-#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronFeatures.h"
 #include "TTree.h"
-#include <iostream>
-
-using namespace std;
 
 /////////////////////////////////////////////////////////////////////////////////
 //
 void IDNtuple::link_tree( TTree *tree ) {
-
-  std::cout<<"I am running IDNtuple::link_tree"<<std::endl; 
 
   tree->Branch("run",  &run_ , "run/i");
   tree->Branch("lumi", &lumi_, "lumi/i");
   tree->Branch("evt",  &evt_ , "evt/i");
   
   tree->Branch("weight", &weight_, "weight/f");
+  tree->Branch("prescale", &prescale_, "prescale/f");
   tree->Branch("rho", &rho_, "rho/f");
 
   tree->Branch("is_aod", &is_aod_, "is_aod/i");
   tree->Branch("is_mc", &is_mc_, "is_mc/i");
 
+  tree->Branch("tag_pt", &tag_pt_, "tag_pt/f");
+  tree->Branch("tag_eta", &tag_eta_, "tag_eta/f");
+
   tree->Branch("is_e", &is_e_, "is_e/O");
-  tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
-  tree->Branch("is_other", &is_other_, "is_other/O");
+  //tree->Branch("is_e_not_matched", &is_e_not_matched_, "is_e_not_matched/O");
+  //tree->Branch("is_other", &is_other_, "is_other/O");
   tree->Branch("is_egamma", &is_egamma_, "is_egamma/O");
 
   tree->Branch("has_trk", &has_trk_, "has_trk/O");
   tree->Branch("has_seed", &has_seed_, "has_seed/O");
   tree->Branch("has_gsf", &has_gsf_, "has_gsf/O");
+  tree->Branch("has_pfgsf", &has_pfgsf_, "has_pfgsf/O");
   tree->Branch("has_ele", &has_ele_, "has_ele/O");
 
   tree->Branch("trk_dr", &trk_dr_, "trk_dr/f");
   tree->Branch("gsf_dr", &gsf_dr_, "gsf_dr/f");
+  tree->Branch("pfgsf_dr", &pfgsf_dr_, "pfgsf_dr/f");
   tree->Branch("ele_dr", &ele_dr_, "ele_dr/f");
   
-  tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
   tree->Branch("gen_pt" , &gen_pt_ , "gen_pt/f" );
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
   tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
+  tree->Branch("gen_e", &gen_e_, "gen_e/f");
   tree->Branch("gen_p", &gen_p_, "gen_p/f");
   tree->Branch("gen_charge", &gen_charge_, "gen_charge/I");
   tree->Branch("gen_pdgid", &gen_pdgid_, "gen_pdgid/I");
@@ -69,8 +70,8 @@ void IDNtuple::link_tree( TTree *tree ) {
   tree->Branch("trk_dz", &trk_dz_, "trk_dz/f");
   tree->Branch("trk_dz_err", &trk_dz_err_, "trk_dz_err/f");
   
-//  tree->Branch("preid_unbiased", &preid_unbiased_, "preid_unbiased/f");
-//  tree->Branch("preid_ptbiased", &preid_ptbiased_, "preid_ptbiased/f");
+  //tree->Branch("preid_unbiased", &preid_unbiased_, "preid_unbiased/f");
+  //tree->Branch("preid_ptbiased", &preid_ptbiased_, "preid_ptbiased/f");
   tree->Branch("preid_bdtout1", &preid_unbiased_, "preid_bdtout1/f");
   tree->Branch("preid_bdtout2", &preid_ptbiased_, "preid_bdtout2/f");
 
@@ -108,15 +109,46 @@ void IDNtuple::link_tree( TTree *tree ) {
   //tree->Branch("gsf_hit_dpt_unc", gsf_hit_dpt_unc_, "gsf_hit_dpt_unc[gsf_ntangents]/f");
   //tree->Branch("gsf_extapolated_eta", &gsf_extapolated_eta_);
   //tree->Branch("gsf_extapolated_phi", &gsf_extapolated_phi_);
+
+  tree->Branch("pfgsf_pt", &pfgsf_pt_, "pfgsf_pt/f");
+  tree->Branch("pfgsf_eta", &pfgsf_eta_, "pfgsf_eta/f");
+  tree->Branch("pfgsf_phi", &pfgsf_phi_, "pfgsf_phi/f");
+  tree->Branch("pfgsf_p", &pfgsf_p_, "pfgsf_p/f");
+  tree->Branch("pfgsf_charge", &pfgsf_charge_, "pfgsf_charge/I");
+  tree->Branch("pfgsf_inp", &pfgsf_inp_, "pfgsf_inp/f");
+  tree->Branch("pfgsf_outp", &pfgsf_outp_, "pfgsf_outp/f");
+  tree->Branch("pfgsf_dpt", &pfgsf_dpt_, "pfgsf_dpt/f");
+
+  tree->Branch("pfgsf_mode_pt", &pfgsf_mode_pt_, "pfgsf_mode_pt/f");
+  tree->Branch("pfgsf_mode_eta", &pfgsf_mode_eta_, "pfgsf_mode_eta/f");
+  tree->Branch("pfgsf_mode_phi", &pfgsf_mode_phi_, "pfgsf_mode_phi/f");
+  tree->Branch("pfgsf_mode_p", &pfgsf_mode_p_, "pfgsf_mode_p/f");
+
+  tree->Branch("pfgsf_nhits",&pfgsf_nhits_, "pfgsf_nhits/I");
+  tree->Branch("pfgsf_missing_inner_hits", &pfgsf_missing_inner_hits_, "pfgsf_missing_inner_hits/I");
+  tree->Branch("pfgsf_chi2red", &pfgsf_chi2red_, "pfgsf_chi2red/f"); 
   
-  tree->Branch("ele_p", &ele_p_, "ele_p/f");
+  tree->Branch("pfgsf_dxy",  &pfgsf_dxy_, "pfgsf_dxy/f");
+  tree->Branch("pfgsf_dxy_err",&pfgsf_dxy_err_, "pfgsf_dxy_err/f");
+  tree->Branch("pfgsf_dz",  &pfgsf_dz_, "pfgsf_dz/f");
+  tree->Branch("pfgsf_dz_err",&pfgsf_dz_err_, "pfgsf_dz_err/f");
+
+  //tree->Branch("pfgsf_ntangents", &pfgsf_ntangents_, "pfgsf_ntangents/I");
+  //tree->Branch("pfgsf_hit_dpt", pfgsf_hit_dpt_, "pfgsf_hit_dpt[pfgsf_ntangents]/f");
+  //tree->Branch("pfgsf_hit_dpt_unc", pfgsf_hit_dpt_unc_, "pfgsf_hit_dpt_unc[pfgsf_ntangents]/f");
+  //tree->Branch("pfgsf_extapolated_eta", &pfgsf_extapolated_eta_);
+  //tree->Branch("pfgsf_extapolated_phi", &pfgsf_extapolated_phi_);
+  
   tree->Branch("ele_pt", &ele_pt_, "ele_pt/f");
+  tree->Branch("ele_p", &ele_p_, "ele_p/f");
   tree->Branch("ele_eta", &ele_eta_, "ele_eta/f");
   tree->Branch("ele_phi", &ele_phi_, "ele_phi/f");
 
   tree->Branch("ele_mva_value", &ele_mva_value_, "ele_mva_value/f");
-  tree->Branch("ele_mva_id", &ele_mva_id_, "ele_mva_id/I");
+  tree->Branch("ele_mva_value_retrained", &ele_mva_value_retrained_, "ele_mva_value_retrained/f");
   tree->Branch("ele_conv_vtx_fit_prob", &ele_conv_vtx_fit_prob_, "ele_conv_vtx_fit_prob/f");
+  tree->Branch("ele_mva_value_depth10", &ele_mva_value_depth10_, "ele_mva_value_depth10/f");
+  tree->Branch("ele_mva_value_depth15", &ele_mva_value_depth15_, "ele_mva_value_depth15/f");
 
   tree->Branch("eid_rho", &eid_rho_, "eid_rho/f");
   tree->Branch("eid_ele_pt", &eid_ele_pt_, "eid_ele_pt/f");
@@ -147,71 +179,49 @@ void IDNtuple::link_tree( TTree *tree ) {
 
   tree->Branch("eid_brem_frac", &eid_brem_frac_, "eid_brem_frac/f");
 
-  // Further track-Cluster matching (not in default ID) //////////
-  tree->Branch("match_seed_EoverP",&match_seed_EoverP_); 
-  tree->Branch("match_seed_EoverPout",&match_seed_EoverPout_); 
-  tree->Branch("match_seed_dPhi",&match_seed_dPhi_); 
-  tree->Branch("match_seed_dEta_vtx",&match_seed_dEta_vtx_); 
-  tree->Branch("match_eclu_EoverPout",&match_eclu_EoverPout_); 
-  tree->Branch("match_eclu_dEta",&match_eclu_dEta_); 
-  tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
-
-  // Fiducial flags (booleans) //////////
-  tree->Branch("fiducial_isEB",&fiducial_isEB_,"fiducial_isEB/I");
-  tree->Branch("fiducial_isEE",&fiducial_isEE_,"fiducial_isEE/I"); 
-  tree->Branch("fiducial_isEBEEGap",&fiducial_isEBEEGap_,"fiducial_isEBEEGap/I"); 
-
-  // Shower shape //////////
-  tree->Branch("shape_sigmaEtaEta",&shape_sigmaEtaEta_); 
-  tree->Branch("shape_sigmaIetaIeta",&shape_sigmaIetaIeta_); 
-  tree->Branch("shape_sigmaIphiIphi",&shape_sigmaIphiIphi_); 
-  tree->Branch("shape_e1x5",&shape_e1x5_); 
-  tree->Branch("shape_e2x5Max",&shape_e2x5Max_); 
-  tree->Branch("shape_e5x5",&shape_e5x5_); 
-  tree->Branch("shape_r9",&shape_r9_); 
-  tree->Branch("shape_HoverE",&shape_HoverE_); 
-  tree->Branch("shape_HoverEBc",&shape_HoverEBc_); 
-  tree->Branch("shape_hcalDepth1",&shape_hcalDepth1_); 
-  tree->Branch("shape_hcalDepth2",&shape_hcalDepth2_); 
-  tree->Branch("shape_hcalDepth1Bc",&shape_hcalDepth1Bc_); 
-  tree->Branch("shape_hcalDepth2Bc",&shape_hcalDepth2Bc_); 
-  tree->Branch("shape_nHcalTowersBc",&shape_nHcalTowersBc_,"shape_nHcalTowersBc/I"); 
-  tree->Branch("shape_eLeft",&shape_eLeft_); 
-  tree->Branch("shape_eRight",&shape_eRight_); 
-  tree->Branch("shape_eTop",&shape_eTop_); 
-  tree->Branch("shape_eBottom",&shape_eBottom_); 
-
-  // full 5x5
-  tree->Branch("shape_full5x5_sigmaEtaEta",&shape_full5x5_sigmaEtaEta_); 
-  tree->Branch("shape_full5x5_e1x5",&shape_full5x5_e1x5_); 
-  tree->Branch("shape_full5x5_e2x5Max",&shape_full5x5_e2x5Max_); 
-  tree->Branch("shape_full5x5_e5x5",&shape_full5x5_e5x5_);
-  tree->Branch("shape_full5x5_HoverEBc",&shape_full5x5_HoverEBc_); 
-  tree->Branch("shape_full5x5_hcalDepth1",&shape_full5x5_hcalDepth1_); 
-  tree->Branch("shape_full5x5_hcalDepth2",&shape_full5x5_hcalDepth2_); 
-  tree->Branch("shape_full5x5_hcalDepth1Bc",&shape_full5x5_hcalDepth1Bc_); 
-  tree->Branch("shape_full5x5_hcalDepth2Bc",&shape_full5x5_hcalDepth2Bc_); 
-  tree->Branch("shape_full5x5_eLeft",&shape_full5x5_eLeft_); 
-  tree->Branch("shape_full5x5_eRight",&shape_full5x5_eRight_); 
-  tree->Branch("shape_full5x5_eTop",&shape_full5x5_eTop_); 
-  tree->Branch("shape_full5x5_eBottom",&shape_full5x5_eBottom_); 
+  tree->Branch("image_gsf_ref_eta", &image_gsf_ref_eta_, "image_gsf_ref_eta/f");
+  tree->Branch("image_gsf_ref_phi", &image_gsf_ref_phi_, "image_gsf_ref_phi/f");
+  tree->Branch("image_gsf_ref_R", &image_gsf_ref_R_, "image_gsf_ref_R/f");
+  tree->Branch("image_gsf_ref_p", &image_gsf_ref_p_, "image_gsf_ref_p/f");
+  tree->Branch("image_gsf_ref_pt", &image_gsf_ref_pt_, "image_gsf_ref_pt/f");
   
-  // Other brem fractions and classification 
-  tree->Branch("brem_fracTrk",&brem_fracTrk_); 
-  tree->Branch("brem_fracSC",&brem_fracSC_); 
-  tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
-  tree->Branch("p4kind",&p4kind_,"p4kind/I"); 
-  
-  // SuperClusters //////////	
-  tree->Branch("sc_Et",&sc_Et_); 
-  tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
-  tree->Branch("sc_Nxtal",&sc_Nxtal_,"sc_Nxtal/I"); 
+  tree->Branch("image_gen_inner_eta", &image_gen_inner_eta_, "image_gen_inner_eta/f");
+  tree->Branch("image_gen_inner_phi", &image_gen_inner_phi_, "image_gen_inner_phi/f");
+  tree->Branch("image_gen_inner_R", &image_gen_inner_R_, "image_gen_inner_R/f");
+  tree->Branch("image_gen_inner_p", &image_gen_inner_p_, "image_gen_inner_p/f");
+  tree->Branch("image_gen_inner_pt", &image_gen_inner_pt_, "image_gen_inner_pt/f");
 
-  // Charge
-  tree->Branch("chPix",&chPix_,"chPix/I");
-  tree->Branch("chGCP",&chGCP_,"chGCP/I");
-  tree->Branch("chGP",&chGP_,"chGP/I");
-  tree->Branch("chGC",&chGC_,"chGC/I");
+  tree->Branch("image_gsf_inner_eta", &image_gsf_inner_eta_, "image_gsf_inner_eta/f");
+  tree->Branch("image_gsf_inner_phi", &image_gsf_inner_phi_, "image_gsf_inner_phi/f");
+  tree->Branch("image_gsf_inner_R", &image_gsf_inner_R_, "image_gsf_inner_R/f");
+  tree->Branch("image_gsf_inner_p", &image_gsf_inner_p_, "image_gsf_inner_p/f");
+  tree->Branch("image_gsf_inner_pt", &image_gsf_inner_pt_, "image_gsf_inner_pt/f");
+  tree->Branch("image_gsf_charge", &image_gsf_charge_, "image_gsf_charge/I");
+
+  tree->Branch("image_gsf_proj_eta", &image_gsf_proj_eta_, "image_gsf_proj_eta/f");
+  tree->Branch("image_gsf_proj_phi", &image_gsf_proj_phi_, "image_gsf_proj_phi/f");
+  tree->Branch("image_gsf_proj_R", &image_gsf_proj_R_, "image_gsf_proj_R/f");
+  tree->Branch("image_gsf_proj_p", &image_gsf_proj_p_, "image_gsf_proj_p/f");
+
+  tree->Branch("image_gsf_atcalo_eta", &image_gsf_atcalo_eta_, "image_gsf_atcalo_eta/f");
+  tree->Branch("image_gsf_atcalo_phi", &image_gsf_atcalo_phi_, "image_gsf_atcalo_phi/f");
+  tree->Branch("image_gsf_atcalo_R", &image_gsf_atcalo_R_, "image_gsf_atcalo_R/f");
+  tree->Branch("image_gsf_atcalo_p", &image_gsf_atcalo_p_, "image_gsf_atcalo_p/f");
+  
+  tree->Branch("image_clu_n", &image_clu_n_, "image_clu_n/I");
+  tree->Branch("image_clu_eta", &image_clu_eta_, "image_clu_eta[image_clu_n]/f");
+  tree->Branch("image_clu_phi", &image_clu_phi_, "image_clu_phi[image_clu_n]/f");
+  tree->Branch("image_clu_e", &image_clu_e_, "image_clu_e[image_clu_n]/f");
+  tree->Branch("image_clu_nhit", &image_clu_nhit_, "image_clu_nhit[image_clu_n]/I");
+
+  tree->Branch("image_pf_n", &image_pf_n_, "image_pf_n/I");
+  tree->Branch("image_pf_eta", &image_pf_eta_, "image_pf_eta[image_pf_n]/f");
+  tree->Branch("image_pf_phi", &image_pf_phi_, "image_pf_phi[image_pf_n]/f");
+  tree->Branch("image_pf_p", &image_pf_p_, "image_pf_p[image_pf_n]/f");
+  tree->Branch("image_pf_pdgid", &image_pf_pdgid_, "image_pf_pdgid[image_pf_n]/I");
+  tree->Branch("image_pf_matched", &image_pf_matched_, "image_pf_matched[image_pf_n]/I");
+  tree->Branch("image_pf_lost", &image_pf_lost_, "image_pf_lost[image_pf_n]/I");
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -228,13 +238,11 @@ void IDNtuple::fill_gen( const reco::GenParticlePtr genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
+  gen_e_ = genp->energy();
   gen_p_ = genp->p();
   gen_charge_ = genp->charge();
-  gen_pdgid_ = genp->pdgId();
-  if ( genp->mother(0) )
-    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
-  else 
-    gen_mom_pdgid_ = 0;
+  gen_pdgid_ = 0;
+  gen_mom_pdgid_ = 0;
   gen_gran_pdgid_ = 0;
 }
 
@@ -244,13 +252,11 @@ void IDNtuple::fill_gen( const reco::CandidatePtr genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
+  gen_e_ = genp->energy();
   gen_p_ = genp->p();
   gen_charge_ = genp->charge();
-  gen_pdgid_ = genp->pdgId();
-  if ( genp->mother(0) )
-    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
-  else 
-    gen_mom_pdgid_ = 0;
+  gen_pdgid_ = 0;
+  gen_mom_pdgid_ = 0;
   gen_gran_pdgid_ = 0;
 }
 
@@ -260,13 +266,11 @@ void IDNtuple::fill_gen( const pat::PackedGenParticleRef genp ) {
   gen_pt_  = genp->pt();
   gen_eta_ = genp->eta();
   gen_phi_ = genp->phi();
+  gen_e_ = genp->energy();
   gen_p_ = genp->p();
   gen_charge_ = genp->charge();
-  gen_pdgid_ = genp->pdgId();
-  if ( genp->mother(0) )
-    gen_mom_pdgid_ = (*genp->mother(0)).pdgId();
-  else 
-    gen_mom_pdgid_ = 0;
+  gen_pdgid_ = 0;
+  gen_mom_pdgid_ = 0;
   gen_gran_pdgid_ = 0;
 }
 
@@ -343,10 +347,8 @@ void IDNtuple::fill_preid( const reco::PreId& preid_ecal,
 //  preid_ptbiased_pass_ = preid_ecal.mvaSelected(1);
 
   // Set seed variables
-  lowptgsfeleseed::Features features;
-  features.set( preid_ecal, preid_hcal, rho, spot, ecal_tools );
-  auto vfeatures = features.get();
-
+  auto vfeatures = lowptgsfeleseed::features( preid_ecal, preid_hcal, rho, spot, ecal_tools );
+  
   //@@ ADD THESE PREID VARS TO THE NTUPLE???
 
 //  //@@ ORDER IS IMPORTANT!
@@ -432,139 +434,238 @@ void IDNtuple::fill_gsf( const reco::GsfTrackPtr gsf,
 
 /////////////////////////////////////////////////////////////////////////////////
 //
+void IDNtuple::fill_pfgsf( const reco::GsfTrackPtr pfgsf, 
+			   const reco::BeamSpot& spot ) {
+
+  if ( pfgsf.isNull() ) {
+    //@@ Shouldn't happen, but do we just take dummy values...? 
+  } else {
+
+    // Kinematics
+    pfgsf_pt_ = pfgsf->pt();
+    pfgsf_eta_ = pfgsf->eta();
+    pfgsf_phi_ = pfgsf->phi();
+    pfgsf_p_ = pfgsf->p();
+    pfgsf_charge_ = pfgsf->charge();
+    if ( pfgsf->extra().isAvailable() && pfgsf->extra().isNonnull() ) {
+      pfgsf_inp_ = sqrt(pfgsf->innerMomentum().mag2());
+      pfgsf_outp_ = sqrt(pfgsf->outerMomentum().mag2());
+      pfgsf_dpt_ = ( pfgsf_inp_ > 0. ) ? fabs( pfgsf_outp_ - pfgsf_inp_ ) / pfgsf_inp_ : 0.; //@@ redundant?
+    }
+    
+    // Kinematics (MODE)
+    pfgsf_mode_pt_ = pfgsf->ptMode();
+    pfgsf_mode_eta_ = pfgsf->etaMode();
+    pfgsf_mode_phi_ = pfgsf->phiMode();
+    pfgsf_mode_p_ = pfgsf->pMode();
+
+    // Quality
+    pfgsf_nhits_ = pfgsf->found();
+    pfgsf_missing_inner_hits_ = pfgsf->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
+    pfgsf_chi2red_ = pfgsf->normalizedChi2();
+
+    // Displacement
+    pfgsf_dxy_ = pfgsf->dxy(spot);
+    pfgsf_dxy_err_ = pfgsf->dxyError();
+    pfgsf_dz_ = pfgsf->dz(spot.position());
+    pfgsf_dz_err_ = pfgsf->dzError();
+
+    // Tangents (requires TrackExtra)
+    //    const auto& extra = pfgsf->pfgsfExtra(); //@@ Collection does not exist?!
+    //    if ( extra.isNonnull() ) {
+    //      pfgsf_ntangents_ = (extra->tangentsSize() > NHITS_MAX) ? NHITS_MAX : extra->tangentsSize();
+    //      for (int idx = 0; idx < pfgsf_ntangents_; idx++ ) {
+    //	pfgsf_hit_dpt_[idx] = extra->tangents().at(idx).deltaP().value();
+    //	pfgsf_hit_dpt_unc_[idx] = extra->tangents().at(idx).deltaP().error();
+    //      }
+    //    }
+    
+  } 
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
 void IDNtuple::fill_ele( const reco::GsfElectronPtr ele,
 			 float mva_value,
-			 int mva_id,
+			 float mva_value_retrained,
+			 float mva_value_depth10,
+			 float mva_value_depth15,
 			 float ele_conv_vtx_fit_prob,
-			 const double rho ) {
+			 const double rho,
+			 bool is_egamma,
+			 float unbiased // Rome ...
+			 ) {
 
-
-  if ( ele.isNonnull() ) {  
-
-    // Kinematics 
+  // Kinematics
+  if ( is_egamma ) {
     ele_p_ = ele->p();
     ele_pt_ = ele->pt();
     ele_eta_ = ele->eta();
     ele_phi_ = ele->phi();
-    
-    // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
-    if ( mva_value > -666. ) { ele_mva_value_ = mva_value; }
-    if ( mva_id > -666 ) { ele_mva_id_ = mva_id; }
-    if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
-    
-    // Set Electron variables
-    lowptgsfeleid::Features features;
-    features.set(ele,rho);
-    auto vfeatures = features.get();
-    
-    //@@ ORDER IS IMPORTANT!
-    size_t idx = 0;
-    eid_rho_ = vfeatures[idx++];
-    eid_ele_pt_ = vfeatures[idx++];
-    eid_sc_eta_ = vfeatures[idx++];
-    eid_shape_full5x5_sigmaIetaIeta_ = vfeatures[idx++];
-    eid_shape_full5x5_sigmaIphiIphi_ = vfeatures[idx++];
-    eid_shape_full5x5_circularity_ = vfeatures[idx++];
-    eid_shape_full5x5_r9_ = vfeatures[idx++];
-    eid_sc_etaWidth_ = vfeatures[idx++];
-    eid_sc_phiWidth_ = vfeatures[idx++];
-    eid_shape_full5x5_HoverE_ = vfeatures[idx++];
-    eid_trk_nhits_ = vfeatures[idx++];
-    eid_trk_chi2red_ = vfeatures[idx++];
-    eid_gsf_chi2red_ = vfeatures[idx++];
-    eid_brem_frac_ = vfeatures[idx++];
-    eid_gsf_nhits_ = vfeatures[idx++];
-    eid_match_SC_EoverP_ = vfeatures[idx++];
-    eid_match_eclu_EoverP_ = vfeatures[idx++];
-    eid_match_SC_dEta_ = vfeatures[idx++];
-    eid_match_SC_dPhi_ = vfeatures[idx++];
-    eid_match_seed_dEta_ = vfeatures[idx++];
-    eid_sc_E_ = vfeatures[idx++];
-    eid_trk_p_ = vfeatures[idx++];
-  }    
+  } else {
+    reco::GsfTrackRef gsf = ele->gsfTrack();
+    if ( gsf.isNonnull() && gsf.isAvailable() ) {
+      ele_p_ = gsf->p();
+      ele_pt_ = gsf->pt();
+      ele_eta_ = gsf->eta();
+      ele_phi_ = gsf->phi();
+    } else {
+      std::cout << "[IDNtuple::fill_ele] ERROR: Null GsfTrackRef!" << std::endl;
+    }
+  }
+  
+  // MVA IDs: only filled if 'ValueMap->size() == electrons->size()' in IDFeatures::analyze()
+  if ( mva_value > -666. ) { ele_mva_value_ = mva_value; }
+  if ( mva_value_retrained > -666 ) { ele_mva_value_retrained_ = mva_value_retrained; }
+  if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
+  if ( mva_value_depth10 > -666. ) { ele_mva_value_depth10_ = mva_value_depth10; }
+  if ( mva_value_depth15 > -666. ) { ele_mva_value_depth15_ = mva_value_depth15; }
+
+  // Set Electron variables
+
+  //lowptgsfeleid::Features features;
+  //features.set(ele,rho);
+  //auto vfeatures = features.get();
+  std::vector<float> vfeatures; // = getFeatures(ele,rho,unbiased); // new interface ...
+
+  //@@ ORDER IS IMPORTANT!
+
+  // My variables ...
+//  size_t idx = 0;
+//  eid_rho_ = vfeatures[idx++];
+//  eid_ele_pt_ = vfeatures[idx++];
+//  eid_sc_eta_ = vfeatures[idx++];
+//  eid_shape_full5x5_sigmaIetaIeta_ = vfeatures[idx++];
+//  eid_shape_full5x5_sigmaIphiIphi_ = vfeatures[idx++];
+//  eid_shape_full5x5_circularity_ = vfeatures[idx++];
+//  eid_shape_full5x5_r9_ = vfeatures[idx++];
+//  eid_sc_etaWidth_ = vfeatures[idx++];
+//  eid_sc_phiWidth_ = vfeatures[idx++];
+//  eid_shape_full5x5_HoverE_ = vfeatures[idx++];
+//  eid_trk_nhits_ = vfeatures[idx++];
+//  eid_trk_chi2red_ = vfeatures[idx++];
+//  eid_gsf_chi2red_ = vfeatures[idx++];
+//  eid_brem_frac_ = vfeatures[idx++];
+//  eid_gsf_nhits_ = vfeatures[idx++];
+//  eid_match_SC_EoverP_ = vfeatures[idx++];
+//  eid_match_eclu_EoverP_ = vfeatures[idx++];
+//  eid_match_SC_dEta_ = vfeatures[idx++];
+//  eid_match_SC_dPhi_ = vfeatures[idx++];
+//  eid_match_seed_dEta_ = vfeatures[idx++];
+//  eid_sc_E_ = vfeatures[idx++];
+//  eid_trk_p_ = vfeatures[idx++];
+
+  // Rome variables ...
+  size_t idx = 0;
+  eid_rho_ = vfeatures[idx++];
+  eid_sc_eta_ = vfeatures[idx++];
+  eid_shape_full5x5_r9_ = vfeatures[idx++];
+  eid_sc_etaWidth_ = vfeatures[idx++];
+  eid_sc_phiWidth_ = vfeatures[idx++];
+  eid_shape_full5x5_HoverE_ = vfeatures[idx++];
+  eid_trk_nhits_ = vfeatures[idx++];
+  eid_trk_chi2red_ = vfeatures[idx++];
+  eid_gsf_chi2red_ = vfeatures[idx++];
+  eid_brem_frac_ = vfeatures[idx++];
+  eid_gsf_nhits_ = vfeatures[idx++];
+  eid_match_SC_EoverP_ = vfeatures[idx++];
+  eid_match_eclu_EoverP_ = vfeatures[idx++];
+  eid_match_SC_dEta_ = vfeatures[idx++];
+  eid_match_SC_dPhi_ = vfeatures[idx++];
+  eid_match_seed_dEta_ = vfeatures[idx++];
+  eid_sc_E_ = vfeatures[idx++];
+  eid_trk_p_ = vfeatures[idx++];
+  // following not set ...
+  //eid_ele_pt_ = vfeatures[idx++];
+  //eid_shape_full5x5_sigmaIetaIeta_ = vfeatures[idx++];
+  //eid_shape_full5x5_sigmaIphiIphi_ = vfeatures[idx++];
+  //eid_shape_full5x5_circularity_ = vfeatures[idx++];
+  // following are new, not used ...
+  //gsf_mode_p,core_shFracHits,gsf_bdtout1,gsf_dr,trk_dr,sc_Nclus,
+  //sc_clus1_nxtal,sc_clus1_dphi,sc_clus2_dphi,sc_clus1_deta,
+  //sc_clus2_deta,sc_clus1_E,sc_clus2_E,sc_clus1_E_ov_p,sc_clus2_E_ov_p  
+
 }
 
-void IDNtuple::fill_supercluster(const reco::GsfElectronPtr ele ) {
-
-  if ( ele.isNull() ) { return; }
-
-  // Charge //////////
-  chPix_ = ele->scPixCharge();
-  chGCP_ = ele->isGsfCtfScPixChargeConsistent();
-  chGP_  = ele->isGsfScPixChargeConsistent();
-  chGC_  = ele->isGsfCtfChargeConsistent();
-
-  // Core //////////
-  core_shFracHits_ = ele->shFracInnerHits();
-
-  // Further track-Cluster matching //////////
-  match_seed_EoverP_    = ele->eSeedClusterOverP();
-  match_seed_EoverPout_ = ele->eSeedClusterOverPout();
-  match_seed_dPhi_      = ele->deltaPhiSeedClusterTrackAtCalo();
-  match_seed_dEta_vtx_  = ele->deltaEtaSeedClusterTrackAtVtx();
-  match_eclu_EoverPout_ = ele->eEleClusterOverPout();
-  match_eclu_dEta_ = ele->deltaEtaEleClusterTrackAtCalo();
-  match_eclu_dPhi_ = ele->deltaPhiEleClusterTrackAtCalo();
-
-  // Fiducial flags //////////
-  fiducial_isEB_ = ele->isEB();
-  fiducial_isEE_ = ele->isEE();
-  fiducial_isEBEEGap_ = ele->isEBEEGap();
-
-  // Further shower shape //////////
-  shape_sigmaEtaEta_   = ele->sigmaEtaEta();
-  shape_sigmaIetaIeta_ = ele->sigmaIetaIeta();
-  shape_sigmaIphiIphi_ = ele->sigmaIphiIphi();
-  shape_e1x5_    = ele->e1x5();
-  shape_e2x5Max_ = ele->e2x5Max();
-  shape_e5x5_    = ele->e5x5();
-  shape_r9_ = ele->r9();
-  shape_HoverE_    = ele->hcalOverEcal();
-  shape_HoverEBc_ = ele->hcalOverEcalBc();
-  shape_hcalDepth1_    = ele->hcalDepth1OverEcal();
-  shape_hcalDepth2_    = ele->hcalDepth2OverEcal();
-  shape_hcalDepth1Bc_  = ele->hcalDepth1OverEcalBc();
-  shape_hcalDepth2Bc_  = ele->hcalDepth2OverEcalBc();
-  shape_nHcalTowersBc_ = ele->hcalTowersBehindClusters().size();
-  shape_eLeft_ = ele->eLeft();
-  shape_eRight_ = ele->eRight();
-  shape_eTop_ = ele->eTop();
-  shape_eBottom_ = ele->eBottom();
-
-  // Further full 5x5 shower shape //////////
-  shape_full5x5_sigmaEtaEta_   = ele->full5x5_sigmaEtaEta();
-  shape_full5x5_e1x5_    = ele->full5x5_e1x5();
-  shape_full5x5_e2x5Max_ = ele->full5x5_e2x5Max();
-  shape_full5x5_e5x5_    = ele->full5x5_e5x5();
-  shape_full5x5_HoverEBc_ = ele->full5x5_hcalOverEcalBc();
-  shape_full5x5_hcalDepth1_    = ele->full5x5_hcalDepth1OverEcal();
-  shape_full5x5_hcalDepth2_    = ele->full5x5_hcalDepth2OverEcal();
-  shape_full5x5_hcalDepth1Bc_  = ele->full5x5_hcalDepth1OverEcalBc();
-  shape_full5x5_hcalDepth2Bc_  = ele->full5x5_hcalDepth2OverEcalBc();
-  shape_full5x5_eLeft_ = ele->full5x5_eLeft();
-  shape_full5x5_eRight_ = ele->full5x5_eRight();
-  shape_full5x5_eTop_ = ele->full5x5_eTop();
-  shape_full5x5_eBottom_ = ele->full5x5_eBottom();
+/////////////////////////////////////////////////////////////////////////////////
+//
+void IDNtuple::fill_image( const float gsf_ref_eta, const float gsf_ref_phi, const float gsf_ref_R,
+			   const float gsf_ref_p, const float gsf_ref_pt,
+			   const float gen_inner_eta, const float gen_inner_phi, const float gen_inner_R,
+			   const float gen_inner_p, const float gen_inner_pt,
+			   const float gen_proj_eta, const float gen_proj_phi, const float gen_proj_R,
+			   const float gsf_inner_eta, const float gsf_inner_phi, const float gsf_inner_R,
+			   const float gsf_inner_p, const float gsf_inner_pt, const int gsf_charge,
+			   const float gsf_proj_eta, const float gsf_proj_phi, const float gsf_proj_R,
+			   const float gsf_proj_p,
+			   const float gsf_atcalo_eta, const float gsf_atcalo_phi, const float gsf_atcalo_R,
+			   const float gsf_atcalo_p,
+			   const std::vector<float>& clu_eta,
+			   const std::vector<float>& clu_phi,
+			   const std::vector<float>& clu_e,
+			   const std::vector<int>& clu_nhit,
+			   const std::vector<float>& pf_eta,
+			   const std::vector<float>& pf_phi,
+			   const std::vector<float>& pf_p,
+			   const std::vector<int>& pf_pdgid,
+			   const std::vector<int>& pf_matched,
+			   const std::vector<int>& pf_lost ) {
+  if ( clu_eta.size() != clu_phi.size() ||
+       clu_eta.size() != clu_e.size() ||
+       clu_eta.size() != clu_nhit.size() ||
+       pf_eta.size() != pf_phi.size() ||
+       pf_eta.size() != pf_p.size() ||
+       pf_eta.size() != pf_pdgid.size() ||
+       pf_eta.size() != pf_matched.size() ||
+       pf_eta.size() != pf_lost.size() ) { 
+    throw std::runtime_error("Inconsistent vector sizes!"); 
+  }
   
-  // Brem fractions and classification //////////
-  brem_fracTrk_ = ele->trackFbrem();
-  brem_fracSC_  = ele->superClusterFbrem();
-  brem_N_ = ele->numberOfBrems();
+  image_gsf_ref_eta_  = gsf_ref_eta;
+  image_gsf_ref_phi_  = gsf_ref_phi;
+  image_gsf_ref_R_  = gsf_ref_R;
+  image_gsf_ref_p_  = gsf_ref_p;
+  image_gsf_ref_pt_ = gsf_ref_pt;
 
-  p4kind_ = ele->candidateP4Kind();
+  image_gen_inner_eta_ = gen_inner_eta;
+  image_gen_inner_phi_ = gen_inner_phi;
+  image_gen_inner_R_ = gen_inner_R;
+  image_gen_inner_p_ = gen_inner_p;
+  image_gen_inner_pt_ = gen_inner_pt;
 
-  // SuperClusters //////////
-  if ( ele->superCluster().isNull() ) { return; }
-  const reco::SuperClusterRef& sc = ele->superCluster();
-  if(sc->clusters().size() == 0) std::cout << "NO CLUSTERS???" << std::endl;
-  //std::cout << "clustersSize: " << sc->clustersSize() << " clusters.size(): " << sc->clusters().size() << std::endl; 
-  //for(auto& cluster : sc->clusters()) {
-  //std::cout << "(" << (cluster)->eta() << ", " << (cluster)->phi() << ")" << std::endl;
-  ///sc_cluster_eta_.push_back((cluster)->eta());
-  ///sc_cluster_phi_.push_back((cluster)->phi());
-  //}
-  
-  sc_Et_ = sc->energy() * sqrt( pow(sc->x(),2) + pow(sc->y(),2) ) / sqrt( pow(sc->x(),2) + pow(sc->y(),2) + pow(sc->z(),2) );
-  sc_Nclus_ = sc->clustersSize();
-  sc_Nxtal_ = sc->size();
+  image_gsf_inner_eta_ = gsf_inner_eta;
+  image_gsf_inner_phi_ = gsf_inner_phi;
+  image_gsf_inner_R_ = gsf_inner_R;
+  image_gsf_inner_p_ = gsf_inner_p;
+  image_gsf_inner_pt_ = gsf_inner_pt;
+  image_gsf_charge_ = gsf_charge;
+
+  image_gsf_proj_eta_ = gsf_proj_eta;
+  image_gsf_proj_phi_ = gsf_proj_phi;
+  image_gsf_proj_R_ = gsf_proj_R;
+  image_gsf_proj_p_ = gsf_proj_p;
+
+  image_gsf_atcalo_eta_ = gsf_atcalo_eta;
+  image_gsf_atcalo_phi_ = gsf_atcalo_phi;
+  image_gsf_atcalo_R_ = gsf_atcalo_R;
+  image_gsf_atcalo_p_ = gsf_atcalo_p;
+
+  image_clu_n_ = clu_eta.size() > ARRAY_SIZE ? ARRAY_SIZE : clu_eta.size();
+  for ( size_t i = 0; i < image_clu_n_; ++i )  { 
+    image_clu_eta_[i] = clu_eta[i];
+    image_clu_phi_[i] = clu_phi[i];
+    image_clu_e_[i] = clu_e[i];
+    image_clu_nhit_[i] = clu_nhit[i];
+  }
+
+  image_pf_n_ = pf_eta.size() > ARRAY_SIZE ? ARRAY_SIZE : pf_eta.size();
+  for ( size_t i = 0; i < image_pf_n_; ++i )  { 
+    image_pf_eta_[i] = pf_eta[i];
+    image_pf_phi_[i] = pf_phi[i];
+    image_pf_p_[i] = pf_p[i];
+    image_pf_pdgid_[i] = pf_pdgid[i];
+    image_pf_matched_[i] = pf_matched[i];
+    image_pf_lost_[i] = pf_lost[i];
+  }
+
 }
