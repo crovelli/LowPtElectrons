@@ -1,12 +1,12 @@
 import FWCore.ParameterSet.Config as cms
 
-ntuplizer = cms.EDAnalyzer(
+ntuplizer = cms.EDFilter( # cms.EDAnalyzer
     "IDNtuplizer",
     verbose = cms.int32(0),
     checkFromB = cms.bool(True),
     drMax = cms.double(0.1),
     drThreshold = cms.double(0.02),
-    prescale = cms.double(0.01),
+    prescale = cms.double(-2.94), # zero: no prescale, +ve: use 1/prescale, -ve: (poisson) mean number of fakes/event
     minTrackPt = cms.double(0.5),
     # Generic collections
     rho = cms.InputTag('fixedGridRhoFastjetAll'),
@@ -35,6 +35,8 @@ ntuplizer = cms.EDAnalyzer(
     mvaUnbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:unbiased"),
     mvaPtbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:ptbiased"),
     mvaValueLowPt = cms.InputTag('lowPtGsfElectronID'),
+    mvaValueLowPtDepth10 = cms.InputTag('lowPtGsfElectronIDExtra:depth10'),
+    mvaValueLowPtDepth15 = cms.InputTag('lowPtGsfElectronIDExtra:depth15'),
     # EGamma collections
     eleSeedsEGamma = cms.InputTag("electronMergedSeeds"), # AOD   # trackerDrivenElectronSeeds:SeedsForGsf
     gsfTracksEGamma = cms.InputTag("electronGsfTracks"), # AOD
@@ -42,7 +44,7 @@ ntuplizer = cms.EDAnalyzer(
     gsfElectronsEGamma = cms.InputTag("gedGsfElectrons"), # AOD
     patElectronsEGamma = cms.InputTag("slimmedElectrons"), # MINIAOD
     mvaValueEGamma = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17NoIsoV2Values'),
-    mvaIdEGamma = cms.InputTag('egmGsfElectronIDs:mvaEleID-Fall17-noIso-V2-wp90'), # wp80?
+    mvaValueEGammaRetrained = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainValues'),
     )
 
     #convVtxFitProb = cms.InputTag('electronMVAVariableHelper:convVtxFitProb'),
