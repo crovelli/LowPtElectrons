@@ -1,9 +1,9 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtraFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackExtra.h"
 #include "LowPtElectrons/LowPtElectrons/interface/RegFatNtuple.h"
-#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronIDHeavyObjectCache.h"
-#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronSeedHeavyObjectCache.h"
-#include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "RecoEgamma/EgammaElectronProducers/interface/LowPtGsfElectronFeatures.h"
+#include "CommonTools/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "CommonTools/BaseParticlePropagator/interface/RawParticle.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Common/interface/RefToPtr.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
@@ -646,9 +646,7 @@ void RegFatNtuple::fill_ele( const reco::GsfElectronPtr ele,
     if ( ele_conv_vtx_fit_prob > -666. ) { ele_conv_vtx_fit_prob_ = ele_conv_vtx_fit_prob; }
     
     // ElectronID variables
-    lowptgsfeleid::Features features;
-    features.set(ele,rho);
-    auto vfeatures = features.get();
+    std::vector<float> vfeatures;
     //@@ ORDER IS IMPORTANT!
     size_t idx = 0;
     eid_rho_ = vfeatures[idx++];
@@ -806,21 +804,20 @@ void RegFatNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele  ) {
   //  math::XYZVector field(field_->inTesla(GlobalPoint(0, 0, 0)));
   float field_z=3.8;
 
-  BaseParticlePropagator mypart(RawParticle(mom,pos), 0, 0, field_z);
-  mypart.setCharge(kfTrackRef->charge());
+  BaseParticlePropagator mypart(RawParticle(mom,pos,kfTrackRef->charge()), 0, 0, field_z);
   mypart.propagateToEcalEntrance(true); // true only first half loop , false more than one loop
   bool reach_ECAL=mypart.getSuccess(); // 0 does not reach ECAL, 1 yes barrel, 2 yes endcaps 
 
   // ECAL entry point for track
   // GlobalPoint ecal_pos(mypart.propagated().vertex().x(), mypart.propagated().vertex().y(), mypart.propagated().vertex().z());
-  GlobalPoint ecal_pos(mypart.x(), mypart.y(), mypart.z());
+  GlobalPoint ecal_pos(mypart.particle().vertex().x(), mypart.particle().vertex().y(), mypart.particle().vertex().z());
   // Preshower limit
   //  bool below_ps = pow(ecal_pos.z(), 2.) > boundary_ * ecal_pos.perp2();
   // Iterate through ECAL clusters
 
-  gsf_x_=mypart.x();
-  gsf_y_=mypart.y();
-  gsf_z_=mypart.z();
+  gsf_x_=mypart.particle().vertex().x();
+  gsf_y_=mypart.particle().vertex().y();
+  gsf_z_=mypart.particle().vertex().z();
 
   if(debug)std::cout<<"fill_supercl mini 3"<<std::endl; 
   if(debug)std::cout<<"fill_supercl mini 3 - size="<<sc->clustersSize()<<std::endl; 

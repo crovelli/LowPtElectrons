@@ -41,7 +41,8 @@
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "LowPtElectrons/LowPtElectrons/interface/RegFatPFNtuple.h"
-#include "FastSimulation/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "CommonTools/BaseParticlePropagator/interface/BaseParticlePropagator.h"
+#include "CommonTools/BaseParticlePropagator/interface/RawParticle.h"
 
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/CaloTopology/interface/CaloTopology.h"
@@ -959,13 +960,12 @@ bool RegFatPFNtuplizer::extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& et
 
   float field_z=3.8;
 
-  BaseParticlePropagator mypart(RawParticle(mom,pos), 0, 0, field_z);
-  mypart.setCharge(kfTrackRef->charge());
+  BaseParticlePropagator mypart(RawParticle(mom, pos, kfTrackRef->charge()), 0, 0, field_z);
   mypart.propagateToEcalEntrance(true); // true only first half loop , false more than one loop
   bool reach_ECAL=mypart.getSuccess(); // 0 does not reach ECAL, 1 yes barrel, 2 yes endcaps 
 
   // ECAL entry point for track
-  GlobalPoint ecal_pos(mypart.x(), mypart.y(), mypart.z());
+  GlobalPoint ecal_pos(mypart.particle().vertex().x(), mypart.particle().vertex().y(), mypart.particle().vertex().z());
 
   eta_ECAL=ecal_pos.eta();
   phi_ECAL=ecal_pos.phi();
