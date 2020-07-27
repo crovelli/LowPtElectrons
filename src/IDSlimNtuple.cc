@@ -179,6 +179,8 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("pre_ecaltrk",&pre_ecaltrk_);
   tree->Branch("post_ecal",&post_ecal_);
   tree->Branch("post_ecaltrk",&post_ecaltrk_);
+  tree->Branch("sc_raw_energy",&sc_raw_energy_);
+  tree->Branch("sc_energy",&sc_energy_);
 
   // Electron - further full 5x5 shower shapes
   if (largeNtuple) {
