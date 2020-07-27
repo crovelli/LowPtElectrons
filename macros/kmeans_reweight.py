@@ -45,7 +45,7 @@ if not os.path.isdir(plots):
 print 'Getting dataset "{:s}"...'.format(dataset)
 data = pd.DataFrame(
    get_data_sync(dataset, ['gen_pt', 'gen_eta', 'gen_dR',
-                           'trk_pt', 'trk_eta', 
+                           'gsf_mode_pt', 'gsf_mode_eta', 
                            'evt', 
                            'is_e', 'is_e_not_matched', 'is_other', 'is_egamma'])
 )
@@ -54,12 +54,12 @@ data = data[np.invert(data.is_egamma)]          # remove EGamma electrons
 data = data[np.invert(data.is_e_not_matched)]   # remove non-matched electrons
 mask = training_selection(data)                 # in dataset 
 data = data[mask]
-data['log_trkpt'] = np.log10(data.trk_pt)
+data['log_gsfmodept'] = np.log10(data.gsf_mode_pt)
 
 data['original_weight'] = 1. #np.invert(data.is_e)*original_weight.get_weight(data.log_trkpt, data.trk_eta)+data.is_e
 
 overall_scale = data.shape[0]/float(data.is_e.sum())
-reweight_feats = ['log_trkpt', 'trk_eta']
+reweight_feats = ['log_gsfmodept', 'gsf_mode_eta']
 
 print 'clustering...'
 from sklearn.cluster import KMeans, MiniBatchKMeans
@@ -101,8 +101,8 @@ print 'time for plots!'
 h = .01     # point in the mesh [x_min, x_max]x[y_min, y_max].
 
 # Plot the decision boundary. For that, we will assign a color to each
-x_min, x_max = data.log_trkpt.min() - 0.3, data.log_trkpt.max() + 0.3
-y_min, y_max = data.trk_eta.min() - 0.3  , data.trk_eta.max() + 0.3
+x_min, x_max = data.log_gsfmodept.min() - 0.3, data.log_gsfmodept.max() + 0.3
+y_min, y_max = data.gsf_mode_eta.min() - 0.3  , data.gsf_mode_eta.max() + 0.3
 xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
 # Obtain labels for each point in mesh. Use last trained model.
@@ -121,8 +121,8 @@ plt.imshow(
 plt.title('weighting by clustering')
 plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
-plt.xlabel(cosmetics.beauty['log_trkpt'])
-plt.ylabel(cosmetics.beauty['trk_eta'])
+##########plt.xlabel(cosmetics.beauty['log_gsfmodept'])
+##########plt.ylabel(cosmetics.beauty['gsf_mode_eta'])
 plt.plot()
 try : plt.savefig('%s/%s_clusters.png' % (plots, dataset))
 except : pass
@@ -142,8 +142,8 @@ plt.imshow(
 plt.title('weight')
 plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
-plt.xlabel(cosmetics.beauty['log_trkpt'])
-plt.ylabel(cosmetics.beauty['trk_eta'])
+###########plt.xlabel(cosmetics.beauty['log_gsfmodept'])
+###########plt.ylabel(cosmetics.beauty['gsf_mode_eta'])
 plt.colorbar()
 plt.plot()
 try : plt.savefig('%s/%s_clusters_weights.png' % (plots, dataset))
@@ -164,8 +164,8 @@ plt.imshow(
 plt.title('counts')
 plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
-plt.xlabel(cosmetics.beauty['log_trkpt'])
-plt.ylabel(cosmetics.beauty['trk_eta'])
+########plt.xlabel(cosmetics.beauty['log_gsfmodept'])
+########plt.ylabel(cosmetics.beauty['gsf_mode_eta'])
 plt.colorbar()
 plt.plot()
 try : plt.savefig('%s/%s_clusters_counts.png' % (plots, dataset))
@@ -199,7 +199,7 @@ try : plt.savefig('%s/%s_clustering_weights.pdf' % (plots, dataset))
 except : pass
 plt.clf()
 
-for plot in reweight_feats+['trk_pt']:
+for plot in reweight_feats+['gsf_mode_pt']:
    x_range = min(data[data.is_e][plot].min(), data[np.invert(data.is_e)][plot].min()), \
       max(data[data.is_e][plot].max(), data[np.invert(data.is_e)][plot].max())
    x_range = cosmetics.ranges.get(plot, x_range)

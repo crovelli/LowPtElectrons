@@ -1,9 +1,9 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
 #
-tag = '2020Jan30'
-posix = '2020Jan30'
-target_dataset = '2020Jan30'
+tag = '2020Jul26'
+posix = '2020Jul26'
+target_dataset = '2020Jul26'
 
 import socket
 path = ""
@@ -38,6 +38,14 @@ input_files['2020Jan24'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BdToKs
 input_files['2020Jan27'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BsToPhiJPsi_small/BsToPhiJPsi_small.root']
 input_files['2020Jan28'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BsToPhiee_small/BsToPhiee_small.root']
 input_files['2020Jan30'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKJpsiToee/BuToKJpsiToeeALL__normalizedVariables.root']
+input_files['2020Feb24'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL__normalized.root']
+input_files['2020Feb25'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/aod/BuToKJpsiToeeAOD__normalized.root']
+input_files['2020Jun5']  = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun__normalized.root']
+input_files['2020Jun25'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withRegression__normalized.root']
+input_files['2020Jun30'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun_withRegression__normalized.root']
+input_files['2020Jul08'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withRegression_largeBprescale__normalized.root']
+input_files['2020Jul20'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withNewRegression__normalized.root']
+input_files['2020Jul26'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withNewRegression_lastRound__normalized.root']
 
 #dataset_names = {
 #   'BToKee' : r'B $\to$ K ee',
@@ -112,7 +120,7 @@ def kmeans_weighter(features, fname):
 
 def training_selection(df,low=0.5,high=15.):
    #'ensures there is a GSF Track and a KTF track within eta/pt boundaries'
-   return (df.trk_pt > low) & (df.trk_pt < high) & (np.abs(df.trk_eta) < 2.4) & ( (df.gen_dR<=0.03) | (df.gen_dR>=0.1) ) 
+   return (df.gsf_mode_pt > low) & (np.abs(df.gsf_mode_eta) < 2.4) & ( (df.gen_dR<=0.03) | (df.gen_dR>=0.1) ) 
 
 import rootpy.plotting as rplt
 import root_numpy
@@ -146,14 +154,15 @@ import numpy as np
 def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):  
    mods = get_models_dir()
    features = list(set(features+['gen_pt', 'gen_eta', 'gen_dR',
-                                 'trk_pt', 'trk_eta',
+                                 'gsf_mode_pt', 'gsf_mode_eta',
                                  'gsf_pt', 'gsf_eta', 
                                  'eid_ele_pt', 'ele_eta', 
+                                 'sc_raw_energy','sc_energy',
                                  'evt', 'weight']))
 
    data_dict = get_data_sync(dataset, features) # path='features/tree')
    if 'is_e_not_matched' not in data_dict:
-      data_dict['is_e_not_matched'] = np.zeros(data_dict['trk_pt'].shape, dtype=bool)
+      data_dict['is_e_not_matched'] = np.zeros(data_dict['gsf_mode_pt'].shape, dtype=bool)
    multi_dim = {}
    for feat in ['gsf_ecal_cluster_ematrix', 'ktf_ecal_cluster_ematrix']:
       if feat in features:
@@ -195,9 +204,9 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
       inv_sip[np.isinf(inv_sip)] = 0
       data['trk_dxy_sig_inverted'] = inv_sip
    data['training_out'] = -1
-   log_trkpt = np.log10(data.trk_pt)
-   log_trkpt[np.isnan(log_trkpt)] = -9999
-   data['log_trkpt'] = log_trkpt
+   log_gsfmodept = np.log10(data.gsf_mode_pt)
+   log_gsfmodept[np.isnan(log_gsfmodept)] = -9999
+   data['log_gsfmodept'] = log_gsfmodept
    
    #apply pt-eta reweighting
    ## from hep_ml.reweight import GBReweighter
@@ -209,7 +218,7 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
       print 'I could not find the appropriate model, using the general instead'
       kmeans_model = '%s/kmeans_%s_weighter.pkl' % (mods, tag)
    weights = kmeans_weighter(
-      data[['log_trkpt', 'trk_eta']],
+      data[['log_gsfmodept', 'gsf_mode_eta']],
       kmeans_model
       )    
    data['weight'] = weights*np.invert(data.is_e) + data.is_e
@@ -258,3 +267,53 @@ def train_test_split(data, div, thr):
    mask = data.evt % div
    mask = mask < thr
    return data[mask], data[np.invert(mask)]
+
+def reduce_mem_usage(df):
+    """ 
+    iterate through all the columns of a dataframe and 
+    modify the data type to reduce memory usage.        
+    """
+    start_mem = df.memory_usage().sum() / 1024**2
+    print(('Memory usage of dataframe is {:.2f}' 
+                     'MB').format(start_mem))
+
+    print 'before'
+    print df
+    
+    for col in df.columns:
+        col_type = df[col].dtype
+        
+        print col
+
+        if col_type != object:
+            c_min = df[col].min()
+            c_max = df[col].max()
+            if str(col_type)[:3] == 'int':
+                if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
+                    df[col] = df[col].astype(np.int8)
+                elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                    df[col] = df[col].astype(np.int16)
+                elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                    df[col] = df[col].astype(np.int32)
+                elif c_min > np.iinfo(np.int64).min and c_max < np.iinfo(np.int64).max:
+                    df[col] = df[col].astype(np.int64)  
+            else:
+                if c_min > np.finfo(np.float16).min and c_max < np.finfo(np.float16).max:
+                    df[col] = df[col].astype(np.float16)
+                elif c_min > np.finfo(np.float32).min and c_max < np.finfo(np.float32).max:
+                    df[col] = df[col].astype(np.float32)
+                else:
+                    df[col] = df[col].astype(np.float64)
+        else:
+            df[col] = df[col].astype('category')    
+
+    end_mem = df.memory_usage().sum() / 1024**2
+    print(('Memory usage after optimization is: {:.2f}' 
+                              'MB').format(end_mem))
+    print('Decreased by {:.1f}%'.format(100 * (start_mem - end_mem) 
+                                             / start_mem))
+    
+    print 'after'
+    print df
+
+    return df
