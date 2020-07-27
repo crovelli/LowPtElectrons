@@ -91,14 +91,6 @@ public:
   // Utility methods
   template <typename T> bool validPtr( edm::Ptr<T>& ptr );
 
-  bool gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk );
-  bool gsfToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed );
-  bool seedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk );
-  //
-  bool egmToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk );    
-  bool egmToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed );  
-  bool egmSeedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk );  
-
   bool extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL);
   
 private:
@@ -349,15 +341,12 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // Low pT electrons
     const reco::GsfElectronPtr ele(gsfElectronsH_, electronlooper);
     
-    // filter candidates: there must be a trk with pT>0.5
+    // filter candidates: there must be a gsf with mode-pT>0.5
     reco::GsfTrackPtr gsf = edm::refToPtr(ele->gsfTrack());    
-    reco::TrackPtr trk;
-    if ( !validPtr(gsf) )     continue;     
-    if ( !gsfToTrk(gsf,trk) ) continue;
-    if ( !validPtr(trk) )     continue;
-    if ( trk->pt() < minTrackPt_ ) continue;
-    if ( trk->pt() > maxTrackPt_ ) continue;
-    if ( fabs(trk->eta()) > maxTrackEta_ ) continue;
+    if ( !validPtr(gsf) ) continue;     
+    reco::TrackRef trk = ele->closestCtfTrackRef();  
+    if ( gsf->ptMode() < minTrackPt_ ) continue;
+    if ( fabs(gsf->etaMode()) > maxTrackEta_ ) continue;
 
     // Work on the electron candidate
     TVector3 eleTV3(0,0,0);
@@ -450,23 +439,29 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
     // ---------------------------------
     // KTF track linked to electron
-    ntuple_.fill_trk (trk, *beamspotH_ );   
-    TVector3 trkTV3(0,0,0);
-    trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
-    ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
-    if (largeNtuple) { 
-      ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);
-      PdgIds::const_iterator pos = pdgids_.find(trk.key());
-      if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
-    }
-    if ( isAOD_ == 1 ) { 
-      if (largeNtuple) {
-	v_dEdx_.clear();
-	v_dEdx_.push_back(dEdx1H_.product());
-	ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
-      } else {
-	ntuple_.fill_trk_dEdx_default();
+    if ( trk.isNonnull() ) {
+      // ntuple_.fill_trk (trk, *beamspotH_ );   
+      TVector3 trkTV3(0,0,0);
+      trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
+      ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
+      /*
+      if (largeNtuple) { 
+	ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);
+	PdgIds::const_iterator pos = pdgids_.find(trk.key());
+	if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
       }
+      if ( isAOD_ == 1 ) { 
+	if (largeNtuple) {
+	  v_dEdx_.clear();
+	  v_dEdx_.push_back(dEdx1H_.product());
+	  ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
+	} else {
+	  ntuple_.fill_trk_dEdx_default();
+	}
+      }
+      */
+    } else {
+      ntuple_.trk_dr_ = -999.;
     }
 
     // fill how many tracks there are around first second and third supercluster within dR<0.1 
@@ -517,25 +512,58 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       }
     }
 
+    reco::SuperClusterRef scp = ele->superCluster(); 
+
     // correct variables thanks to regression
     if (useEnergyRegression) {
-      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal; 
-      ntuple_.eid_match_eclu_EoverP_=ntuple_.eid_match_eclu_EoverP_*post_ecal/pre_ecal;
-      ntuple_.eid_sc_E_=ntuple_.eid_sc_E_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverP_=ntuple_.match_seed_EoverP_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverPout_=ntuple_.match_seed_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.match_eclu_EoverPout_=ntuple_.match_eclu_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.sc_Et_=ntuple_.sc_Et_*post_ecal/pre_ecal;
-      ntuple_.sc_clus1_E_ov_E_=ntuple_.sc_clus1_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus2_E_ov_E_=ntuple_.sc_clus2_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus3_E_ov_E_=ntuple_.sc_clus3_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal;
+      ntuple_.eid_match_eclu_EoverP_=1/post_ecal-1/post_ecaltrk;
     }
     ntuple_.pre_ecal_=pre_ecal;
     ntuple_.pre_ecaltrk_=pre_ecaltrk;
     ntuple_.post_ecal_=post_ecal;
     ntuple_.post_ecaltrk_=post_ecaltrk;
+    ntuple_.sc_raw_energy_=scp->rawEnergy();
+    ntuple_.sc_energy_=scp->energy();
 
     tree_->Fill();
+
+    /*
+    std::cout << "Dumper" << std::endl;
+    std::cout << ntuple_.eid_rho_ << " " 
+	      << ntuple_.eid_sc_eta_ << " " 
+	      << ntuple_.eid_shape_full5x5_r9_ << " " 
+	      << ntuple_.eid_sc_etaWidth_ << " " 
+	      << ntuple_.eid_sc_phiWidth_ << " " 
+	      << ntuple_.eid_shape_full5x5_HoverE_ << " " 
+	      << ntuple_.eid_trk_nhits_ << " " 
+	      << ntuple_.eid_trk_chi2red_ << " " 
+	      << ntuple_.eid_gsf_chi2red_ << " " 
+	      << ntuple_.eid_brem_frac_ << " " 
+	      << ntuple_.eid_gsf_nhits_ << " " 
+	      << ntuple_.eid_match_SC_EoverP_ << " " 
+	      << ntuple_.eid_match_eclu_EoverP_ << " " 
+	      << ntuple_.eid_match_SC_dEta_ << " " 
+	      << ntuple_.eid_match_SC_dPhi_ << " " 
+	      << ntuple_.eid_match_seed_dEta_ << " " 
+	      << ntuple_.eid_sc_E_ << " " 
+	      << ntuple_.eid_trk_p_ << " " 
+	      << ntuple_.gsf_mode_p_ << " " 
+	      << ntuple_.core_shFracHits_ << " " 
+	      << ntuple_.seed_unbiased_ << " " 
+	      << ntuple_.gsf_dr_ << " " 
+	      << ntuple_.trk_dr_ << " " 
+	      << ntuple_.sc_Nclus_ << " " 
+	      << ntuple_.sc_clus1_nxtal_ << " " 
+	      << ntuple_.sc_clus1_dphi_ << " " 
+	      << ntuple_.sc_clus2_dphi_ << " " 
+	      << ntuple_.sc_clus1_deta_ << " " 
+	      << ntuple_.sc_clus2_deta_ << " " 
+	      << ntuple_.sc_clus1_E_ << " " 
+	      << ntuple_.sc_clus2_E_ << " " 
+	      << ntuple_.sc_clus1_E_ov_p_ << " " 
+	      << ntuple_.sc_clus2_E_ov_p_ << std::endl;
+    */
 
   } // electron looper
 
@@ -560,15 +588,12 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     // GSF electrons
     const reco::GsfElectronPtr ele(gsfElectronsEGammaH_, electronlooper);
 
-    // filter candidates: there must be a trk with pT>0.5   
+    // filter candidates: there must be a gsf with mode-pT>0.5
     reco::GsfTrackPtr gsf = edm::refToPtr(ele->gsfTrack());    
-    reco::TrackPtr trk;
     if ( !validPtr(gsf) )          continue;     
-    if ( !egmToTrk(gsf,trk) )      continue;
-    if ( !validPtr(trk) )          continue;
-    if ( trk->pt() < minTrackPt_ ) continue;
-    if ( trk->pt() > maxTrackPt_ ) continue;
-    if ( fabs(trk->eta()) > maxTrackEta_ ) continue;
+    reco::TrackRef trk = ele->closestCtfTrackRef(); 
+    if ( gsf->ptMode() < minTrackPt_ ) continue;
+    if ( fabs(gsf->etaMode()) > maxTrackEta_ ) continue;
 
     // Work on the electron candidate
     TVector3 eleTV3(0,0,0);
@@ -657,23 +682,29 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
     // ---------------------------------
     // KTF track linked to electron
-    ntuple_.fill_trk (trk, *beamspotH_ );   
-    TVector3 trkTV3(0,0,0);
-    trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
-    ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
-    if (largeNtuple) {
-      ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);  
-      PdgIds::const_iterator pos = pdgids_.find(trk.key());
-      if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
-    }
-    if ( isAOD_ == 1 ) { 
+    if ( trk.isNonnull() ) {
+      // ntuple_.fill_trk (trk, *beamspotH_ );   
+      TVector3 trkTV3(0,0,0);
+      trkTV3.SetPtEtaPhi(trk->pt(), trk->eta(), trk->phi());  
+      ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
+      /*
       if (largeNtuple) {
-	v_dEdx_.clear();
-	v_dEdx_.push_back(dEdx1H_.product());
-	ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
-      } else {
-	ntuple_.fill_trk_dEdx_default();
+	ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);  
+	PdgIds::const_iterator pos = pdgids_.find(trk.key());
+	if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
       }
+      if ( isAOD_ == 1 ) { 
+	if (largeNtuple) {
+	  v_dEdx_.clear();
+	  v_dEdx_.push_back(dEdx1H_.product());
+	  ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
+	} else {
+	  ntuple_.fill_trk_dEdx_default();
+	}
+	}
+      */
+    } else {
+      ntuple_.trk_dr_ = -999.;
     }
 
     // fill how many tracks there are around first second and third supercluster within dR<0.1 
@@ -724,18 +755,12 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       }
     }
 
+    reco::SuperClusterRef scp = ele->superCluster();  
+
     // correct variables thanks to regression
     if (useEnergyRegression) {    
-      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal; 
-      ntuple_.eid_match_eclu_EoverP_=ntuple_.eid_match_eclu_EoverP_*post_ecal/pre_ecal;
-      ntuple_.eid_sc_E_=ntuple_.eid_sc_E_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverP_=ntuple_.match_seed_EoverP_*post_ecal/pre_ecal;
-      ntuple_.match_seed_EoverPout_=ntuple_.match_seed_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.match_eclu_EoverPout_=ntuple_.match_eclu_EoverPout_*post_ecal/pre_ecal;
-      ntuple_.sc_Et_=ntuple_.sc_Et_*post_ecal/pre_ecal;
-      ntuple_.sc_clus1_E_ov_E_=ntuple_.sc_clus1_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus2_E_ov_E_=ntuple_.sc_clus2_E_ov_E_*post_ecal/pre_ecal;
-      ntuple_.sc_clus3_E_ov_E_=ntuple_.sc_clus3_E_ov_E_*post_ecal/pre_ecal;
+      ntuple_.eid_match_SC_EoverP_=ntuple_.eid_match_SC_EoverP_*post_ecal/pre_ecal;
+      ntuple_.eid_match_eclu_EoverP_=1/post_ecal-1/post_ecaltrk;
     }
     ntuple_.pre_ecal_=pre_ecal;
     ntuple_.pre_ecaltrk_=pre_ecaltrk;
@@ -981,238 +1006,6 @@ bool IDSlimNtuplizer::validPtr( edm::Ptr<T>& ptr ) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool IDSlimNtuplizer::gsfToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed ) {
-  if ( !validPtr(gsf) ) {
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR! GsfTrackPtr:"
-		<< " gsf.isNull(): " << gsf.isNull()
-		<< " gsf.isAvailable(): " << gsf.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  edm::RefToBase<TrajectorySeed> traj;
-  if ( gsf->extra().isNonnull() && gsf->extra().isAvailable() ) { 
-    traj = gsf->seedRef(); 
-  } else {
-    if ( verbose_ > 2 ) { // TrackExtra are not stored by default in MINIAOD
-      std::cout << "ERROR: TrackExtra:" 
-		<< " gsf->extra().isNull(): " << gsf->extra().isNull()
-		<< " gsf->extra().isAvailable(): " << gsf->extra().isAvailable()
-		<< std::endl; 
-    }
-    return false;
-  }
-  if ( traj.isNull() || !traj.isAvailable() ) { 
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR: TrajectorySeedRef:" 
-		<< " traj.isNull(): " << traj.isNull()
-		<< " traj.isAvailable(): " << traj.isAvailable()
-		<< std::endl; 
-    }
-    return false;
-  }
-  seed = edm::refToPtr(traj.castTo<reco::ElectronSeedRef>());
-  if ( !validPtr(seed) ) { 
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR! ElectronSeedPtr:"
-		<< " seed.isNull(): " << seed.isNull()
-		<< " seed.isAvailable(): " << seed.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-bool IDSlimNtuplizer::seedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk ) {
-  if ( !validPtr(seed) ) { 
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR! ElectronSeedPtr:"
-		<< " seed.isNull(): " << seed.isNull()
-		<< " seed.isAvailable(): " << seed.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  if ( !seed->isTrackerDriven() ) {
-    if ( verbose_ > 3 ) {
-      std::cout << "INFO! ElectronSeedPtr:"
-		<< " seed->isTrackerDriven(): " << seed->isTrackerDriven()
-		<< std::endl;
-    }
-  }
-  trk = edm::refToPtr(seed->ctfTrack());
-  if ( !validPtr(trk) ) { 
-    if ( verbose_ > 3 ) {
-      std::cout << "INFO! TrackPtr:"
-		<< " trk.isNull(): " << trk.isNull()
-		<< " trk.isAvailable(): " << trk.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  return true;
-}
-
-bool IDSlimNtuplizer::gsfToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {   
-
-  // Attempt to navigate via Seed (and TrackExtra) to Track
-  reco::ElectronSeedPtr seed;
-  if ( gsfToSeed(gsf,seed) && seedToTrk(seed,trk) ) { return true; }
-  
-  // ... if above fails (e.g. TrackExtra missing), attempt to use ...
-  if ( isAOD_ == 1 ) {
-    // ... track Association in AOD
-    reco::GsfTrackRef gsf_ref(gsfTracksH_,(unsigned long)gsf.key());
-    reco::TrackRef trk_ref = (*gsfTrackLinksH_)[gsf_ref];
-    trk = edm::refToPtr(trk_ref);
-    if ( validPtr(trk) ) { return true; }
-  } else if ( isAOD_ == 0 ) {
-    // ... "packedCand" Associations in MINIAOD
-    reco::GsfTrackRef gsf_ref(gsfTracksH_,(unsigned long)gsf.key());
-    pat::PackedCandidateRef packed_ref = (*packedCandLinksH_)[gsf_ref];
-    if ( packed_ref.isAvailable() && 
-	 packed_ref.isNonnull() && 
-	 packed_ref->bestTrack() != nullptr ) { 
-      trk = reco::TrackPtr(packed_ref->bestTrack(),packed_ref.key());
-      if ( validPtr(trk) ) { return true; }
-    }
-    // ... "lostTrack" Associations in MINIAOD
-    pat::PackedCandidateRef lost_ref = (*lostTrackLinksH_)[gsf_ref];
-    if ( lost_ref.isAvailable() && 
-	 lost_ref.isNonnull() && 
-	 lost_ref->bestTrack() != nullptr ) { 
-      trk = reco::TrackPtr(lost_ref->bestTrack(),lost_ref.key());
-      if ( validPtr(trk) ) { return true; }
-    }
-  }
-
-  return false;
-}
-
-bool IDSlimNtuplizer::egmToSeed( reco::GsfTrackPtr& gsf, reco::ElectronSeedPtr& seed ) {
-  if ( !validPtr(gsf) ) {
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR! GsfTrackPtr:"
-		<< " gsf.isNull(): " << gsf.isNull()
-		<< " gsf.isAvailable(): " << gsf.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  edm::RefToBase<TrajectorySeed> traj;
-  if ( gsf->extra().isNonnull() && gsf->extra().isAvailable() ) { 
-    traj = gsf->seedRef(); 
-  } else {
-    if ( verbose_ > 2 ) { // TrackExtra are not stored by default in MINIAOD
-      std::cout << "ERROR: TrackExtra:" 
-		<< " gsf->extra().isNull(): " << gsf->extra().isNull()
-		<< " gsf->extra().isAvailable(): " << gsf->extra().isAvailable()
-		<< std::endl; 
-    }
-    return false;
-  }
-  if ( traj.isNull() || !traj.isAvailable() ) { 
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR: TrajectorySeedRef:" 
-		<< " traj.isNull(): " << traj.isNull()
-		<< " traj.isAvailable(): " << traj.isAvailable()
-		<< std::endl; 
-    }
-    return false;
-  }
-  seed = edm::refToPtr(traj.castTo<reco::ElectronSeedRef>());
-  if ( !validPtr(seed) ) { 
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR! ElectronSeedPtr:"
-		<< " seed.isNull(): " << seed.isNull()
-		<< " seed.isAvailable(): " << seed.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-bool IDSlimNtuplizer::egmSeedToTrk( reco::ElectronSeedPtr& seed, reco::TrackPtr& trk ) {
-  if ( !validPtr(seed) ) { 
-    if ( verbose_ > 0 ) {
-      std::cout << "ERROR! ElectronSeedPtr:"
-		<< " seed.isNull(): " << seed.isNull()
-		<< " seed.isAvailable(): " << seed.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  if ( !seed->isTrackerDriven() ) {
-    if ( verbose_ > 3 ) {
-      std::cout << "INFO! ElectronSeedPtr:"
-		<< " seed->isTrackerDriven(): " << seed->isTrackerDriven()
-		<< std::endl;
-    }
-  }
-  trk = edm::refToPtr(seed->ctfTrack());
-  if ( !validPtr(trk) ) { 
-    if ( verbose_ > 3 ) {
-      std::cout << "INFO! TrackPtr:"
-		<< " trk.isNull(): " << trk.isNull()
-		<< " trk.isAvailable(): " << trk.isAvailable()
-		<< std::endl;
-    }
-    return false;
-  }
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-bool IDSlimNtuplizer::egmToTrk( reco::GsfTrackPtr& gsf, reco::TrackPtr& trk ) {   
-
-  // Attempt to navigate via Seed (and TrackExtra) to Track
-  reco::ElectronSeedPtr seed;
-  if ( egmToSeed(gsf,seed) && egmSeedToTrk(seed,trk) ) { // works for AOD 
-    return true; 
-  }
-
-  // ... if above fails (e.g. TrackExtra missing), attempt to use ...
-  if ( isAOD_ == 1 ) {
-    // ... track Association in AOD
-    reco::GsfTrackRef gsf_ref(gsfTracksEGammaH_,(unsigned long)gsf.key());
-    reco::TrackRef trk_ref = (*gsfTrackLinksH_)[gsf_ref];
-    trk = edm::refToPtr(trk_ref);
-    if ( validPtr(trk) ) { return true; }
-  } else if ( isAOD_ == 0 ) {
-    // last resort... try DR match 
-    float dRmin=99.0;
-    size_t iptr=0;
-    for ( auto& ptr : *packedCandsH_) {
-      if(ptr.bestTrack() == nullptr) { continue;}
-      reco::TrackPtr trkx(ptr.bestTrack(), iptr);
-      float dRcur=deltaR2(trkx->eta(),trkx->phi(),gsf->eta(),gsf->phi());
-      if(dRcur<dRmin){
-	dRmin=dRcur;
-	trk=trkx; 
-      }
-      ++iptr;
-    }
-    for ( auto& ptr : *lostTracksH_) {
-      if(ptr.bestTrack() == nullptr) { continue;}
-      reco::TrackPtr trkx(ptr.bestTrack(), iptr);
-      float dRcur=deltaR2(trkx->eta(),trkx->phi(),gsf->eta(),gsf->phi());
-      if(dRcur<dRmin){
-	dRmin=dRcur;
-	trk=trkx; 
-      }
-      ++iptr;
-    }
-
-    if(dRmin<99.0 && validPtr(trk)) return true;
-  }
-
-  return false;
-}
 
 bool IDSlimNtuplizer::extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL){
 
