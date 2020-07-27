@@ -273,6 +273,8 @@ class IDSlimNtuple {
   float pre_ecaltrk_  = IDSlimNtuple::NEG_FLOAT;
   float post_ecal_    = IDSlimNtuple::NEG_FLOAT;
   float post_ecaltrk_ = IDSlimNtuple::NEG_FLOAT;
+  float sc_raw_energy_= IDSlimNtuple::NEG_FLOAT;
+  float sc_energy_    = IDSlimNtuple::NEG_FLOAT;
 
   // SuperClusters 
   float sc_Et_  = IDSlimNtuple::NEG_FLOAT;
