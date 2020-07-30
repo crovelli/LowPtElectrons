@@ -169,7 +169,7 @@ class IDSlimNtuple {
   */
 
   // SuperClusters 
-  int sc_Nclus_ = IDSlimNtuple::NEG_INT;
+  float sc_Nclus_ = IDSlimNtuple::NEG_FLOAT;
 
   // When running on miniaod, only 3 highest ET clusters only
   float sc_clus1_E_      = IDSlimNtuple::NEG_FLOAT;
@@ -177,7 +177,7 @@ class IDSlimNtuple {
   float sc_clus1_E_ov_E_ = IDSlimNtuple::NEG_FLOAT;
   float sc_clus1_eta_    = IDSlimNtuple::NEG_FLOAT;
   float sc_clus1_phi_    = IDSlimNtuple::NEG_FLOAT;
-  int sc_clus1_nxtal_    = IDSlimNtuple::NEG_INT;
+  float sc_clus1_nxtal_  = IDSlimNtuple::NEG_FLOAT;
   float sc_clus1_dphi_   = IDSlimNtuple::NEG_FLOAT;
   float sc_clus1_deta_   = IDSlimNtuple::NEG_FLOAT;
   //
@@ -186,7 +186,7 @@ class IDSlimNtuple {
   float sc_clus2_E_ov_E_ = IDSlimNtuple::NEG_FLOAT;
   float sc_clus2_eta_    = IDSlimNtuple::NEG_FLOAT;
   float sc_clus2_phi_    = IDSlimNtuple::NEG_FLOAT;
-  int sc_clus2_nxtal_    = IDSlimNtuple::NEG_INT;
+  float sc_clus2_nxtal_  = IDSlimNtuple::NEG_FLOAT;
   float sc_clus2_dphi_   = IDSlimNtuple::NEG_FLOAT;
   float sc_clus2_deta_   = IDSlimNtuple::NEG_FLOAT;
   //
@@ -195,7 +195,7 @@ class IDSlimNtuple {
   float sc_clus3_E_ov_E_ = IDSlimNtuple::NEG_FLOAT;
   float sc_clus3_eta_    = IDSlimNtuple::NEG_FLOAT;
   float sc_clus3_phi_    = IDSlimNtuple::NEG_FLOAT;
-  int sc_clus3_nxtal_    = IDSlimNtuple::NEG_INT;
+  float sc_clus3_nxtal_  = IDSlimNtuple::NEG_FLOAT;
   float sc_clus3_dphi_   = IDSlimNtuple::NEG_FLOAT;
   float sc_clus3_deta_   = IDSlimNtuple::NEG_FLOAT;
 };
