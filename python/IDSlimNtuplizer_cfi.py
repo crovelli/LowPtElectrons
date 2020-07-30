@@ -32,11 +32,4 @@ ntuplizer = cms.EDAnalyzer(
     mvaPtbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:ptbiased"),
     mvaValueLowPt = cms.InputTag('lowPtGsfElectronID'),
     dEdx1Tag = cms.InputTag('dedxHarmonic2'),
-    # EGamma collections
-    gsfTracksEGamma = cms.InputTag("electronGsfTracks"),                   # AOD
-    gsfTracksEGamma_MAOD = cms.InputTag("reducedEgamma:reducedGsfTracks"), # MINIAOD
-    gsfElectronsEGamma = cms.InputTag("gedGsfElectrons"),                  # AOD
-    patElectronsEGamma = cms.InputTag("slimmedElectrons"),                 # MINIAOD
-    mvaValueEGamma = cms.InputTag('electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17NoIsoV2Values'),
-    mvaIdEGamma = cms.InputTag('egmGsfElectronIDs:mvaEleID-Fall17-noIso-V2-wp90'), # wp80?
 )
