@@ -32,6 +32,8 @@ class normalizeVar{
   Float_t         gsf_pt;
   Float_t         gsf_bdtout1;
   Float_t         gsf_mode_p;
+  Float_t         gsf_mode_pt;
+  Float_t         gsf_mode_eta;
   Float_t         gsf_eta;
   Float_t         trk_dr;
   Float_t         trk_pt;
@@ -106,6 +108,8 @@ class normalizeVar{
   Float_t         pre_ecaltrk;
   Float_t         post_ecal;
   Float_t         post_ecaltrk;
+  Float_t         sc_raw_energy;
+  Float_t         sc_energy;
   Int_t type;
 
 };

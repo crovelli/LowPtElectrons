@@ -11,14 +11,14 @@ using namespace std;
 
 void normalizeVar::train() {
 
-  const char *origfname = "/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun_withRegression.root";
+  const char *origfname = "../../run/output_fromMINIAOD_slim.root";
   
   TFile *origInput = 0;
   origInput = TFile::Open(origfname);
   if (!origInput) return;
   std::cout << "just opened your file" << std::endl;
 
-  TDirectory *dir = (TDirectory*)origInput->Get("/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun_withRegression.root:/ntuplizer");
+  TDirectory *dir = (TDirectory*)origInput->Get("../../run/output_fromMINIAOD_slim.root:/ntuplizer");
   TTree *fChain ; 
   dir->GetObject("tree",fChain);
   std::cout << "just taken your tree" << std::endl;
@@ -42,6 +42,8 @@ void normalizeVar::train() {
   fChain->SetBranchAddress("gsf_pt", &gsf_pt);
   fChain->SetBranchAddress("gsf_bdtout1", &gsf_bdtout1);
   fChain->SetBranchAddress("gsf_mode_p", &gsf_mode_p);
+  fChain->SetBranchAddress("gsf_mode_pt", &gsf_mode_pt);
+  fChain->SetBranchAddress("gsf_mode_eta", &gsf_mode_eta);
   fChain->SetBranchAddress("gsf_eta", &gsf_eta);
   fChain->SetBranchAddress("trk_dr", &trk_dr);
   fChain->SetBranchAddress("trk_pt", &trk_pt);
@@ -116,7 +118,9 @@ void normalizeVar::train() {
   fChain->SetBranchAddress("pre_ecaltrk",&pre_ecaltrk);
   fChain->SetBranchAddress("post_ecal",&post_ecal);
   fChain->SetBranchAddress("post_ecaltrk",&post_ecaltrk);
-  
+  fChain->SetBranchAddress("sc_raw_energy",&sc_raw_energy);
+  fChain->SetBranchAddress("sc_energy",&sc_energy);
+
   // New tree
   TFile *fileNew = TFile::Open("/tmp/simu_shortLP.root","RECREATE");     
   fileNew->ls();
@@ -144,6 +148,8 @@ void normalizeVar::train() {
   simu->Branch("gsf_pt", &gsf_pt, "gsf_pt/f");
   simu->Branch("gsf_bdtout1", &gsf_bdtout1, "gsf_bdtout1/f");
   simu->Branch("gsf_mode_p", &gsf_mode_p, "gsf_mode_p/f");
+  simu->Branch("gsf_mode_pt", &gsf_mode_pt, "gsf_mode_pt/f");
+  simu->Branch("gsf_mode_eta", &gsf_mode_eta, "gsf_mode_eta/f");
   simu->Branch("gsf_eta", &gsf_eta, "gsf_eta/f");
   simu->Branch("trk_dr", &trk_dr, "trk_dr/f");
   simu->Branch("trk_pt", &trk_pt, "trk_pt/f");
@@ -218,6 +224,8 @@ void normalizeVar::train() {
   simu->Branch("pre_ecaltrk", &pre_ecaltrk, "pre_ecaltrk/F");
   simu->Branch("post_ecal", &post_ecal, "post_ecal/F");
   simu->Branch("post_ecaltrk", &post_ecaltrk, "post_ecaltrk/F");
+  simu->Branch("sc_raw_energy",&sc_raw_energy,"sc_raw_energy/F");
+  simu->Branch("sc_energy",&sc_energy,"sc_energy/F");
 
   simu->Branch("type",   &type,   "type/I");
 
@@ -243,6 +251,10 @@ void normalizeVar::normalize(){
 
   if(gsf_mode_p<0) gsf_mode_p=0;
   if(gsf_mode_p>1000) gsf_mode_p=1000;
+  if(gsf_mode_pt<0) gsf_mode_pt=0;
+  if(gsf_mode_pt>1000) gsf_mode_pt=1000;
+  if(gsf_mode_eta<-5) gsf_mode_eta=-5;
+  if(gsf_mode_eta>5) gsf_mode_eta=5;
   if(eid_rho<0) eid_rho=0;
   if(eid_rho>100) eid_rho=100;
   if(eid_ele_pt<0) eid_ele_pt=0;
@@ -275,9 +287,8 @@ void normalizeVar::normalize(){
   if(eid_gsf_nhits>50) eid_gsf_nhits=50;
   if(eid_match_SC_EoverP<0) eid_match_SC_EoverP=0;
   if(eid_match_SC_EoverP>100) eid_match_SC_EoverP=100;
-  if(eid_match_eclu_EoverP<-0.001) eid_match_eclu_EoverP=-0.001;
-  if(eid_match_eclu_EoverP>0.001) eid_match_eclu_EoverP=0.001;
-  eid_match_eclu_EoverP=eid_match_eclu_EoverP*1.E7;
+  if(eid_match_eclu_EoverP<-1.) eid_match_eclu_EoverP=-1.;
+  if(eid_match_eclu_EoverP>1.) eid_match_eclu_EoverP=1.;
   if(eid_match_SC_dEta<-10)eid_match_SC_dEta=-10;
   if(eid_match_SC_dEta>10)eid_match_SC_dEta=10;
   if(eid_match_SC_dPhi<-3.14)eid_match_SC_dPhi=-3.14;
@@ -341,6 +352,10 @@ void normalizeVar::normalize(){
   if(post_ecal>1000) post_ecal=1000;
   if(post_ecaltrk<0) post_ecaltrk=0;
   if(post_ecaltrk>1000) post_ecaltrk=1000;
+  if(sc_raw_energy<0) sc_raw_energy=0;
+  if(sc_raw_energy>1000) sc_raw_energy=1000;
+  if(sc_energy<0) sc_energy=0;
+  if(sc_energy>1000) sc_energy=1000;
 
 }
 
