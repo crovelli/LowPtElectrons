@@ -109,7 +109,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("brem_N",&brem_N_,"brem_N/I"); 
 
   // SuperCluster associated to the electron
-  tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/I"); 
+  tree->Branch("sc_Nclus",&sc_Nclus_,"sc_Nclus/F"); 
 
   // Clusters making the SC 
   tree->Branch("sc_clus1_E",      &sc_clus1_E_,      "sc_clus1_E/F");
@@ -117,27 +117,27 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("sc_clus1_E_ov_E", &sc_clus1_E_ov_E_, "sc_clus1_E_ov_E/F");
   tree->Branch("sc_clus1_eta",    &sc_clus1_eta_,    "sc_clus1_eta/F");
   tree->Branch("sc_clus1_phi",    &sc_clus1_phi_,    "sc_clus1_phi/F");
-  tree->Branch("sc_clus1_nxtal",  &sc_clus1_nxtal_,  "sc_clus1_nxtal/I");
+  tree->Branch("sc_clus1_nxtal",  &sc_clus1_nxtal_,  "sc_clus1_nxtal/F");
   tree->Branch("sc_clus1_dphi",   &sc_clus1_dphi_,   "sc_clus1_dphi/F");
   tree->Branch("sc_clus1_deta",   &sc_clus1_deta_,   "sc_clus1_deta/F");
   //
-  tree->Branch("sc_clus2_E",      &sc_clus2_E_,    "sc_clus2_E/F");
-  tree->Branch("sc_clus2_E_ov_p", &sc_clus2_E_ov_p_,     "sc_clus2_E_ov_p/F");
-  tree->Branch("sc_clus2_E_ov_E", &sc_clus2_E_ov_E_,     "sc_clus2_E_ov_E/F");
-  tree->Branch("sc_clus2_eta",    &sc_clus2_eta_,  "sc_clus2_eta/F");
-  tree->Branch("sc_clus2_phi",    &sc_clus2_phi_,  "sc_clus2_phi/F");
-  tree->Branch("sc_clus2_nxtal",  &sc_clus2_nxtal_, "sc_clus2_nxtal/I");
-  tree->Branch("sc_clus2_dphi",   &sc_clus2_dphi_,  "sc_clus2_dphi/F");
-  tree->Branch("sc_clus2_deta",   &sc_clus2_deta_,  "sc_clus2_deta/F");
+  tree->Branch("sc_clus2_E",      &sc_clus2_E_,      "sc_clus2_E/F");
+  tree->Branch("sc_clus2_E_ov_p", &sc_clus2_E_ov_p_, "sc_clus2_E_ov_p/F");
+  tree->Branch("sc_clus2_E_ov_E", &sc_clus2_E_ov_E_, "sc_clus2_E_ov_E/F");
+  tree->Branch("sc_clus2_eta",    &sc_clus2_eta_,    "sc_clus2_eta/F");
+  tree->Branch("sc_clus2_phi",    &sc_clus2_phi_,    "sc_clus2_phi/F");
+  tree->Branch("sc_clus2_nxtal",  &sc_clus2_nxtal_,  "sc_clus2_nxtal/F");
+  tree->Branch("sc_clus2_dphi",   &sc_clus2_dphi_,   "sc_clus2_dphi/F");
+  tree->Branch("sc_clus2_deta",   &sc_clus2_deta_,   "sc_clus2_deta/F");
   //
-  tree->Branch("sc_clus3_E",      &sc_clus3_E_,    "sc_clus3_E/F");
-  tree->Branch("sc_clus3_E_ov_p", &sc_clus3_E_ov_p_,     "sc_clus3_E_ov_p/F");
-  tree->Branch("sc_clus3_E_ov_E", &sc_clus3_E_ov_E_,     "sc_clus3_E_ov_E/F");
-  tree->Branch("sc_clus3_eta",    &sc_clus3_eta_,  "sc_clus3_eta/F");
-  tree->Branch("sc_clus3_phi",    &sc_clus3_phi_,  "sc_clus3_phi/F");
-  tree->Branch("sc_clus3_nxtal",  &sc_clus3_nxtal_, "sc_clus3_nxtal/I");
-  tree->Branch("sc_clus3_dphi",   &sc_clus3_dphi_,  "sc_clus3_dphi/F");
-  tree->Branch("sc_clus3_deta",   &sc_clus3_deta_,  "sc_clus3_deta/F");
+  tree->Branch("sc_clus3_E",      &sc_clus3_E_,      "sc_clus3_E/F");
+  tree->Branch("sc_clus3_E_ov_p", &sc_clus3_E_ov_p_, "sc_clus3_E_ov_p/F");
+  tree->Branch("sc_clus3_E_ov_E", &sc_clus3_E_ov_E_, "sc_clus3_E_ov_E/F");
+  tree->Branch("sc_clus3_eta",    &sc_clus3_eta_,    "sc_clus3_eta/F");
+  tree->Branch("sc_clus3_phi",    &sc_clus3_phi_,    "sc_clus3_phi/F");
+  tree->Branch("sc_clus3_nxtal",  &sc_clus3_nxtal_,  "sc_clus3_nxtal/F");
+  tree->Branch("sc_clus3_dphi",   &sc_clus3_dphi_,   "sc_clus3_dphi/F");
+  tree->Branch("sc_clus3_deta",   &sc_clus3_deta_,   "sc_clus3_deta/F");
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -311,7 +311,7 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   sc_clus2_E_ov_E_ = -999.;      
   sc_clus2_eta_    = -999.;
   sc_clus2_phi_    = -999.;
-  sc_clus2_nxtal_  = -999;
+  sc_clus2_nxtal_  = -999.;
   //sc_clus2_deta_   = -999.;
   //sc_clus2_dphi_   = -999.;
   sc_clus3_E_      = -999.;
@@ -319,7 +319,7 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
   sc_clus3_E_ov_E_ = -999.;      
   sc_clus3_eta_    = -999.;
   sc_clus3_phi_    = -999.;
-  sc_clus3_nxtal_  = -999;
+  sc_clus3_nxtal_  = -999.;
   sc_clus3_deta_   = -999.;
   sc_clus3_dphi_   = -999.;
   // sc_Nclus_        = -999;
@@ -452,7 +452,7 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 	  if( eleScEne>0)  sc_clus1_E_ov_E_ = cluster->energy()/eleScEne;
 	  sc_clus1_eta_   = cluster->eta();
 	  sc_clus1_phi_   = cluster->phi();
-	  // sc_clus1_nxtal_ =(int) cluster->size();
+	  // sc_clus1_nxtal_ = (float)cluster->size();
 	  // std::cout << "HAND: sc_clus1_nxtal_ = " << sc_clus1_nxtal_ << std::endl;
 	  // if(reach_ECAL>0){
 	  //sc_clus1_deta_ = deta;
@@ -469,7 +469,7 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 	  if( eleScEne>0)  sc_clus2_E_ov_E_ = cluster->energy()/eleScEne;
 	  sc_clus2_eta_   = cluster->eta();
 	  sc_clus2_phi_   = cluster->phi();
-	  sc_clus2_nxtal_ = (int) cluster->size();
+	  sc_clus2_nxtal_ = (float)cluster->size();
 	  //if(reach_ECAL>0){
 	  //sc_clus2_deta_ = deta;
 	  //sc_clus2_dphi_ = dphi;
@@ -483,7 +483,7 @@ void IDSlimNtuple::fill_supercluster_miniAOD(const reco::GsfElectronPtr ele ) {
 	  if( eleScEne>0)  sc_clus3_E_ov_E_ = cluster->energy()/eleScEne;
 	  sc_clus3_eta_   = cluster->eta();
 	  sc_clus3_phi_   = cluster->phi();
-	  sc_clus3_nxtal_ = (int) cluster->size();
+	  sc_clus3_nxtal_ = (float)cluster->size();
 	  if(reach_ECAL>0){
 	    sc_clus3_deta_ = deta;
 	    sc_clus3_dphi_ = dphi;
