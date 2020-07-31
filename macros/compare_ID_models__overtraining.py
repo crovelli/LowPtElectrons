@@ -14,7 +14,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from sklearn.externals import joblib
 import xgboost as xgb
 from datasets import HistWeighter
-from xgbo.xgboost2tmva import convert_model
 from itertools import cycle
 from sklearn.metrics import roc_curve , roc_auc_score
 
@@ -30,30 +29,28 @@ def get_model(pkl):
 
 # test dataset
 test = pd.read_hdf(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/bdt_cmssw_mva_id_nnclean2___paramMauro/'
+    'models/2020Jul26/bdt_cmssw_mva_id_nnclean2_weights2versione/'
     '/bdt_cmssw_mva_id_nnclean2_testdata.hdf', key='data')
 test = test[np.invert(test.is_egamma)] 
-test = test[np.invert(abs(test.trk_eta)>=2.4)] 
-test = test[np.invert(test.trk_pt<0.5)] 
-test = test[np.invert(test.trk_pt>15.)] 
+test = test[np.invert(abs(test.gsf_mode_eta)>=2.4)] 
+test = test[np.invert(test.gsf_mode_pt<0.5)] 
 print "test dataset done"
 print test.size
 
 # train dataset
 train = pd.read_hdf(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/bdt_cmssw_mva_id_nnclean2___paramMauro/'
+    'models/2020Jul26/bdt_cmssw_mva_id_nnclean2_weights2versione/'
     '/bdt_cmssw_mva_id_nnclean2_traindata.hdf', key='data')
 train = train[np.invert(train.is_egamma)] 
-train = train[np.invert(abs(train.trk_eta)>=2.4)] 
-train = train[np.invert(train.trk_pt<0.5)] 
-train = train[np.invert(train.trk_pt>15.)] 
+train = train[np.invert(abs(train.gsf_mode_eta)>=2.4)] 
+train = train[np.invert(train.gsf_mode_pt<0.5)] 
 print "train dataset done"
 print train.size
 
 # variables
 base = get_model(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsJan30/BuToKJpsiToee_renorm/bdt_cmssw_mva_id_nnclean2___paramMauro/'
-    '/2020Jan30__cmssw_mva_id_nnclean2_BDT.pkl')
+    'models/2020Jul26/bdt_cmssw_mva_id_nnclean2_weights2versione/'
+    '/2020Jul26__cmssw_mva_id_nnclean2_BDT.pkl')
 based_features, _ = get_features('cmssw_mva_id_nnclean2')
 
 # on test

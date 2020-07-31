@@ -14,7 +14,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from sklearn.externals import joblib
 import xgboost as xgb
 from datasets import HistWeighter
-from xgbo.xgboost2tmva import convert_model
 from itertools import cycle
 from sklearn.metrics import roc_curve , roc_auc_score
 
@@ -33,9 +32,9 @@ test = pd.read_hdf(
     '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2___paramRob/'
     '/bdt_cmssw_mva_id_nnclean2_testdata.hdf', key='data')
 test = test[np.invert(test.is_egamma)] 
-test = test[np.invert(abs(test.trk_eta)>=2.4)] 
-test = test[np.invert(test.trk_pt<0.5)] 
-test = test[np.invert(test.trk_pt>15.)] 
+test = test[np.invert(abs(test.gsf_mode_eta)>=2.4)] 
+test = test[np.invert(test.gsf_mode_pt<0.5)] 
+
 print test.size
 
 # default variables
@@ -90,9 +89,7 @@ plt.plot(
 plt.plot(base_roc[0][:-1], base_roc[1][:-1], 
          linestyle='solid', 
          color='black', 
-#         label='Aug22 variables (AUC: %.3f)' %base_auc)
          label='Aug22 hyperpar (AUC: %.3f)' %base_auc)
-#         label='Extended set (AUC: %.3f)' %base_auc)
 
 plt.plot(ecal_roc[0][:-1], ecal_roc[1][:-1], 
          linestyle='dashed', 
