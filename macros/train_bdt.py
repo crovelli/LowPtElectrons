@@ -16,11 +16,11 @@ parser.add_argument(
    '--jobtag', default='', type=str
 )
 parser.add_argument(
-   '--ntrees', default=500, type=int                # chiara: era 100. Io sempre usato 500; Rob 2000
+   '--ntrees', default=700, type=int               # chiara: era 100. Io sempre usato 500; Rob 2000; Per modello finale 700
 )
 
 parser.add_argument(
-   '--depth', default=10, type=int                  # chiara: era 4; def = 6; Io ho sempre usato 10; Rob/Mauro: 15
+   '--depth', default=13, type=int                  # chiara: era 4; def = 6; Io ho sempre usato 10; Rob/Mauro: 15; Per modello finale 13
 )
 parser.add_argument(
    '--lrate', default=0.1, type=float     
@@ -45,7 +45,7 @@ parser.add_argument(
    '--reg_alpha', default=0.0, type=float
 )
 parser.add_argument(
-   '--reg_lambda', default=1, type=float          # chiara: default 1, sempre usato nei miei test; mauro 9.99999999862; rob: 2.112612055963768
+   '--reg_lambda', default=2.112612055963768, type=float          # chiara: default 1, sempre usato nei miei test; mauro 9.99999999862; rob: 2.112612055963768
 )
 parser.add_argument(
    '--nthreads', default=8, type=int
@@ -105,7 +105,7 @@ import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
-from datasets import tag, pre_process_data, target_dataset, get_models_dir, train_test_split
+from datasets import tag, pre_process_data, target_dataset, get_models_dir, train_test_split, reduce_mem_usage
 import os
 
 dataset = 'test' if args.test else target_dataset
@@ -153,6 +153,10 @@ if not dataset.endswith('.hdf'): # if not args.load_model :
 
    if args.noweight:
       data['weight'] = 1
+
+   # chiara   
+   ####reduce_mem_usage(data)
+
    train_test, validation = train_test_split(data, 10, 8)
    train, test = train_test_split(train_test, 10, 6)
    validation.to_hdf(
@@ -233,6 +237,7 @@ elif not args.load_model :
    clf.fit(
       train[features].as_matrix(), 
       train.is_e.as_matrix().astype(int), 
+      #####xgb_model='/tmp/crovelli/models/checkpoints/2020Jun5__cmssw_mva_id_nnclean2_BDT.pkl',
       sample_weight=train.weight.as_matrix(),
       **early_stop_kwargs
    )
