@@ -1,9 +1,9 @@
 from glob import glob
 #A single place where to bookkeep the dataset file locations
 #
-tag = '2020Jul26'
-posix = '2020Jul26'
-target_dataset = '2020Jul26'
+tag = '2020Nov27UL17'
+posix = '2020Nov27UL17'
+target_dataset = '2020Nov27UL17'
 
 import socket
 path = ""
@@ -46,6 +46,7 @@ input_files['2020Jun30'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/
 input_files['2020Jul08'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withRegression_largeBprescale__normalized.root']
 input_files['2020Jul20'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withNewRegression__normalized.root']
 input_files['2020Jul26'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withNewRegression_lastRound__normalized.root']
+input_files['2020Nov27UL17'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_UL17/BuToKJpsiToee_UL17_AOD__prescale0d15.root'] 
 
 #dataset_names = {
 #   'BToKee' : r'B $\to$ K ee',
@@ -156,7 +157,7 @@ def pre_process_data(dataset, features, for_seeding=False, keep_nonmatch=False):
    features = list(set(features+['gen_pt', 'gen_eta', 'gen_dR',
                                  'gsf_mode_pt', 'gsf_mode_eta',
                                  'gsf_pt', 'gsf_eta', 
-                                 'eid_ele_pt', 'ele_eta', 
+                                 'ele_pt', 'ele_eta', 
                                  'sc_raw_energy','sc_energy',
                                  'evt', 'weight']))
 

@@ -6,7 +6,8 @@ ntuplizer = cms.EDAnalyzer(
     "IDSlimNtuplizer",
     verbose = cms.int32(0),
     checkFromB = cms.bool(True),
-    prescale = cms.double(0.15),            # JPsi usual
+######    prescale = cms.double(0.15),            # JPsi usual
+    prescale = cms.double(0.30),      
 #    prescale = cms.double(0.05),            # DoubleEle
     minTrackPt = cms.double(0.5),  
     maxTrackPt = cms.double(15.),  

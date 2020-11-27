@@ -1,5 +1,7 @@
 import numpy as np
-import matplotlib
+import matplotlib 
+import matplotlib.font_manager
+
 matplotlib.use('Agg')
 from argparse import ArgumentParser
 import os
@@ -27,7 +29,7 @@ import pandas as pd
 from matplotlib import rc
 from pdb import set_trace
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-rc('text', usetex=True)
+##############rc('text', usetex=True)
 from datasets import tag, apply_weight, get_data_sync, target_dataset, HistWeighter, training_selection
 import os
 dataset = 'test' if args.test else target_dataset

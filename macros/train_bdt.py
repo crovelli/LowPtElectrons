@@ -16,11 +16,11 @@ parser.add_argument(
    '--jobtag', default='', type=str
 )
 parser.add_argument(
-   '--ntrees', default=700, type=int               # chiara: era 100. Io sempre usato 500; Rob 2000; Per modello finale 700
+   '--ntrees', default=1000, type=int               # default 100
 )
 
 parser.add_argument(
-   '--depth', default=13, type=int                  # chiara: era 4; def = 6; Io ho sempre usato 10; Rob/Mauro: 15; Per modello finale 13
+   '--depth', default=15, type=int                  # was 4; def = 6
 )
 parser.add_argument(
    '--lrate', default=0.1, type=float     
@@ -45,7 +45,7 @@ parser.add_argument(
    '--reg_alpha', default=0.0, type=float
 )
 parser.add_argument(
-   '--reg_lambda', default=2.112612055963768, type=float          # chiara: default 1, sempre usato nei miei test; mauro 9.99999999862; rob: 2.112612055963768
+   '--reg_lambda', default=1., type=float          # default 1
 )
 parser.add_argument(
    '--nthreads', default=8, type=int
