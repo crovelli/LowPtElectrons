@@ -11,7 +11,7 @@
 <use name="RecoEgamma/EgammaElectronProducers"/>
 <use name="Geometry/CaloGeometry"/>
 <use name="Geometry/CaloTopology"/>
-<use name="FastSimulation/BaseParticlePropagator"/>
+<use name="CommonTools/BaseParticlePropagator"/>
 <use name="CommonTools/CandAlgos"/>
 <use name="root"/>
 <export>

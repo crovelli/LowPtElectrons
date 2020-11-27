@@ -16,7 +16,7 @@
 <use name="DataFormats/TrajectorySeed"/>
 <use name="DataFormats/TrackCandidate"/>
 <use name="DataFormats/TrackReco"/>
-<use name="FastSimulation/BaseParticlePropagator"/>
+<use name="CommonTools/BaseParticlePropagator"/>
 <use name="FWCore/Common"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/MessageLogger"/>
@@ -36,7 +36,6 @@
 <use name="TrackingTools/TrackFitters"/>
 <use name="TrackingTools/TransientTrack"/>
 <use name="TrackingTools/Records"/>
-<use name="EcalReconstruction/EcalTools"/>
 <use name="root"/>
 
 <flags CXXFLAGS="-g"/>  
