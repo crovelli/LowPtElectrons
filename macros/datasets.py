@@ -1,9 +1,9 @@
 from glob import glob
-#A single place where to bookkeep the dataset file locations
+#A single place where to bookkeep the dataset file locations 
 #
-tag = '2020Nov27UL17'
-posix = '2020Nov27UL17'
-target_dataset = '2020Nov27UL17'
+tag = '2020Nov28ULALL'
+posix = '2020Nov28ULALL'
+target_dataset = '2020Nov28ULALL'
 
 import socket
 path = ""
@@ -30,23 +30,10 @@ input_files['limited'] = [j for i, j in enumerate(input_files['all']) if i % 2]
 # chiara: questa parte non funziona con i nuovi formati di store (non sono divisi per dataset)
 
 # datasets
-input_files['2019Dec16'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch3/BuToKJpsiToee_all_onlyLowPt__genDR0d03.root']
-input_files['2019Dec17'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch3/BuToKJpsiToee_all.root']
-input_files['2020Jan20'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKJpsiToee/BuToKJpsiToeeALL.root']
-input_files['2020Jan23'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKee/BuToKeeALL.root']
-input_files['2020Jan24'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BdToKstaree/BdToKstareeALL.root']
-input_files['2020Jan27'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BsToPhiJPsi_small/BsToPhiJPsi_small.root']
-input_files['2020Jan28'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BsToPhiee_small/BsToPhiee_small.root']
-input_files['2020Jan30'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch4/BuToKJpsiToee/BuToKJpsiToeeALL__normalizedVariables.root']
-input_files['2020Feb24'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL__normalized.root']
-input_files['2020Feb25'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/aod/BuToKJpsiToeeAOD__normalized.root']
-input_files['2020Jun5']  = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun__normalized.root']
-input_files['2020Jun25'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withRegression__normalized.root']
-input_files['2020Jun30'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/DoubleElectronGun_withRegression__normalized.root']
-input_files['2020Jul08'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withRegression_largeBprescale__normalized.root']
-input_files['2020Jul20'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withNewRegression__normalized.root']
-input_files['2020Jul26'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_Aug22/miniaod/BuToKJpsiToeeALL_withNewRegression_lastRound__normalized.root']
-input_files['2020Nov27UL17'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_UL17/BuToKJpsiToee_UL17_AOD__prescale0d15.root'] 
+input_files['2020Nov28UL16'] = ['/cmshome/rovelch/dataB/UL/BuToKJpsiToee_UL16_AOD__prescale0d30.root']
+input_files['2020Nov28UL17'] = ['/cmshome/rovelch/dataB/UL/BuToKJpsiToee_UL17_AOD__prescale0d30.root']
+input_files['2020Nov28UL18'] = ['/cmshome/rovelch/dataB/UL/BuToKJpsiToee_UL18_AOD__prescale0d30.root']
+input_files['2020Nov28ULALL'] = ['/cmshome/rovelch/dataB/UL/BuToKJpsiToee_ULALL_AOD__prescale0d30.root']
 
 #dataset_names = {
 #   'BToKee' : r'B $\to$ K ee',
@@ -57,8 +44,8 @@ input_files['2020Nov27UL17'] = ['/eos/cms/store/user/crovelli/LowPtEle/Batch1_UL
 #}
 
 import os
-if not os.path.isdir('/tmp/crovelli/plots/%s' % tag):
-   os.mkdir('/tmp/crovelli/plots/%s' % tag)
+if not os.path.isdir('./plots/%s' % tag):
+   os.mkdir('./plots/%s' % tag)
 
 #import concurrent.futures
 import multiprocessing
@@ -70,7 +57,7 @@ def get_models_dir():
       cmssw_path = dir_path = os.path.dirname(os.path.realpath(__file__)).split('src/LowPtElectrons')[0]
       os.environ['CMSSW_BASE'] = cmssw_path
    
-   mods = '/tmp/crovelli/models/%s/' % (tag)
+   mods = './models/%s/' % (tag)
    if not os.path.isdir(mods):
       os.makedirs(mods)
    print mods
