@@ -20,7 +20,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-   '--depth', default=15, type=int                  # was 4; def = 6
+   '--depth', default=13, type=int                  # was 4; def = 6
 )
 parser.add_argument(
    '--lrate', default=0.1, type=float     
@@ -104,7 +104,7 @@ import rootpy
 import pandas as pd
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-rc('text', usetex=True)
+#####rc('text', usetex=True)
 from datasets import tag, pre_process_data, target_dataset, get_models_dir, train_test_split, reduce_mem_usage
 import os
 
@@ -116,7 +116,7 @@ mods = '%s/bdt_%s' % (get_models_dir(), args.what)
 if not os.path.isdir(mods):
    os.makedirs(mods)
 
-plots = '/tmp/crovelli/plots/%s/' % (tag)
+plots = '/cmshome/rovelch/BPark_10_6_15/src/LowPtElectrons/LowPtElectrons/macros/plots/%s/' % (tag)
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
@@ -210,6 +210,7 @@ elif not args.load_model :
       booster='gbtree',                                # chiara: preso dalla versione di Rob, non nel master (ma e' il default)
       silent=False,
       #### nthread=args.nthreads,
+      nthread=40,
       # booster parameters
       n_estimators=args.ntrees,                       
       learning_rate=args.lrate,                        
@@ -237,7 +238,6 @@ elif not args.load_model :
    clf.fit(
       train[features].as_matrix(), 
       train.is_e.as_matrix().astype(int), 
-      #####xgb_model='/tmp/crovelli/models/checkpoints/2020Jun5__cmssw_mva_id_nnclean2_BDT.pkl',
       sample_weight=train.weight.as_matrix(),
       **early_stop_kwargs
    )
