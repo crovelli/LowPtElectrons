@@ -36,11 +36,11 @@ dataset = 'test' if args.test else target_dataset
 if args.dataset:
    dataset = args.dataset
 
-mods = '/tmp/crovelli/models/%s/' % (tag)
+mods = './models/%s/' % (tag)
 if not os.path.isdir(mods):
    os.makedirs(mods)
 
-plots = '/tmp/crovelli/plots/%s/' % (tag)
+plots = './plots/%s/' % (tag)
 if not os.path.isdir(plots):
    os.makedirs(plots)
 
