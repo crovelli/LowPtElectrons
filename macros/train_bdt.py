@@ -16,11 +16,11 @@ parser.add_argument(
    '--jobtag', default='', type=str
 )
 parser.add_argument(
-   '--ntrees', default=700, type=int               # chiara: era 100. Io sempre usato 500; Rob 2000; Per modello finale 700
+   '--ntrees', default=1000, type=int               # Default=100. Most tests=500. Final model=1000
 )
 
 parser.add_argument(
-   '--depth', default=13, type=int                  # chiara: era 4; def = 6; Io ho sempre usato 10; Rob/Mauro: 15; Per modello finale 13
+   '--depth', default=15, type=int                  # Default=6. Most tests=10; Final model=15
 )
 parser.add_argument(
    '--lrate', default=0.1, type=float     
@@ -45,10 +45,10 @@ parser.add_argument(
    '--reg_alpha', default=0.0, type=float
 )
 parser.add_argument(
-   '--reg_lambda', default=2.112612055963768, type=float          # chiara: default 1, sempre usato nei miei test; mauro 9.99999999862; rob: 2.112612055963768
+   '--reg_lambda', default=1., type=float          # Default, most tests, final model=1
 )
 parser.add_argument(
-   '--nthreads', default=8, type=int
+   '--nthreads', default=8, type=int               # @Roma: 8 or 40; @cern: 1
 )
 parser.add_argument(
    '--no_early_stop', action='store_true'
@@ -209,7 +209,7 @@ elif not args.load_model :
       # general parameters
       booster='gbtree',                                # chiara: preso dalla versione di Rob, non nel master (ma e' il default)
       silent=False,
-      #### nthread=args.nthreads,
+      nthread=args.nthreads,
       # booster parameters
       n_estimators=args.ntrees,                       
       learning_rate=args.lrate,                        
@@ -217,8 +217,8 @@ elif not args.load_model :
       max_depth=args.depth,                            #def in xgboost=6, here is 4
       gamma=args.gamma,                                #def=0 in xgboost, as here 
       max_delta_step=0,                                #def=0 in xgboost, as here 
-      subsample=args.subsample,                        #def=1 in xgboost, as here     ===> tizio dice che e' tipico iniziare con 0.8
-      colsample_bytree=args.colsample_bytree,          #def=1 in xgboost, as here     ===> tizio dice che e' tipico iniziare con 0.8    
+      subsample=args.subsample,                        #def=1 in xgboost, as here     
+      colsample_bytree=args.colsample_bytree,          #def=1 in xgboost, as here     
       colsample_bylevel=1,                             #def=1; use subsample and colsample_bytree instead
       reg_lambda=args.reg_lambda,                      #def=1 in xgboost, as here  
       reg_alpha=args.reg_alpha,                        #def=0 in xgboost, as here
@@ -237,7 +237,6 @@ elif not args.load_model :
    clf.fit(
       train[features].as_matrix(), 
       train.is_e.as_matrix().astype(int), 
-      #####xgb_model='/tmp/crovelli/models/checkpoints/2020Jun5__cmssw_mva_id_nnclean2_BDT.pkl',
       sample_weight=train.weight.as_matrix(),
       **early_stop_kwargs
    )
