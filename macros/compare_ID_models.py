@@ -29,8 +29,8 @@ def get_model(pkl):
 
 # test dataset
 test = pd.read_hdf(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2___paramRob/'
-    '/bdt_cmssw_mva_id_nnclean2_testdata.hdf', key='data')
+    'models_all/2020Nov28ULALL_Depth10/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/bdt_cmssw_mva_id_nnclean2_forUL_testdata.hdf', key='data')
 test = test[np.invert(test.is_egamma)] 
 test = test[np.invert(abs(test.gsf_mode_eta)>=2.4)] 
 test = test[np.invert(test.gsf_mode_pt<0.5)] 
@@ -39,9 +39,9 @@ print test.size
 
 # default variables
 base = get_model(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2___paramRob/'
-    '/2020Feb24__cmssw_mva_id_nnclean2_BDT.pkl')
-based_features, _ = get_features('cmssw_mva_id_nnclean2')
+    'models_all/2020Nov28ULALL_Depth10/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/2020Nov28ULALL__cmssw_mva_id_nnclean2_forUL_BDT.pkl')
+based_features, _ = get_features('cmssw_mva_id_nnclean2_forUL')
 test['base_out'] = base.predict_proba(test[based_features].as_matrix())[:,1]
 test['base_out'].loc[np.isnan(test.base_out)] = -999 
 base_roc = roc_curve(
@@ -52,24 +52,36 @@ print "ROC done"
 print base_auc
 
 # updated variables
-ecal = get_model(
-    '/eos/cms/store/user/crovelli/LowPtEle/ResultsFeb24/bdt_cmssw_mva_id_nnclean2/'
-    '/2020Feb24__cmssw_mva_id_nnclean2_BDT.pkl')
-ecal_features, _ = get_features('cmssw_mva_id_nnclean2')
-test['ecal_out'] = ecal.predict_proba(test[ecal_features].as_matrix())[:,1]
-test['ecal_out'].loc[np.isnan(test.ecal_out)] = -999 
-ecal_roc = roc_curve(
-    test.is_e, test.ecal_out
+ecalA = get_model(
+    'models_all/2020Nov28ULALL_Depth12/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/2020Nov28ULALL__cmssw_mva_id_nnclean2_forUL_BDT.pkl')
+ecalA_features, _ = get_features('cmssw_mva_id_nnclean2_forUL')
+test['ecalA_out'] = ecalA.predict_proba(test[ecalA_features].as_matrix())[:,1]
+test['ecalA_out'].loc[np.isnan(test.ecalA_out)] = -999 
+ecalA_roc = roc_curve(
+    test.is_e, test.ecalA_out
 )
-ecal_auc = roc_auc_score(test.is_e, test.ecal_out)
-print ecal_auc
+ecalA_auc = roc_auc_score(test.is_e, test.ecalA_out)
+print ecalA_auc
 
-# training version in cmssw
-#cmssw_roc = roc_curve(
-#     test.is_e, test.ele_mva_value
-#    )
-#cmssw_auc = roc_auc_score(test.is_e, test.ele_mva_value)
-#print cmssw_auc
+ecalB = get_model(
+    'models_all/2020Nov28ULALL_Depth13/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/2020Nov28ULALL__cmssw_mva_id_nnclean2_forUL_BDT.pkl')
+ecalB_features, _ = get_features('cmssw_mva_id_nnclean2_forUL')
+test['ecalB_out'] = ecalB.predict_proba(test[ecalB_features].as_matrix())[:,1]
+test['ecalB_out'].loc[np.isnan(test.ecalB_out)] = -999 
+ecalB_roc = roc_curve(
+    test.is_e, test.ecalB_out
+)
+ecalB_auc = roc_auc_score(test.is_e, test.ecalB_out)
+print ecalB_auc
+
+## training version in cmssw
+cmssw_roc = roc_curve(
+     test.is_e, test.ele_mva_value
+    )
+cmssw_auc = roc_auc_score(test.is_e, test.ele_mva_value)
+print cmssw_auc
 
 # plots
 print "Making plots ..."
@@ -87,26 +99,33 @@ plt.plot(
    'k--')
 
 plt.plot(base_roc[0][:-1], base_roc[1][:-1], 
-         linestyle='solid', 
-         color='black', 
-         label='Aug22 hyperpar (AUC: %.3f)' %base_auc)
-
-plt.plot(ecal_roc[0][:-1], ecal_roc[1][:-1], 
          linestyle='dashed', 
          color='red', 
-         label='Conservative hyperpar (AUC: %.3f)' %ecal_auc)
+         label='Depth10 (AUC: %.3f)' %base_auc)
 
-#plt.plot(cmssw_roc[0][:-1], cmssw_roc[1][:-1],
-#         linestyle='dashed', 
-#         color='red',
-#         label='MVA ID cmssw (AUC: %.3f)' %cmssw_auc)
+plt.plot(ecalA_roc[0][:-1], ecalA_roc[1][:-1], 
+         linestyle='dashed', 
+         color='green', 
+         label='Depth12 (AUC: %.3f)' %ecalA_auc)
+
+plt.plot(ecalB_roc[0][:-1], ecalB_roc[1][:-1], 
+         linestyle='dashed', 
+         color='blue', 
+         label='Depth13 (AUC: %.3f)' %ecalB_auc)
+
+plt.plot(cmssw_roc[0][:-1], cmssw_roc[1][:-1],
+         linestyle='solid', 
+         color='black',
+         label='B-Parking Id (AUC: %.3f)' %cmssw_auc)
 
 plt.xlabel('Mistag Rate')
 plt.ylabel('Efficiency')
 plt.legend(loc='best')
 plt.xlim(0., 1)
+plt.ylim(0., 1)
 plt.savefig('ROC_comparison.png')
 plt.gca().set_xscale('log')
+plt.ylim(0., 1)
 plt.xlim(1e-4, 1)
 plt.savefig('ROC_comparison_log.png')
 plt.clf()

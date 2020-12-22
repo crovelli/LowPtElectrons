@@ -16,11 +16,11 @@ parser.add_argument(
    '--jobtag', default='', type=str
 )
 parser.add_argument(
-   '--ntrees', default=1000, type=int               # default 100
+   '--ntrees', default=1000, type=int               # default: 100. For UL training: 1000
 )
 
 parser.add_argument(
-   '--depth', default=13, type=int                  # was 4; def = 6
+   '--depth', default=10, type=int                  # default: 6. For UL training: 10
 )
 parser.add_argument(
    '--lrate', default=0.1, type=float     
@@ -45,7 +45,7 @@ parser.add_argument(
    '--reg_alpha', default=0.0, type=float
 )
 parser.add_argument(
-   '--reg_lambda', default=1., type=float          # default 1
+   '--reg_lambda', default=1., type=float         
 )
 parser.add_argument(
    '--nthreads', default=8, type=int

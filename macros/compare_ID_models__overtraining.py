@@ -29,8 +29,8 @@ def get_model(pkl):
 
 # test dataset
 test = pd.read_hdf(
-    'models/2020Jul26/bdt_cmssw_mva_id_nnclean2_weights2versione/'
-    '/bdt_cmssw_mva_id_nnclean2_testdata.hdf', key='data')
+    'models/2020Nov28ULALL_Depth10/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/bdt_cmssw_mva_id_nnclean2_forUL_testdata.hdf', key='data')
 test = test[np.invert(test.is_egamma)] 
 test = test[np.invert(abs(test.gsf_mode_eta)>=2.4)] 
 test = test[np.invert(test.gsf_mode_pt<0.5)] 
@@ -39,8 +39,8 @@ print test.size
 
 # train dataset
 train = pd.read_hdf(
-    'models/2020Jul26/bdt_cmssw_mva_id_nnclean2_weights2versione/'
-    '/bdt_cmssw_mva_id_nnclean2_traindata.hdf', key='data')
+    'models/2020Nov28ULALL_Depth10/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/bdt_cmssw_mva_id_nnclean2_forUL_traindata.hdf', key='data')
 train = train[np.invert(train.is_egamma)] 
 train = train[np.invert(abs(train.gsf_mode_eta)>=2.4)] 
 train = train[np.invert(train.gsf_mode_pt<0.5)] 
@@ -49,9 +49,9 @@ print train.size
 
 # variables
 base = get_model(
-    'models/2020Jul26/bdt_cmssw_mva_id_nnclean2_weights2versione/'
-    '/2020Jul26__cmssw_mva_id_nnclean2_BDT.pkl')
-based_features, _ = get_features('cmssw_mva_id_nnclean2')
+    'models/2020Nov28ULALL_Depth10/bdt_cmssw_mva_id_nnclean2_forUL/'
+    '/2020Nov28ULALL__cmssw_mva_id_nnclean2_forUL_BDT.pkl')
+based_features, _ = get_features('cmssw_mva_id_nnclean2_forUL')
 
 # on test
 test['base_out'] = base.predict_proba(test[based_features].as_matrix())[:,1]
