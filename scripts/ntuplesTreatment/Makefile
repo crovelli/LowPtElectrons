@@ -12,9 +12,9 @@ include Makefile.arch
 #------------------------------------------------------------------------------
 
 
-ANAHV5O      = normalizeVar.o
-ANAHV5S      = normalizeVar.C
-ANAHV5       = normalizeVar.exe
+ANAHV5O      = reduceSize.o
+ANAHV5S      = reduceSize.C
+ANAHV5       = reduceSize.exe
 
 
 
