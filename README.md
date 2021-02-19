@@ -12,21 +12,18 @@ git clone --single-branch --branch from-CMSSW_10_2_15_2020Sept15 git@github.com:
 ```
 
 ### Install ntuplizer code
+```
 git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons 
-
 cd LowPtElectrons/LowPtElectrons
-
 git remote add crovelli git@github.com:crovelli/LowPtElectrons.git
-
 git fetch crovelli
-
 git checkout -b for106x crovelli/for106x
+```
 
 scram b
 
+```
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
-
 voms-proxy-init --voms cms
-
 cmsRun ntuplizer.py 
 ```
