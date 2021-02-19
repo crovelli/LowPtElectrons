@@ -20,8 +20,12 @@ git fetch crovelli
 git checkout -b for106x crovelli/for106x
 ```
 
+### Compile
+```
 scram b
+```
 
+### Run
 ```
 cd $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons/run
 voms-proxy-init --voms cms
