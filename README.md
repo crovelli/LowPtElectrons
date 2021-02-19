@@ -6,10 +6,10 @@ git cms-init
 ```
 
 ### Get latest code and model for electron ID (2020Sept15, trained for 2018 b-park) - and energy regression
+```
 git cms-merge-topic bainbrid:LowPtElectrons_userFloats_106X
-
 git clone --single-branch --branch from-CMSSW_10_2_15_2020Sept15 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
-
+```
 
 ### Install ntuplizer code
 git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtElectrons/LowPtElectrons 
