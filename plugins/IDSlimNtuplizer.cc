@@ -64,8 +64,8 @@ public:
   
   explicit IDSlimNtuplizer( const edm::ParameterSet& );
   ~IDSlimNtuplizer() {}
-
-
+  
+  
   // ---------------------------------------
   // Main methods
   virtual void beginRun( const edm::Run&, const edm::EventSetup& ) override;
@@ -73,16 +73,16 @@ public:
   
   // Reads all collections from the Event
   void readCollections( const edm::Event&, const edm::EventSetup& );      
-
+  
   // Delete collections at the end                                        
   void deleteCollections(); 
-
+  
   // Wraps other methods to provide a sample of "signal" electrons
-  void signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ); 
+  void signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons, std::set<reco::GenParticlePtr>& bg_electrons ); 
   void signalElectronsFromGun( std::set<reco::GenParticlePtr>& signal_electrons ); 
-
+  
   // GEN-based method to provide a sample of "signal" electrons            
-  void genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,  
+  void genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,std::set<reco::GenParticlePtr>& electrons_others,  
 			  float muon_pt = 7., float muon_eta = 1.5 );
   void genElectronsFromGun( std::set<reco::GenParticlePtr>& electrons_from_gun);
 
@@ -90,18 +90,18 @@ public:
   // ---------------------------------------
   // Utility methods
   template <typename T> bool validPtr( edm::Ptr<T>& ptr );
-
+  
   bool extrapolate_to_ECAL(reco::TrackPtr kfTrackRef, float& eta_ECAL, float& phi_ECAL);
   
 private:
-
+  
   // Regression stuff
   std::unique_ptr<ModifyObjectValueBase> regression_;     // Low pt 
   std::unique_ptr<ModifyObjectValueBase> regressionGsf_;  // Gsf
   
   // Misc  
   edm::Service<TFileService> fs_;
-  TTree* tree_;	
+  TTree* tree_; 
   IDSlimNtuple ntuple_;
   int verbose_;
   bool check_from_B_;
@@ -131,6 +131,9 @@ private:
   const edm::EDGetTokenT< edm::View<pat::PackedCandidate> > lostTracks_; // MINIAOD
   edm::Handle< edm::View<pat::PackedCandidate> > lostTracksH_;
 
+  const edm::EDGetTokenT< std::vector<pat::Muon> > muonSrc_;
+  edm::Handle<std::vector<pat::Muon>> muons;      // MINIAOD
+  
   const edm::EDGetTokenT<EcalRecHitCollection> ebRecHits_;
   edm::Handle<EcalRecHitCollection> ebRecHitsH_;
   const edm::EDGetTokenT<EcalRecHitCollection> eeRecHits_;
@@ -145,7 +148,7 @@ private:
   const edm::EDGetTokenT<edm::ValueMap< reco::DeDxData > > dEdx1Tag_;  // AOD only
   edm::Handle< edm::ValueMap< reco::DeDxData > > dEdx1H_;
   std::vector<const edm::ValueMap<reco::DeDxData>*> v_dEdx_;
-
+  
   // Low pT collections
   const edm::EDGetTokenT< std::vector<reco::GsfTrack> > gsfTracks_; // AOD and MINIAOD
   edm::Handle< std::vector<reco::GsfTrack> > gsfTracksH_;
@@ -164,7 +167,7 @@ private:
   edm::Handle< edm::ValueMap<float> > mvaPtbiasedH_;
   const edm::EDGetTokenT< edm::ValueMap<float> > mvaValueLowPt_;
   edm::Handle< edm::ValueMap<float> > mvaValueLowPtH_;
-
+  
   // EGamma collections                                                                           
   // const edm::EDGetTokenT< std::vector<reco::ElectronSeed> > eleSeedsEGamma_; // AOD           
   // edm::Handle< std::vector<reco::ElectronSeed> > eleSeedsEGammaH_; // AOD                     
@@ -208,6 +211,7 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     packedCandsH_(),
     lostTracks_(consumes< edm::View<pat::PackedCandidate> >(cfg.getParameter<edm::InputTag>("lostTracks"))),
     lostTracksH_(),
+    muonSrc_( consumes<std::vector<pat::Muon>> ( cfg.getParameter<edm::InputTag>( "muonCollection" ) ) ),
     ebRecHits_(consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("ebRecHits"))),
     ebRecHitsH_(),
     eeRecHits_(consumes<EcalRecHitCollection>(cfg.getParameter<edm::InputTag>("eeRecHits"))),
@@ -247,39 +251,39 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     mvaIdEGamma_(consumes<edm::ValueMap<bool> >(cfg.getParameter<edm::InputTag>("mvaIdEGamma"))),
     mvaIdEGammaH_(),
 // 
-    pdgids_()
-  {
-    tree_ = fs_->make<TTree>("tree","tree");
-    ntuple_.link_tree(tree_);
-    std::cout << "Verbosity level: "<< verbose_ << std::endl;
-
-    // Regression stuff - lowPtElectrons
-    if( cfg.existsAs<edm::ParameterSet>("lowPtRegressionConfig") ) {
-      const edm::ParameterSet& iconf = cfg.getParameterSet("lowPtRegressionConfig");
-      const std::string& mname = iconf.getParameter<std::string>("modifierName");
+  pdgids_()
+{
+  tree_ = fs_->make<TTree>("tree","tree");
+  ntuple_.link_tree(tree_);
+  std::cout << "Verbosity level: "<< verbose_ << std::endl;
+  
+  // Regression stuff - lowPtElectrons
+  if( cfg.existsAs<edm::ParameterSet>("lowPtRegressionConfig") ) {
+    const edm::ParameterSet& iconf = cfg.getParameterSet("lowPtRegressionConfig");
+    const std::string& mname = iconf.getParameter<std::string>("modifierName");
       ModifyObjectValueBase* plugin =
         ModifyObjectValueFactory::get()->create(mname,iconf);
       regression_.reset(plugin);
       edm::ConsumesCollector sumes = consumesCollector();
       regression_->setConsumes(sumes);
-    } else {
-      regression_.reset(nullptr);
-    }
+  } else {
+    regression_.reset(nullptr);
+  }
 
-    // Regression stuff - GSF electrons
-    if( cfg.existsAs<edm::ParameterSet>("gsfRegressionConfig") ) {
-      const edm::ParameterSet& iconf = cfg.getParameterSet("gsfRegressionConfig");
-      const std::string& mname = iconf.getParameter<std::string>("modifierName");
+  // Regression stuff - GSF electrons
+  if( cfg.existsAs<edm::ParameterSet>("gsfRegressionConfig") ) {
+    const edm::ParameterSet& iconf = cfg.getParameterSet("gsfRegressionConfig");
+    const std::string& mname = iconf.getParameter<std::string>("modifierName");
       ModifyObjectValueBase* plugin =
         ModifyObjectValueFactory::get()->create(mname,iconf);
       regressionGsf_.reset(plugin);
       edm::ConsumesCollector sumes = consumesCollector();
       regressionGsf_->setConsumes(sumes);
-    } else {
-      regressionGsf_.reset(nullptr);
-    }
-
+  } else {
+    regressionGsf_.reset(nullptr);
   }
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialise the weights LUT to filter fake tracks
@@ -298,7 +302,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   bool useEleGun=0;
   bool useEnergyRegression=1;
   // ----------------------------------------
-
+  
   // Reset ntuple
   ntuple_.reset();
 
@@ -315,10 +319,12 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
   // Gen level electrons from B                        
   std::set<reco::GenParticlePtr> signal_electrons;
+  std::set<reco::GenParticlePtr> bg_electrons;
   if (!useEleGun) {
-    if (isMC_) signalElectrons(signal_electrons);          
+    if (isMC_) signalElectrons(signal_electrons, bg_electrons);          
     if (!tag_side_muon) return;
   } 
+
   // Gen level electrons from particle gun
   if (useEleGun) {
     if (isMC_) signalElectronsFromGun(signal_electrons);          
@@ -367,19 +373,34 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       }
     }
 
-    // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (fakes)
+    float dRGenMinOther=999.;
+    reco::GenParticlePtr theGenParticleOther;
+    TVector3 genOtherTV3(0,0,0);
+    for ( auto oth : bg_electrons ) {      
+      genOtherTV3.SetPtEtaPhi(oth->pt(), oth->eta(), oth->phi());
+      float dR = eleTV3.DeltaR(genOtherTV3);
+      if (dR<dRGenMinOther) { 
+	dRGenMinOther=dR;
+      }
+    }
+
+    // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (potential fakes)
     if (dRGenMin>=0.03 && dRGenMin<0.1) continue;
+    // Further check on other electrons
+    if (dRGenMin>=0.03 && dRGenMinOther<0.1) continue;
 
     genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
-    if (dRGenMin<0.1) {
+    if (dRGenMin<0.03) {
       ntuple_.fill_gen( theGenParticle ); 
       ntuple_.gen_dR_ = dRGenMin;
+      ntuple_.genOther_dR_ = dRGenMinOther;
       ntuple_.is_e_ = true;
       ntuple_.is_other_ = false;
       ntuple_.gen_tag_side_=tag_side_muon;
     } else { 
       ntuple_.fill_gen_default(); 
       ntuple_.gen_dR_ = dRGenMin;
+      ntuple_.genOther_dR_ = dRGenMinOther;
       ntuple_.is_e_ = false;
       ntuple_.is_other_ = true;
       ntuple_.gen_tag_side_=tag_side_muon;
@@ -401,6 +422,17 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     } else {
       std::cout << "ERROR! Issue matching MVA output to GsfElectrons!" << std::endl;
     }
+
+    // ---------------------------------
+    // Distance ele - closest muon
+    float dRmuEleMin=999.;
+    for (const pat::Muon &muon : *muons) {
+      TVector3 muTV3(0,0,0);
+      muTV3.SetPtEtaPhi(muon.pt(), muon.eta(), muon.phi());
+      float thisDRem = muTV3.DeltaR(eleTV3);
+      if (thisDRem<dRmuEleMin) dRmuEleMin=thisDRem;
+    }
+    ntuple_.minDrWithMu_ = dRmuEleMin;
 
     // ---------------------------------
     // Fill ele info 
@@ -446,18 +478,18 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
       /*
       if (largeNtuple) { 
-	ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);
-	PdgIds::const_iterator pos = pdgids_.find(trk.key());
-	if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
+ ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);
+ PdgIds::const_iterator pos = pdgids_.find(trk.key());
+ if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
       }
       if ( isAOD_ == 1 ) { 
-	if (largeNtuple) {
-	  v_dEdx_.clear();
-	  v_dEdx_.push_back(dEdx1H_.product());
-	  ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
-	} else {
-	  ntuple_.fill_trk_dEdx_default();
-	}
+ if (largeNtuple) {
+   v_dEdx_.clear();
+   v_dEdx_.push_back(dEdx1H_.product());
+   ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
+ } else {
+   ntuple_.fill_trk_dEdx_default();
+ }
       }
       */
     } else {
@@ -499,7 +531,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 	float dRcur1=100;
 	float dRcur2=100;
 	float dRcur3=100;
-	
+ 
 	if(extrapolate_to_ECAL(trkx,eta_EC, phi_EC)){
 	  if(ntuple_.sc_clus1_E_>0) dRcur1=deltaR(eta_EC,phi_EC,ntuple_.sc_clus1_eta_,ntuple_.sc_clus1_phi_);
 	  if(ntuple_.sc_clus2_E_>0) dRcur2=deltaR(eta_EC,phi_EC,ntuple_.sc_clus2_eta_,ntuple_.sc_clus2_phi_);
@@ -529,40 +561,40 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
     tree_->Fill();
 
     /*
-    std::cout << "Dumper" << std::endl;
-    std::cout << ntuple_.eid_rho_ << " " 
-	      << ntuple_.eid_sc_eta_ << " " 
-	      << ntuple_.eid_shape_full5x5_r9_ << " " 
-	      << ntuple_.eid_sc_etaWidth_ << " " 
-	      << ntuple_.eid_sc_phiWidth_ << " " 
-	      << ntuple_.eid_shape_full5x5_HoverE_ << " " 
-	      << ntuple_.eid_trk_nhits_ << " " 
-	      << ntuple_.eid_trk_chi2red_ << " " 
-	      << ntuple_.eid_gsf_chi2red_ << " " 
-	      << ntuple_.eid_brem_frac_ << " " 
-	      << ntuple_.eid_gsf_nhits_ << " " 
-	      << ntuple_.eid_match_SC_EoverP_ << " " 
-	      << ntuple_.eid_match_eclu_EoverP_ << " " 
-	      << ntuple_.eid_match_SC_dEta_ << " " 
-	      << ntuple_.eid_match_SC_dPhi_ << " " 
-	      << ntuple_.eid_match_seed_dEta_ << " " 
-	      << ntuple_.eid_sc_E_ << " " 
-	      << ntuple_.eid_trk_p_ << " " 
-	      << ntuple_.gsf_mode_p_ << " " 
-	      << ntuple_.core_shFracHits_ << " " 
-	      << ntuple_.seed_unbiased_ << " " 
-	      << ntuple_.gsf_dr_ << " " 
-	      << ntuple_.trk_dr_ << " " 
-	      << ntuple_.sc_Nclus_ << " " 
-	      << ntuple_.sc_clus1_nxtal_ << " " 
-	      << ntuple_.sc_clus1_dphi_ << " " 
-	      << ntuple_.sc_clus2_dphi_ << " " 
-	      << ntuple_.sc_clus1_deta_ << " " 
-	      << ntuple_.sc_clus2_deta_ << " " 
-	      << ntuple_.sc_clus1_E_ << " " 
-	      << ntuple_.sc_clus2_E_ << " " 
-	      << ntuple_.sc_clus1_E_ov_p_ << " " 
-	      << ntuple_.sc_clus2_E_ov_p_ << std::endl;
+      std::cout << "Dumper" << std::endl;
+      std::cout << ntuple_.eid_rho_ << " " 
+      << ntuple_.eid_sc_eta_ << " " 
+      << ntuple_.eid_shape_full5x5_r9_ << " " 
+      << ntuple_.eid_sc_etaWidth_ << " " 
+      << ntuple_.eid_sc_phiWidth_ << " " 
+      << ntuple_.eid_shape_full5x5_HoverE_ << " " 
+      << ntuple_.eid_trk_nhits_ << " " 
+      << ntuple_.eid_trk_chi2red_ << " " 
+      << ntuple_.eid_gsf_chi2red_ << " " 
+      << ntuple_.eid_brem_frac_ << " " 
+      << ntuple_.eid_gsf_nhits_ << " " 
+      << ntuple_.eid_match_SC_EoverP_ << " " 
+      << ntuple_.eid_match_eclu_EoverP_ << " " 
+      << ntuple_.eid_match_SC_dEta_ << " " 
+      << ntuple_.eid_match_SC_dPhi_ << " " 
+      << ntuple_.eid_match_seed_dEta_ << " " 
+      << ntuple_.eid_sc_E_ << " " 
+      << ntuple_.eid_trk_p_ << " " 
+      << ntuple_.gsf_mode_p_ << " " 
+      << ntuple_.core_shFracHits_ << " " 
+      << ntuple_.seed_unbiased_ << " " 
+      << ntuple_.gsf_dr_ << " " 
+      << ntuple_.trk_dr_ << " " 
+      << ntuple_.sc_Nclus_ << " " 
+      << ntuple_.sc_clus1_nxtal_ << " " 
+      << ntuple_.sc_clus1_dphi_ << " " 
+      << ntuple_.sc_clus2_dphi_ << " " 
+      << ntuple_.sc_clus1_deta_ << " " 
+      << ntuple_.sc_clus2_deta_ << " " 
+      << ntuple_.sc_clus1_E_ << " " 
+      << ntuple_.sc_clus2_E_ << " " 
+      << ntuple_.sc_clus1_E_ov_p_ << " " 
+      << ntuple_.sc_clus2_E_ov_p_ << std::endl;
     */
 
   } // electron looper
@@ -571,7 +603,7 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
   
   // Loop over GSF electrons   
   int iele=-1; 
-    for( size_t electronlooper = 0; electronlooper < gsfElectronsEGammaH_->size(); electronlooper++ ) {
+  for( size_t electronlooper = 0; electronlooper < gsfElectronsEGammaH_->size(); electronlooper++ ) {
     iele=iele+1; 
 
     // ---------------------------------
@@ -613,19 +645,34 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       }
     }
 
+    float dRGenMinOther=999.;
+    reco::GenParticlePtr theGenParticleOther;
+    TVector3 genOtherTV3(0,0,0);
+    for ( auto oth : bg_electrons ) {      
+      genOtherTV3.SetPtEtaPhi(oth->pt(), oth->eta(), oth->phi());
+      float dR = eleTV3.DeltaR(genOtherTV3);
+      if (dR<dRGenMinOther) { 
+	dRGenMinOther=dR;
+      }
+    }
+
     // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (fakes)
     if (dRGenMin>=0.03 && dRGenMin<0.1) continue;
+    // Further check on other electrons
+    if (dRGenMin>=0.03 && dRGenMinOther<0.1) continue;
 
     genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
-    if (dRGenMin<0.1) {
+    if (dRGenMin<0.03) {
       ntuple_.fill_gen( theGenParticle ); 
       ntuple_.gen_dR_ = dRGenMin;
+      ntuple_.genOther_dR_ = dRGenMinOther;
       ntuple_.is_e_ = true;
       ntuple_.is_other_ = false;
       ntuple_.gen_tag_side_=tag_side_muon;
     } else { 
       ntuple_.fill_gen_default(); 
       ntuple_.gen_dR_ = dRGenMin;
+      ntuple_.genOther_dR_ = dRGenMinOther;
       ntuple_.is_e_ = false;
       ntuple_.is_other_ = true;
       ntuple_.gen_tag_side_=tag_side_muon;
@@ -689,19 +736,19 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       ntuple_.trk_dr_ = eleTV3.DeltaR(trkTV3);  
       /*
       if (largeNtuple) {
-	ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);  
-	PdgIds::const_iterator pos = pdgids_.find(trk.key());
-	if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
+ ntuple_.gen_trk_dr_ = genTV3.DeltaR(trkTV3);  
+ PdgIds::const_iterator pos = pdgids_.find(trk.key());
+ if ( pos != pdgids_.end() ) { ntuple_.pdg_id_ = pos->second; }
       }
       if ( isAOD_ == 1 ) { 
-	if (largeNtuple) {
-	  v_dEdx_.clear();
-	  v_dEdx_.push_back(dEdx1H_.product());
-	  ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
-	} else {
-	  ntuple_.fill_trk_dEdx_default();
-	}
-	}
+ if (largeNtuple) {
+   v_dEdx_.clear();
+   v_dEdx_.push_back(dEdx1H_.product());
+   ntuple_.fill_trk_dEdx( trk, v_dEdx_ );
+ } else {
+   ntuple_.fill_trk_dEdx_default();
+ }
+ }
       */
     } else {
       ntuple_.trk_dr_ = -999.;
@@ -834,6 +881,9 @@ void IDSlimNtuplizer::readCollections( const edm::Event& event, const edm::Event
     event.getByToken(lostTracks_,lostTracksH_);
   }
 
+  // Muons
+  event.getByToken(muonSrc_, muons);
+
   // RecHits 
   if ( isAOD_ == 1 ) {   
     event.getByToken(ebRecHits_, ebRecHitsH_);
@@ -886,19 +936,23 @@ void IDSlimNtuplizer::deleteCollections( ) {
 }
 
 // Gen-level electons from B
-void IDSlimNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ) {
+void IDSlimNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons, std::set<reco::GenParticlePtr>& bg_electrons ) {
 
   signal_electrons.clear();
   std::set<reco::GenParticlePtr> electrons_from_B;
-  genElectronsFromB(electrons_from_B);
+  bg_electrons.clear();
+  std::set<reco::GenParticlePtr> electrons_others;
+  genElectronsFromB(electrons_from_B, electrons_others);
   for ( auto gen : electrons_from_B ) { signal_electrons.insert(gen); }
+  for ( auto gen : electrons_others ) { bg_electrons.insert(gen); }
 }
 
 // Gen-level electons from B 
-void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,
+void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B, std::set<reco::GenParticlePtr>& electrons_others,
 					 float muon_pt, float muon_eta ) {   
   
   electrons_from_B.clear();
+  electrons_others.clear();
   tag_side_muon = false;
 
   for ( size_t idx = 0; idx < genParticlesH_->size(); idx++ ) {
@@ -930,14 +984,14 @@ void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
     
     //  Check for tag side muon
     tag_side_muon |= ( std::abs(gen->pdgId()) == 13 && gen->isLastCopy() 
-		       && 
+         && 
 		       ( ( gen->numberOfMothers() >= 1 &&
 			   gen->mother() &&
 			   std::abs(gen->mother()->pdgId()) > 510 &&
 			   std::abs(gen->mother()->pdgId()) < 546 && 
 			   gen->mother()->pt() > muon_pt && 
 			   std::abs(gen->mother()->eta()) < muon_eta ) 
-			 ||
+    ||
 			 ( gen->numberOfMothers() >= 1 && 
 			   gen->mother() &&
 			   gen->mother()->numberOfMothers() >= 1 && 
@@ -957,6 +1011,13 @@ void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
 		  << " non resonant? " << non_resonant
 		  << " tag-side muon? " << tag_side_muon
 		  << std::endl;
+      }
+    } else if(is_ele) {
+      //if (gen->mother()) std::cout << "std::abs(gen->mother()->pdgId()) = " << std::abs(gen->mother()->pdgId()) 
+      // << ", gen->px = " << gen->px() << ", gen->py = " << gen->py() << ", gen->pz = " << gen->pz() 
+      // << ", status = " << gen->status() << std::endl;
+      if (gen->mother() && std::abs(gen->mother()->pdgId())!=2212 && std::abs(gen->mother()->pdgId())>8) {
+	electrons_others.insert(gen);
       }
     }
     
@@ -987,7 +1048,7 @@ void IDSlimNtuplizer::genElectronsFromGun( std::set<reco::GenParticlePtr>& elect
       std::cout << "ERROR! GenParticlePtr:"
 		<< " gen.isNull(): " << gen.isNull()
 		<< " gen.isAvailable(): " << gen.isAvailable()
-		<< std::endl;
+  << std::endl;
       continue;
     }
 
