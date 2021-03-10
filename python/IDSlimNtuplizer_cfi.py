@@ -23,6 +23,7 @@ ntuplizer = cms.EDAnalyzer(
     eeRecHits = cms.InputTag('reducedEcalRecHitsEE'),
     ebRecHitsEGM = cms.InputTag('reducedEgamma','reducedEBRecHits'),
     eeRecHitsEGM = cms.InputTag('reducedEgamma','reducedEERecHits'),
+    muonCollection = cms.InputTag("slimmedMuons"), 
     # Low pT collections
     gsfTracks = cms.InputTag("lowPtGsfEleGsfTracks"),
     gsfElectrons = cms.InputTag("lowPtGsfElectrons"), # AOD 
