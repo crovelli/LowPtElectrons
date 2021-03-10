@@ -43,6 +43,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
   tree->Branch("gen_tag_side", &gen_tag_side_, "gen_tag_side/I");   
   tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
+  tree->Branch("genOther_dR" , &genOther_dR_ , "genOther_dR/f" );
   tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
   tree->Branch("gen_p",   &gen_p_,   "gen_p/f");
   if (largeNtuple) {
@@ -174,6 +175,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
     tree->Branch("match_eclu_dPhi",&match_eclu_dPhi_); 
   }
 
+  // Distance from muon
+  tree->Branch("minDrWithMu",&minDrWithMu_);
+
   // Electron energy regression                                                                                                                  
   tree->Branch("pre_ecal",&pre_ecal_);
   tree->Branch("pre_ecaltrk",&pre_ecaltrk_);
@@ -215,6 +219,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
     tree->Branch("sc_E_ps1",&sc_E_ps1_,"sc_E_ps1/F");
     tree->Branch("sc_E_ps2",&sc_E_ps2_,"sc_E_ps2/F");
   }
+
 
   // Clusters making the SC 
   bool cluster_in_rootuple=false;     
