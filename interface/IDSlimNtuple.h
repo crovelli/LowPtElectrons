@@ -105,6 +105,7 @@ class IDSlimNtuple {
 
   // GEN electrons
   float gen_dR_  = IDSlimNtuple::NEG_FLOAT;
+  float genOther_dR_  = IDSlimNtuple::NEG_FLOAT;
   float gen_pt_  = IDSlimNtuple::NEG_FLOAT;
   float gen_eta_ = IDSlimNtuple::NEG_FLOAT;
   float gen_phi_ = IDSlimNtuple::NEG_FLOAT;
@@ -243,6 +244,8 @@ class IDSlimNtuple {
   float match_eclu_EoverPout_ = IDSlimNtuple::NEG_FLOAT;
   float match_eclu_dEta_      = IDSlimNtuple::NEG_FLOAT;
   float match_eclu_dPhi_      = IDSlimNtuple::NEG_FLOAT;
+
+  float minDrWithMu_          = IDSlimNtuple::NEG_FLOAT;
 
   // Further full 5x5 shower shape 
   float shape_full5x5_e1x5_    = IDSlimNtuple::NEG_FLOAT;
