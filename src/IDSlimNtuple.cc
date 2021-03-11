@@ -51,6 +51,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("trk_pt", &trk_pt_, "trk_pt/f");
   tree->Branch("trk_eta", &trk_eta_, "trk_eta/f");
   tree->Branch("trk_phi", &trk_phi_, "trk_phi/f");
+  tree->Branch("trk_dEdx1", &trk_dEdx1_, "trk_dEdx1/f");   
+  tree->Branch("trk_dEdx1_Nm", &trk_dEdx1_Nm_, "trk_dEdx1_Nm/I");  
+  tree->Branch("trk_dEdx1_NSm", &trk_dEdx1_NSm_, "trk_dEdx1_NSm/I");     
 
   // Electron - kinematics
   tree->Branch("ele_p", &ele_p_, "ele_p/f");
@@ -180,7 +183,25 @@ void IDSlimNtuple::fill_trk( const reco::TrackPtr& trk ) {
     trk_phi_ = trk->phi();
     trk_p_ = trk->p();    
   }
-  
+}
+
+void IDSlimNtuple::fill_trk_dEdx( const reco::TrackRef& trk,
+				  std::vector<const edm::ValueMap<reco::DeDxData>*>& v_dEdx ) {
+
+  if ( trk.isNonnull() ) {    // should never happen    
+    const edm::ValueMap<reco::DeDxData>& dEdxTrack = *(v_dEdx[0]);
+    const reco::DeDxData& dedx = dEdxTrack[trk];
+    trk_dEdx1_=dedx.dEdx();
+    trk_dEdx1_Nm_=dedx.numberOfMeasurements();
+    trk_dEdx1_NSm_=dedx.numberOfSaturatedMeasurements();
+  }
+}
+
+void IDSlimNtuple::fill_trk_dEdx_default( ) {
+
+  trk_dEdx1_     = -999.;
+  trk_dEdx1_Nm_  = -999;
+  trk_dEdx1_NSm_ = -999;
 }
 
 /////////////////////////////////////////////////////////////////////////////////

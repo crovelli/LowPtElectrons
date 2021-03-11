@@ -12,6 +12,7 @@
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/TrackReco/interface/DeDxData.h"    
 #include "FWCore/Framework/interface/Event.h"
 #include <vector>
 
@@ -49,6 +50,10 @@ class IDSlimNtuple {
   //void fill_trk( const reco::TrackPtr& trk,
   //const reco::BeamSpot& spot );
   void fill_trk( const reco::TrackPtr& trk );
+
+  void fill_trk_dEdx( const reco::TrackRef& trk,
+                      std::vector< const edm::ValueMap< reco::DeDxData > * > & x );
+  void fill_trk_dEdx_default();
 
   void fill_bdt( double seed_unbiased,
 		 double seed_ptbiased );
@@ -112,10 +117,15 @@ class IDSlimNtuple {
   float seed_ptbiased_ = IDSlimNtuple::NEG_FLOAT;
 
   // KF tracks: kine
-  float trk_pt_  = IDSlimNtuple::NEG_FLOAT;
+  float trk_pt_   = IDSlimNtuple::NEG_FLOAT;
   float trk_eta_  = IDSlimNtuple::NEG_FLOAT;
   float trk_phi_  = IDSlimNtuple::NEG_FLOAT;
   float trk_p_    = IDSlimNtuple::NEG_INT;
+
+  // KF tracks: dE/dx
+  float trk_dEdx1_   = IDSlimNtuple::NEG_FLOAT;
+  int trk_dEdx1_Nm_  = IDSlimNtuple::NEG_INT;
+  int trk_dEdx1_NSm_ = IDSlimNtuple::NEG_INT;
 
   // GSF electrons: kinematics
   float ele_p_   = IDSlimNtuple::NEG_FLOAT;

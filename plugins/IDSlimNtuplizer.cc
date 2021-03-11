@@ -26,6 +26,7 @@
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeed.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/TrackReco/interface/DeDxData.h" 
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -115,6 +116,11 @@ private:
   const edm::EDGetTokenT< std::vector<reco::Muon> > recoMuonSrc_;      // AOD
   edm::Handle<std::vector<reco::Muon>> recomuons;      
 
+  // dEdx
+  const edm::EDGetTokenT<edm::ValueMap< reco::DeDxData > > dEdx1Tag_;  // AOD only
+  edm::Handle< edm::ValueMap< reco::DeDxData > > dEdx1H_;
+  std::vector<const edm::ValueMap<reco::DeDxData>*> v_dEdx_;
+
   // Low pT collections
   const edm::EDGetTokenT< edm::View<reco::GsfElectron> > gsfElectrons_; // AOD
   const edm::EDGetTokenT< edm::View<reco::GsfElectron> > patElectrons_; // MINIAOD
@@ -147,6 +153,7 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     genParticlesH_(),
     patMuonSrc_( consumes<std::vector<pat::Muon>> ( cfg.getParameter<edm::InputTag>( "patMuonCollection" ) ) ),
     recoMuonSrc_( consumes<std::vector<reco::Muon>> ( cfg.getParameter<edm::InputTag>( "recoMuonCollection" ) ) ),
+    dEdx1Tag_(consumes< edm::ValueMap<reco::DeDxData> >(cfg.getParameter<edm::InputTag>("dEdx1Tag"))), 
     // Low pT collections
     gsfElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gsfElectrons"))),
     patElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("patElectrons"))),
@@ -354,6 +361,15 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
       post_ecaltrk = newElectron.energy();
     }
 
+    // dE/dx, AOD only
+    if ( isAOD_ == 1 ) { 
+      v_dEdx_.clear();    
+      v_dEdx_.push_back(dEdx1H_.product());
+      ntuple_.fill_trk_dEdx( trk, v_dEdx_ ); 
+    } else {
+      ntuple_.fill_trk_dEdx_default();    
+    }
+
     // ---------------------------------
     // GSF track linked to electron
     ntuple_.fill_gsf( gsf );
@@ -443,6 +459,9 @@ void IDSlimNtuplizer::readCollections( const edm::Event& event, const edm::Event
   // Muons
   if ( isAOD_ != 1 ) event.getByToken(patMuonSrc_, patmuons);
   if ( isAOD_ == 1 ) event.getByToken(recoMuonSrc_, recomuons);
+
+  // dEdx
+  if ( isAOD_ == 1 ) event.getByToken(dEdx1Tag_, dEdx1H_); 
 }
 
 void IDSlimNtuplizer::deleteCollections( ) {

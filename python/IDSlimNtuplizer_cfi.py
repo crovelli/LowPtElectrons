@@ -24,6 +24,7 @@ ntuplizer = cms.EDAnalyzer(
     mvaUnbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:unbiased"),
     mvaPtbiased = cms.InputTag("lowPtGsfElectronSeedValueMaps:ptbiased"),
     mvaValueLowPt = cms.InputTag('lowPtGsfElectronID'),
+    dEdx1Tag = cms.InputTag('dedxHarmonic2'), 
 
     lowPtRegressionConfig = cms.PSet(
       modifierName = cms.string('EGRegressionModifierV3'),      
