@@ -110,8 +110,10 @@ private:
   edm::Handle< edm::View<reco::GenParticle> > genParticlesH_;
 
   // Muons
-  const edm::EDGetTokenT< std::vector<pat::Muon> > muonSrc_;
-  edm::Handle<std::vector<pat::Muon>> muons;      // MINIAOD  
+  const edm::EDGetTokenT< std::vector<pat::Muon> > patMuonSrc_;       // MINIAOD  
+  edm::Handle<std::vector<pat::Muon>> patmuons;      
+  const edm::EDGetTokenT< std::vector<reco::Muon> > recoMuonSrc_;      // AOD
+  edm::Handle<std::vector<reco::Muon>> recomuons;      
 
   // Low pT collections
   const edm::EDGetTokenT< edm::View<reco::GsfElectron> > gsfElectrons_; // AOD
@@ -143,7 +145,8 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     genParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
     prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
     genParticlesH_(),
-    muonSrc_( consumes<std::vector<pat::Muon>> ( cfg.getParameter<edm::InputTag>( "muonCollection" ) ) ),
+    patMuonSrc_( consumes<std::vector<pat::Muon>> ( cfg.getParameter<edm::InputTag>( "patMuonCollection" ) ) ),
+    recoMuonSrc_( consumes<std::vector<reco::Muon>> ( cfg.getParameter<edm::InputTag>( "recoMuonCollection" ) ) ),
     // Low pT collections
     gsfElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gsfElectrons"))),
     patElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("patElectrons"))),
@@ -312,12 +315,22 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
      // ----------------------------------
      // Distance ele - closest muon    
      float dRmuEleMin=999.;
-     for (const pat::Muon &muon : *muons) {
-       TVector3 muTV3(0,0,0);
-       muTV3.SetPtEtaPhi(muon.pt(), muon.eta(), muon.phi());
-       float thisDRem = muTV3.DeltaR(eleTV3);
-       if (thisDRem<dRmuEleMin) dRmuEleMin=thisDRem;
+     if ( isAOD_ != 1 ) {
+       for (const pat::Muon &muon : *patmuons) {
+	 TVector3 muTV3(0,0,0);
+	 muTV3.SetPtEtaPhi(muon.pt(), muon.eta(), muon.phi());
+	 float thisDRem = muTV3.DeltaR(eleTV3);
+	 if (thisDRem<dRmuEleMin) dRmuEleMin=thisDRem;
+       }
+     } else if ( isAOD_ == 1 ) {
+       for (const reco::Muon &muon : *recomuons) {
+	 TVector3 muTV3(0,0,0);
+	 muTV3.SetPtEtaPhi(muon.pt(), muon.eta(), muon.phi());
+	 float thisDRem = muTV3.DeltaR(eleTV3);
+	 if (thisDRem<dRmuEleMin) dRmuEleMin=thisDRem;
+       }
      }
+
      ntuple_.minDrWithMu_ = dRmuEleMin;
      
     // ---------------------------------
@@ -428,7 +441,8 @@ void IDSlimNtuplizer::readCollections( const edm::Event& event, const edm::Event
   event.getByToken(mvaValueLowPt_, mvaValueLowPtH_);
 
   // Muons
-  event.getByToken(muonSrc_, muons);
+  if ( isAOD_ != 1 ) event.getByToken(patMuonSrc_, patmuons);
+  if ( isAOD_ == 1 ) event.getByToken(recoMuonSrc_, recomuons);
 }
 
 void IDSlimNtuplizer::deleteCollections( ) {

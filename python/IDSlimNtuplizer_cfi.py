@@ -16,7 +16,8 @@ ntuplizer = cms.EDAnalyzer(
     rho = cms.InputTag('fixedGridRhoFastjetAll'),
     genParticles = cms.InputTag("genParticles"), # AOD
     prunedGenParticles = cms.InputTag("prunedGenParticles"), # MINIAOD
-    muonCollection = cms.InputTag("slimmedMuons"), 
+    patMuonCollection = cms.InputTag("slimmedMuons"), # MINIAOD  
+    recoMuonCollection = cms.InputTag("muons"), # AOD
     # Low pT collections
     gsfElectrons = cms.InputTag("lowPtGsfElectrons"), # AOD 
     patElectrons = cms.InputTag("slimmedLowPtElectrons"), # MINIAOD
