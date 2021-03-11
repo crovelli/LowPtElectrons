@@ -34,7 +34,7 @@ process.ntuplizer_seq = cms.Sequence()
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.MessageLogger.cerr.FwkReport.reportEvery = 500
 
-process.load('RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cfi')
+process.load('RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cff')
 if not options.useAOD : 
     process.lowPtGsfElectronID.electrons = 'slimmedLowPtElectrons'
     process.lowPtGsfElectronID.rho = 'fixedGridRhoFastjetAll'
