@@ -70,12 +70,12 @@ public:
   void deleteCollections(); 
 
   // Wraps other methods to provide a sample of "signal" electrons
-  void signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ); 
+  void signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons, std::set<reco::GenParticlePtr>& bg_electrons );
   void signalElectronsFromGun( std::set<reco::GenParticlePtr>& signal_electrons ); 
 
   // GEN-based method to provide a sample of "signal" electrons            
-  void genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,  
-			  float muon_pt = 7., float muon_eta = 1.5 );
+  void genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,std::set<reco::GenParticlePtr>& electrons_others,
+                          float muon_pt = 7., float muon_eta = 1.5 );
   void genElectronsFromGun( std::set<reco::GenParticlePtr>& electrons_from_gun);
 
 
@@ -109,6 +109,10 @@ private:
   const edm::EDGetTokenT< edm::View<reco::GenParticle> > prunedGenParticles_; // MINIAOD
   edm::Handle< edm::View<reco::GenParticle> > genParticlesH_;
 
+  // Muons
+  const edm::EDGetTokenT< std::vector<pat::Muon> > muonSrc_;
+  edm::Handle<std::vector<pat::Muon>> muons;      // MINIAOD  
+
   // Low pT collections
   const edm::EDGetTokenT< edm::View<reco::GsfElectron> > gsfElectrons_; // AOD
   const edm::EDGetTokenT< edm::View<reco::GsfElectron> > patElectrons_; // MINIAOD
@@ -139,6 +143,7 @@ IDSlimNtuplizer::IDSlimNtuplizer( const edm::ParameterSet& cfg )
     genParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("genParticles"))),
     prunedGenParticles_(consumes< edm::View<reco::GenParticle> >(cfg.getParameter<edm::InputTag>("prunedGenParticles"))),
     genParticlesH_(),
+    muonSrc_( consumes<std::vector<pat::Muon>> ( cfg.getParameter<edm::InputTag>( "muonCollection" ) ) ),
     // Low pT collections
     gsfElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("gsfElectrons"))),
     patElectrons_(consumes< edm::View<reco::GsfElectron> >(cfg.getParameter<edm::InputTag>("patElectrons"))),
@@ -206,88 +211,115 @@ void IDSlimNtuplizer::analyze( const edm::Event& event, const edm::EventSetup& s
 
   // Gen level electrons from B                        
   std::set<reco::GenParticlePtr> signal_electrons;
+  std::set<reco::GenParticlePtr> bg_electrons;
   if (!useEleGun) {
-    if (isMC_) signalElectrons(signal_electrons);          
-    if (!tag_side_muon) return;
-  } 
-  // Gen level electrons from particle gun
-  if (useEleGun) {
-    if (isMC_) signalElectronsFromGun(signal_electrons);          
-  }
+    if (isMC_) signalElectrons(signal_electrons, bg_electrons);
+     if (!tag_side_muon) return;
+   } 
+   // Gen level electrons from particle gun
+   if (useEleGun) {
+     if (isMC_) signalElectronsFromGun(signal_electrons);          
+   }
 
-  // Loop over low-pT electrons                  
-  for( size_t electronlooper = 0; electronlooper < gsfElectronsH_->size(); electronlooper++ ) {
+   // Loop over low-pT electrons                  
+   for( size_t electronlooper = 0; electronlooper < gsfElectronsH_->size(); electronlooper++ ) {
 
-    // ---------------------------------
-    // General event info - we save 1 entry per electron
-    ntuple_.fill_evt( event.id() );
-    ntuple_.is_egamma_ = false;
-    ntuple_.weight_ = 1.;
-  
-    // Low pT electrons
-    const reco::GsfElectronPtr ele(gsfElectronsH_, electronlooper);
-    
-    // filter candidates: there must be a gsf with mode-pT>0.5
-    reco::GsfTrackPtr gsf = edm::refToPtr(ele->gsfTrack());    
-    if ( !validPtr(gsf) ) continue;     
-    reco::TrackRef trk = ele->closestCtfTrackRef();  
-    if ( gsf->ptMode() < minTrackPt_ ) continue;
-    if ( fabs(gsf->etaMode()) > maxTrackEta_ ) continue;
+     // ---------------------------------
+     // General event info - we save 1 entry per electron
+     ntuple_.fill_evt( event.id() );
+     ntuple_.is_egamma_ = false;
+     ntuple_.weight_ = 1.;
 
-    // Work on the electron candidate
-    TVector3 eleTV3(0,0,0);
-    eleTV3.SetPtEtaPhi(ele->pt(), ele->eta(), ele->phi());
+     // Low pT electrons
+     const reco::GsfElectronPtr ele(gsfElectronsH_, electronlooper);
 
-    
-    // ---------------------------------
-    // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.1 )
-    float dRGenMin=999.;
-    reco::GenParticlePtr theGenParticle;
-    TVector3 genTV3(0,0,0);
-    for ( auto sig : signal_electrons ) {      
-      genTV3.SetPtEtaPhi(sig->pt(), sig->eta(), sig->phi());
-      float dR = eleTV3.DeltaR(genTV3);
-      if (dR<dRGenMin) { 
-	theGenParticle = sig;
-	dRGenMin=dR;
-      }
-    }
+     // filter candidates: there must be a gsf with mode-pT>0.5
+     reco::GsfTrackPtr gsf = edm::refToPtr(ele->gsfTrack());    
+     if ( !validPtr(gsf) ) continue;     
+     reco::TrackRef trk = ele->closestCtfTrackRef();  
+     if ( gsf->ptMode() < minTrackPt_ ) continue;
+     if ( fabs(gsf->etaMode()) > maxTrackEta_ ) continue;
 
-    // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (fakes)
-    if (dRGenMin>=0.03 && dRGenMin<0.1) continue;
+     // Work on the electron candidate
+     TVector3 eleTV3(0,0,0);
+     eleTV3.SetPtEtaPhi(ele->pt(), ele->eta(), ele->phi());
 
-    genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
-    if (dRGenMin<0.1) {
-      ntuple_.fill_gen( theGenParticle ); 
-      ntuple_.gen_dR_ = dRGenMin;
-      ntuple_.is_e_ = true;
-      ntuple_.is_other_ = false;
-      ntuple_.gen_tag_side_=tag_side_muon;
-    } else { 
-      ntuple_.fill_gen_default(); 
-      ntuple_.gen_dR_ = dRGenMin;
-      ntuple_.is_e_ = false;
-      ntuple_.is_other_ = true;
-      ntuple_.gen_tag_side_=tag_side_muon;
-    }
 
-    // prescale fake electrons 
-    if (dRGenMin>=0.1) {
-      if ( gRandom->Rndm() > prescale_  ) continue;
-      ntuple_.weight_ = 1./prescale_;
-    }  
+     // ---------------------------------
+     // Signal or fake electron, using gen-level info (-999 means nothing found with dR<0.1 )
+     float dRGenMin=999.;
+     reco::GenParticlePtr theGenParticle;
+     TVector3 genTV3(0,0,0);
+     for ( auto sig : signal_electrons ) {      
+       genTV3.SetPtEtaPhi(sig->pt(), sig->eta(), sig->phi());
+       float dR = eleTV3.DeltaR(genTV3);
+       if (dR<dRGenMin) { 
+	 theGenParticle = sig;
+	 dRGenMin=dR;
+       }
+     }
+     
+     float dRGenMinOther=999.;
+     reco::GenParticlePtr theGenParticleOther;
+     TVector3 genOtherTV3(0,0,0);
+     for ( auto oth : bg_electrons ) {
+       genOtherTV3.SetPtEtaPhi(oth->pt(), oth->eta(), oth->phi());
+       float dR = eleTV3.DeltaR(genOtherTV3);
+       if (dR<dRGenMinOther) {
+	 dRGenMinOther=dR;
+       }
+     }
 
-    // ---------------------------------
-    // Electron ID: dirty hack as ID is not in Event nor embedded in pat::Electron
-    float mva_value = -999.;
-    int mva_id = -999;
-    if ( mvaValueLowPtH_.isValid() && 
-	 mvaValueLowPtH_->size() == gsfElectronsH_->size() ) {
-      mva_value = mvaValueLowPtH_->get( ele.key() );
-    } else {
-      std::cout << "ERROR! Issue matching MVA output to GsfElectrons!" << std::endl;
-    }
+     // Keep only electrons with dRGenMin<0.03 (signal) or >0.1 (potential fakes)
+     if (dRGenMin>=0.03 && dRGenMin<0.1) continue;
+     // Further check on other electrons      
+     if (dRGenMin>=0.03 && dRGenMinOther<0.1) continue;
 
+     genTV3.SetPtEtaPhi(theGenParticle->pt(), theGenParticle->eta(), theGenParticle->phi());
+     if (dRGenMin<0.03) {
+       ntuple_.fill_gen( theGenParticle ); 
+       ntuple_.gen_dR_ = dRGenMin;
+       ntuple_.genOther_dR_ = dRGenMinOther;
+       ntuple_.is_e_ = true;
+       ntuple_.is_other_ = false;
+       ntuple_.gen_tag_side_=tag_side_muon;
+     } else { 
+       ntuple_.fill_gen_default(); 
+       ntuple_.gen_dR_ = dRGenMin;
+       ntuple_.genOther_dR_ = dRGenMinOther;
+       ntuple_.is_e_ = false;
+       ntuple_.is_other_ = true;
+       ntuple_.gen_tag_side_=tag_side_muon;
+     }
+
+     // prescale fake electrons 
+     if (dRGenMin>=0.1) {
+       if ( gRandom->Rndm() > prescale_  ) continue;
+       ntuple_.weight_ = 1./prescale_;
+     }  
+
+     // ---------------------------------
+     // Electron ID: dirty hack as ID is not in Event nor embedded in pat::Electron
+     float mva_value = -999.;
+     int mva_id = -999;
+     if ( mvaValueLowPtH_.isValid() && 
+	  mvaValueLowPtH_->size() == gsfElectronsH_->size() ) {
+       mva_value = mvaValueLowPtH_->get( ele.key() );
+     } else {
+       std::cout << "ERROR! Issue matching MVA output to GsfElectrons!" << std::endl;
+     }
+     
+     // ----------------------------------
+     // Distance ele - closest muon    
+     float dRmuEleMin=999.;
+     for (const pat::Muon &muon : *muons) {
+       TVector3 muTV3(0,0,0);
+       muTV3.SetPtEtaPhi(muon.pt(), muon.eta(), muon.phi());
+       float thisDRem = muTV3.DeltaR(eleTV3);
+       if (thisDRem<dRmuEleMin) dRmuEleMin=thisDRem;
+     }
+     ntuple_.minDrWithMu_ = dRmuEleMin;
+     
     // ---------------------------------
     // Fill ele info 
     float unbiasedSeedBdt_ = (*mvaUnbiasedH_)[gsf];
@@ -394,25 +426,32 @@ void IDSlimNtuplizer::readCollections( const edm::Event& event, const edm::Event
   event.getByToken(mvaUnbiased_, mvaUnbiasedH_);
   event.getByToken(mvaPtbiased_, mvaPtbiasedH_);
   event.getByToken(mvaValueLowPt_, mvaValueLowPtH_);
+
+  // Muons
+  event.getByToken(muonSrc_, muons);
 }
 
 void IDSlimNtuplizer::deleteCollections( ) {
 }
 
 // Gen-level electons from B
-void IDSlimNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons ) {
+void IDSlimNtuplizer::signalElectrons( std::set<reco::GenParticlePtr>& signal_electrons, std::set<reco::GenParticlePtr>& bg_electrons ) {
 
   signal_electrons.clear();
   std::set<reco::GenParticlePtr> electrons_from_B;
-  genElectronsFromB(electrons_from_B);
+  bg_electrons.clear();
+  std::set<reco::GenParticlePtr> electrons_others;
+  genElectronsFromB(electrons_from_B, electrons_others);
   for ( auto gen : electrons_from_B ) { signal_electrons.insert(gen); }
+  for ( auto gen : electrons_others ) { bg_electrons.insert(gen); }
 }
 
 // Gen-level electons from B 
-void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B,
+void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electrons_from_B, std::set<reco::GenParticlePtr>& electrons_others,
 					 float muon_pt, float muon_eta ) {   
   
   electrons_from_B.clear();
+  electrons_others.clear();
   tag_side_muon = false;
 
   for ( size_t idx = 0; idx < genParticlesH_->size(); idx++ ) {
@@ -471,6 +510,10 @@ void IDSlimNtuplizer::genElectronsFromB( std::set<reco::GenParticlePtr>& electro
 		  << " non resonant? " << non_resonant
 		  << " tag-side muon? " << tag_side_muon
 		  << std::endl;
+      }
+    } else if(is_ele) {
+      if (gen->mother() && std::abs(gen->mother()->pdgId())!=2212 && std::abs(gen->mother()->pdgId())>8) {
+        electrons_others.insert(gen);
       }
     }
     

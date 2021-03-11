@@ -83,6 +83,7 @@ class IDSlimNtuple {
 
   // GEN electrons
   float gen_dR_  = IDSlimNtuple::NEG_FLOAT;
+  float genOther_dR_  = IDSlimNtuple::NEG_FLOAT;
   float gen_pt_  = IDSlimNtuple::NEG_FLOAT;
   float gen_eta_ = IDSlimNtuple::NEG_FLOAT;
   float gen_phi_ = IDSlimNtuple::NEG_FLOAT;
@@ -201,6 +202,9 @@ class IDSlimNtuple {
   int sc_clus3_nxtal_    = IDSlimNtuple::NEG_INT;
   float sc_clus3_dphi_   = IDSlimNtuple::NEG_FLOAT;
   float sc_clus3_deta_   = IDSlimNtuple::NEG_FLOAT;
+
+  // Distance wrt muons
+  float minDrWithMu_ = IDSlimNtuple::NEG_FLOAT;
 };
 
 #endif // LowPtElectrons_LowPtElectrons_IDSlimNtuple

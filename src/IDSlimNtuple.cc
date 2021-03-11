@@ -32,6 +32,7 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("gen_eta", &gen_eta_, "gen_eta/f");
   tree->Branch("gen_tag_side", &gen_tag_side_, "gen_tag_side/I");   
   tree->Branch("gen_dR" , &gen_dR_ , "gen_dR/f" );
+  tree->Branch("genOther_dR" , &genOther_dR_ , "genOther_dR/f" );
   tree->Branch("gen_phi", &gen_phi_, "gen_phi/f");
   tree->Branch("gen_p",   &gen_p_,   "gen_p/f");
 
@@ -134,6 +135,9 @@ void IDSlimNtuple::link_tree( TTree *tree ) {
   tree->Branch("sc_clus3_nxtal",  &sc_clus3_nxtal_, "sc_clus3_nxtal/I");
   tree->Branch("sc_clus3_dphi",   &sc_clus3_dphi_,  "sc_clus3_dphi/F");
   tree->Branch("sc_clus3_deta",   &sc_clus3_deta_,  "sc_clus3_deta/F");
+
+  // Distance wrt muons
+  tree->Branch("minDrWithMu", &minDrWithMu_);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

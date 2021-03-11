@@ -165,7 +165,7 @@ def main():
             outputfile.write(opt.application+' '+icfgfilename+' \n')
             if(opt.download=='pccmsrm'): outputfile.write('ls *.root | xargs -i scp -o BatchMode=yes -o StrictHostKeyChecking=no {} pccmsrm24:'+diskoutputmain+'/{}\n') 
             if(opt.eos!=''): 
-                outputfile.write('cp '+rootoutputfile+' /eos/cms/store/user/crovelli/LowPtEle/Batch1_UL17/'+output+'_'+str(ijob)+'.root\n')
+                outputfile.write('cp '+rootoutputfile+' /eos/cms/store/user/crovelli/LowPtEle/Batch1_UL18/'+output+'_'+str(ijob)+'.root\n')
                 outputfile.write('rm '+rootoutputfile)
             outputfile.close()
             logfile = logdir+output+"_"+str(ijob)+".log"
