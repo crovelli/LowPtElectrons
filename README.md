@@ -17,7 +17,7 @@ git clone git@github.com:CMSBParking/LowPtElectrons.git $CMSSW_BASE/src/LowPtEle
 cd LowPtElectrons/LowPtElectrons
 git remote add crovelli git@github.com:crovelli/LowPtElectrons.git
 git fetch crovelli
-git checkout -b for106x crovelli/for106x
+git checkout -b for106x_bkgFix crovelli/for106x_bkgFix
 ```
 
 ### Compile
