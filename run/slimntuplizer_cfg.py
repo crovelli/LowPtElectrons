@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('python')
-options.setDefault('maxEvents',-1)
+options.setDefault('maxEvents',5000)
 options.register('skipEvents',0,VarParsing.multiplicity.singleton,VarParsing.varType.int,"")
 options.register('useAOD',True,VarParsing.multiplicity.singleton,VarParsing.varType.bool,"")
 options.parseArguments()
@@ -41,7 +41,7 @@ process.ntuplizer_seq = cms.Sequence()
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.MessageLogger.cerr.FwkReport.reportEvery = 500
 
-process.load('RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cfi')
+process.load('RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cff')
 if not options.useAOD : 
     process.lowPtGsfElectronID.electrons = 'slimmedLowPtElectrons'
     process.lowPtGsfElectronID.rho = 'fixedGridRhoFastjetAll'
